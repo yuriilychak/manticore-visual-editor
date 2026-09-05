@@ -1,0 +1,1 @@
+export const SPLASH_TRANSITION_DURATION = 250;

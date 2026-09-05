@@ -5,14 +5,17 @@ import App from '../App';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, values?: { platform: string }) => {
+    t: (key: string) => {
       const translations: Record<string, string> = {
-        'app.description': 'The desktop shell, React UI, and development hot reload are ready.',
-        'app.productName': 'Manticore 2.0',
-        'app.title': 'Visual Editor'
+        'welcome.community': 'Community',
+        'welcome.documentation': 'Documentation',
+        'welcome.newProject': 'New Project...',
+        'welcome.openProject': 'Open Project...',
+        'welcome.start': 'Start',
+        'welcome.title': 'Welcome to Manticore'
       };
 
-      return key === 'app.platform' ? `Running on ${values?.platform}.` : translations[key];
+      return translations[key] ?? key;
     }
   })
 }));
@@ -21,8 +24,11 @@ describe('App', () => {
   test('renders the localized application content', () => {
     render(<App />);
 
-    screen.getByRole('heading', { name: 'Visual Editor' });
-    screen.getByText('Manticore 2.0');
-    screen.getByText('Running on the web preview.');
+    screen.getByRole('heading', { name: 'Welcome to Manticore' });
+    screen.getByRole('heading', { name: 'Start' });
+    screen.getByRole('button', { name: 'New Project...' });
+    screen.getByRole('button', { name: 'Open Project...' });
+    screen.getByRole('button', { name: 'Documentation' });
+    screen.getByRole('button', { name: 'Community' });
   });
 });

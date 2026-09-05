@@ -5,6 +5,8 @@ import { Box, IconButton } from '@mui/material';
 import { TITLE_BAR_HEIGHT } from '../../../constants';
 import type { WindowControlAction } from '../../../types';
 
+import Menubar from '../menubar/Menubar';
+
 import { TITLE_BAR_STYLES, WINDOW_CONTROL_BUTTONS } from './constants';
 
 type TitleBarProps = {
@@ -38,7 +40,10 @@ const TitleBar: FC<TitleBarProps> = ({ isMaximized, onWindowControl, showWindowC
       onDoubleClick={handleWindowControl}
       sx={TITLE_BAR_STYLES.root}
     >
-      <Box alt="Manticore Visual Editor" component="img" src="./asset/logo.svg" sx={TITLE_BAR_STYLES.logo} />
+      <Box alignItems="center" display="flex" flexGrow={1} gap={1}>
+        <Box alt="Manticore Visual Editor" component="img" src="./asset/logo.svg" sx={TITLE_BAR_STYLES.logo} />
+        <Menubar />
+      </Box>
       {showWindowControls && visibleWindowControlButtons.length > 0 && (
         <Box display="flex" sx={TITLE_BAR_STYLES.controls}>
           {visibleWindowControlButtons.map(({ action, ariaLabel, Icon, sx }) => (

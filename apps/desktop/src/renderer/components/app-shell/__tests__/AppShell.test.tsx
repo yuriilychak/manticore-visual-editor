@@ -5,6 +5,10 @@ import type { WindowControls } from '../../../types';
 
 import AppShell from '../AppShell';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({ i18n: { changeLanguage: jest.fn(), language: 'en' }, t: (key: string) => key })
+}));
+
 const WINDOW_CONTROLS: WindowControls = {
   close: jest.fn(async () => undefined),
   isMaximized: jest.fn(async () => false),

@@ -6,6 +6,10 @@ import type { WindowControlAction } from '../../../../types';
 
 import TitleBar from '../TitleBar';
 
+jest.mock('react-i18next', () => ({
+  useTranslation: () => ({ i18n: { changeLanguage: jest.fn(), language: 'en' }, t: (key: string) => key })
+}));
+
 describe('TitleBar', () => {
   test('renders state-appropriate controls and forwards their actions', async () => {
     const user = userEvent.setup();

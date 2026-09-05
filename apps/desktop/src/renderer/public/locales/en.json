@@ -1,8 +1,33 @@
 {
-  "app": {
-    "productName": "Manticore 2.0",
-    "title": "Visual Editor",
-    "description": "The desktop shell, React UI, and development hot reload are ready.",
-    "platform": "Running on {{platform}}."
+  "welcome": {
+    "title": "Welcome to Manticore",
+    "subtitle": "Create and manage projects for the Manticore 2.0 engine.",
+    "start": "Start",
+    "newProject": "New Project...",
+    "openProject": "Open Project...",
+    "learn": "Learn",
+    "gettingStarted": "Get Started",
+    "documentation": "Documentation",
+    "keyboardShortcuts": "Keyboard Shortcuts",
+    "help": "Help",
+    "helpCenter": "Help Center",
+    "community": "Community",
+    "reportIssue": "Report an Issue"
+  },
+  "menu": {
+    "file": {
+      "label": "File",
+      "createFile": "Create File",
+      "importFile": "Import File",
+      "createProject": "Create New Project"
+    },
+    "help": {
+      "label": "Help",
+      "language": "Language",
+      "languages": {
+        "english": "English",
+        "spanish": "Spanish"
+      }
+    }
   }
 }

@@ -2,9 +2,11 @@ import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 
 const IS_DEVELOPMENT = !app.isPackaged;
+const WINDOW_ICON_PATH = path.join(__dirname, '../build/icon.png');
 
 async function createWindow(): Promise<void> {
   const window = new BrowserWindow({
+    icon: IS_DEVELOPMENT ? WINDOW_ICON_PATH : undefined,
     width: 1280,
     height: 800,
     minWidth: 900,

@@ -1,0 +1,33 @@
+{
+  "welcome": {
+    "title": "Bienvenido a Manticore",
+    "subtitle": "Crea y administra proyectos para el motor Manticore 2.0.",
+    "start": "Comenzar",
+    "newProject": "Nuevo proyecto...",
+    "openProject": "Abrir proyecto...",
+    "learn": "Aprender",
+    "gettingStarted": "Primeros pasos",
+    "documentation": "Documentación",
+    "keyboardShortcuts": "Atajos de teclado",
+    "help": "Ayuda",
+    "helpCenter": "Centro de ayuda",
+    "community": "Comunidad",
+    "reportIssue": "Informar de un problema"
+  },
+  "menu": {
+    "file": {
+      "label": "Archivo",
+      "createFile": "Crear archivo",
+      "importFile": "Importar archivo",
+      "createProject": "Crear nuevo proyecto"
+    },
+    "help": {
+      "label": "Ayuda",
+      "language": "Idioma",
+      "languages": {
+        "english": "Inglés",
+        "spanish": "Español"
+      }
+    }
+  }
+}

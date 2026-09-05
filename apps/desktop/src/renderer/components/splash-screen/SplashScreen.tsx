@@ -10,7 +10,15 @@ type SplashScreenProps = {
 const SplashScreen: FC<SplashScreenProps> = ({ hasError = false, onRetry }) => {
   if (hasError) {
     return (
-      <Box alignItems="center" display="flex" flexDirection="column" flexGrow={1} gap={2} justifyContent="center">
+      <Box
+        alignItems="center"
+        bgcolor="background.default"
+        display="flex"
+        flexDirection="column"
+        flexGrow={1}
+        gap={2}
+        justifyContent="center"
+      >
         <Alert severity="error">Could not load the application language.</Alert>
         <Button onClick={onRetry} variant="contained">
           Retry
@@ -20,7 +28,15 @@ const SplashScreen: FC<SplashScreenProps> = ({ hasError = false, onRetry }) => {
   }
 
   return (
-    <Box alignItems="center" display="flex" flexDirection="column" flexGrow={1} gap={2} justifyContent="center">
+    <Box
+      alignItems="center"
+      bgcolor="background.default"
+      display="flex"
+      flexDirection="column"
+      flexGrow={1}
+      gap={2}
+      justifyContent="center"
+    >
       <CircularProgress aria-label="Loading application" size={44} />
       <Typography color="text.secondary" variant="body2">
         Loading Manticore…

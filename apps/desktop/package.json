@@ -53,6 +53,7 @@
   "build": {
     "appId": "com.manticore.visualeditor",
     "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "icon": "build/icon.png",
     "directories": {
       "output": "release"
     },

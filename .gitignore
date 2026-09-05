@@ -1,6 +1,7 @@
 node_modules
 dist
 .turbo
+.history
 *.log
 apps/*/dist
 apps/*/coverage
