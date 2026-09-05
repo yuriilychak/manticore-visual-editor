@@ -1,0 +1,9 @@
+node_modules
+dist
+.turbo
+*.log
+apps/*/dist
+apps/*/release
+apps/*/.vite
+.DS_Store
+

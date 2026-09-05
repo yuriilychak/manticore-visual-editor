@@ -1,0 +1,20 @@
+{
+  "name": "manticore-visual-editor",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev --concurrency=1",
+    "build": "turbo run build",
+    "check": "turbo run check",
+    "clean": "turbo run clean"
+  },
+  "devDependencies": {
+    "turbo": "^2.5.6"
+  },
+  "packageManager": "npm@10.9.2"
+}
+
