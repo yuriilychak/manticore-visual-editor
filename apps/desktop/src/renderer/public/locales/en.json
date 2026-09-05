@@ -1,0 +1,8 @@
+{
+  "app": {
+    "productName": "Manticore 2.0",
+    "title": "Visual Editor",
+    "description": "The desktop shell, React UI, and development hot reload are ready.",
+    "platform": "Running on {{platform}}."
+  }
+}

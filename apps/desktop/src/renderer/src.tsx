@@ -1,27 +1,19 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import './styles.css';
 
-declare global {
-  interface Window {
-    manticore: { platform: string };
-  }
-}
+import { CssBaseline, ThemeProvider } from '@mui/material';
 
-function App() {
-  return (
-    <main>
-      <p className="eyebrow">Manticore 2.0</p>
-      <h1>Visual Editor</h1>
-      <p>The desktop shell, React UI, and development hot reload are ready.</p>
-      <small>Running on {window.manticore?.platform ?? 'the web preview'}.</small>
-    </main>
-  );
-}
+import AppShell from './components/app-shell/AppShell';
+import Renderer from './components/renderer/Renderer';
+import { THEME } from './theme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ThemeProvider theme={THEME}>
+      <CssBaseline />
+      <AppShell controls={window.manticore?.windowControls}>
+        <Renderer />
+      </AppShell>
+    </ThemeProvider>
   </StrictMode>
 );
-

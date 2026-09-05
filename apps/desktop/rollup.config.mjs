@@ -3,14 +3,14 @@ import { nodeResolve } from '@rollup/plugin-node-resolve';
 import typescript from '@rollup/plugin-typescript';
 import { builtinModules } from 'node:module';
 
-const external = ['electron', ...builtinModules, ...builtinModules.map((name) => `node:${name}`)];
+const EXTERNAL = ['electron', ...builtinModules, ...builtinModules.map((name) => `node:${name}`)];
 
 export default {
   input: {
     main: 'src/main.ts',
     preload: 'src/preload.ts'
   },
-  external,
+  external: EXTERNAL,
   output: {
     dir: 'dist',
     format: 'cjs',
@@ -19,4 +19,3 @@ export default {
   },
   plugins: [nodeResolve({ preferBuiltins: true }), commonjs(), typescript({ noEmit: false, outDir: 'dist' })]
 };
-

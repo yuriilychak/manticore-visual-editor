@@ -1,35 +1,71 @@
 {
   "name": "@manticore/desktop",
   "version": "0.1.0",
+  "description": "Manticore Visual Editor desktop application",
   "private": true,
   "main": "dist/main.cjs",
   "scripts": {
     "dev": "concurrently -k -n vite,main,electron -c cyan,magenta,green \"vite --host 127.0.0.1\" \"rollup --config rollup.config.mjs --watch\" \"wait-on tcp:5173 file:dist/main.cjs && electronmon dist/main.cjs\"",
     "build": "vite build && rollup --config rollup.config.mjs",
+    "dist": "npm run build && electron-builder --linux --x64",
+    "dist:dir": "npm run build && electron-builder --dir",
     "check": "tsc --noEmit",
-    "clean": "rimraf dist"
+    "lint": "eslint src vite.config.ts rollup.config.mjs",
+    "test": "jest --config jest.config.cjs --runInBand",
+    "test:coverage": "jest --config jest.config.cjs --coverage --runInBand",
+    "clean": "rimraf dist release"
   },
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.2",
+    "@mui/material": "^7.3.2",
     "@vitejs/plugin-react": "^4.7.0",
+    "i18next": "^25.5.2",
+    "i18next-http-backend": "^3.0.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
+    "react-i18next": "^16.0.0",
     "vite": "^7.1.3"
   },
   "devDependencies": {
+    "@jest/globals": "^30.2.0",
     "@rollup/plugin-commonjs": "^28.0.6",
     "@rollup/plugin-node-resolve": "^16.0.1",
     "@rollup/plugin-typescript": "^12.1.4",
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.8.0",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.3.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
     "concurrently": "^9.2.1",
-    "electron": "^37.2.6",
+    "electron": "37.10.3",
+    "electron-builder": "^26.15.3",
     "electronmon": "^2.0.3",
     "rimraf": "^6.0.1",
     "rollup": "^4.48.1",
     "tslib": "^2.8.1",
     "typescript": "^5.9.2",
     "wait-on": "^8.0.3"
+  },
+  "build": {
+    "appId": "com.manticore.visualeditor",
+    "artifactName": "${productName}-${version}-${os}-${arch}.${ext}",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "linux": {
+      "category": "Development",
+      "target": [
+        "AppImage"
+      ]
+    },
+    "productName": "Manticore Visual Editor"
   }
 }
-

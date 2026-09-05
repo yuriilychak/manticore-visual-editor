@@ -10,11 +10,28 @@
     "dev": "turbo run dev --concurrency=1",
     "build": "turbo run build",
     "check": "turbo run check",
+    "lint": "turbo run lint",
+    "test": "turbo run test",
+    "test:coverage": "turbo run test:coverage",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "clean": "turbo run clean"
   },
   "devDependencies": {
-    "turbo": "^2.5.6"
+    "@eslint/js": "^9.36.0",
+    "eslint": "^9.36.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.20",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "globals": "^16.4.0",
+    "jest": "^30.2.0",
+    "jest-environment-jsdom": "^30.2.0",
+    "prettier": "^3.6.2",
+    "ts-jest": "^29.4.5",
+    "turbo": "^2.5.6",
+    "typescript-eslint": "^8.44.1"
   },
   "packageManager": "npm@10.9.2"
 }
-

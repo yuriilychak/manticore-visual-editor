@@ -3,7 +3,7 @@ dist
 .turbo
 *.log
 apps/*/dist
+apps/*/coverage
 apps/*/release
 apps/*/.vite
 .DS_Store
-

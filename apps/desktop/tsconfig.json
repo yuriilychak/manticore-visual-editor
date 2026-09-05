@@ -5,11 +5,12 @@
     "moduleResolution": "bundler",
     "strict": true,
     "esModuleInterop": true,
+    "resolveJsonModule": true,
     "skipLibCheck": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["node", "vite/client"]
   },
-  "include": ["src", "vite.config.ts", "rollup.config.mjs"]
+  "include": ["src", "vite.config.ts", "rollup.config.mjs"],
+  "exclude": ["src/**/__tests__/**"]
 }
-

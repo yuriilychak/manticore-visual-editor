@@ -9,6 +9,18 @@
       "dependsOn": ["^check"],
       "outputs": []
     },
+    "lint": {
+      "dependsOn": ["^lint"],
+      "outputs": []
+    },
+    "test": {
+      "dependsOn": ["^test"],
+      "outputs": []
+    },
+    "test:coverage": {
+      "dependsOn": ["^test:coverage"],
+      "outputs": ["coverage/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true
@@ -18,4 +30,3 @@
     }
   }
 }
-

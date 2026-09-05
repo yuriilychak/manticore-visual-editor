@@ -22,6 +22,8 @@ npm run dev
 ```bash
 npm run build
 npm run check
+npm run dist --workspace @manticore/desktop
 ```
 
 Turbo runs workspace tasks; the desktop build writes the renderer and Electron bundles to `apps/desktop/dist`.
+`npm run dist --workspace @manticore/desktop` creates a Linux x64 AppImage in `apps/desktop/release`.
