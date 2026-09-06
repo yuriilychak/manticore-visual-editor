@@ -15,7 +15,13 @@ describe('TitleBar', () => {
     const user = userEvent.setup();
     const onWindowControl = jest.fn<(action: WindowControlAction) => Promise<void>>().mockResolvedValue(undefined);
     const { rerender } = render(
-      <TitleBar isMaximized={false} onAction={jest.fn()} onWindowControl={onWindowControl} showWindowControls />
+      <TitleBar
+        isMaximized={false}
+        onAction={jest.fn()}
+        onWindowControl={onWindowControl}
+        selectedActionIds={[]}
+        showWindowControls
+      />
     );
 
     screen.getByLabelText('Maximize window');
@@ -27,7 +33,15 @@ describe('TitleBar', () => {
     expect(onWindowControl).toHaveBeenNthCalledWith(1, 'close');
     expect(onWindowControl).toHaveBeenNthCalledWith(2, 'toggle-maximize');
 
-    rerender(<TitleBar isMaximized onAction={jest.fn()} onWindowControl={onWindowControl} showWindowControls />);
+    rerender(
+      <TitleBar
+        isMaximized
+        onAction={jest.fn()}
+        onWindowControl={onWindowControl}
+        selectedActionIds={[]}
+        showWindowControls
+      />
+    );
 
     screen.getByLabelText('Restore window');
     expect(screen.queryByLabelText('Maximize window')).not.toBeInTheDocument();

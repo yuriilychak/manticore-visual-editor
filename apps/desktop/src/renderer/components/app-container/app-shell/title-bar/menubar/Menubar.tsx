@@ -1,4 +1,4 @@
-import { type FC, type MouseEvent, useCallback, useState } from 'react';
+import { type FC, memo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import ChevronRightRounded from '@mui/icons-material/ChevronRightRounded';
@@ -6,94 +6,52 @@ import { Box, Button, Menu, MenuItem } from '@mui/material';
 
 import type { ApplicationAction } from '../../../../../types';
 
-import { FILE_MENU_ITEMS, LANGUAGE_MENU_ITEMS, MENUBAR_STYLES } from './constants';
+import { MENU_SLOT_PROPS, MENUBAR_STYLES, MENUS } from './constants';
+import { useMenubar } from './useMenubar';
 
 type MenubarProps = {
   onAction: (action: ApplicationAction) => void;
+  selectedActionIds: readonly ApplicationAction[];
 };
 
-const Menubar: FC<MenubarProps> = ({ onAction }) => {
-  const { i18n, t } = useTranslation();
-  const [fileMenuAnchor, setFileMenuAnchor] = useState<HTMLElement | null>(null);
-  const [helpMenuAnchor, setHelpMenuAnchor] = useState<HTMLElement | null>(null);
-  const [languageMenuAnchor, setLanguageMenuAnchor] = useState<HTMLElement | null>(null);
-
-  const closeMenus = () => {
-    setFileMenuAnchor(null);
-    setHelpMenuAnchor(null);
-    setLanguageMenuAnchor(null);
-  };
-
-  const changeLanguage = (language: string) => {
-    void i18n.changeLanguage(language);
-    closeMenus();
-  };
-  const handleFileAction = useCallback(
-    (event: MouseEvent<HTMLElement>) => {
-      onAction(event.currentTarget.dataset.action as ApplicationAction);
-      closeMenus();
-    },
-    [onAction]
-  );
+const Menubar: FC<MenubarProps> = ({ onAction, selectedActionIds }) => {
+  const { t } = useTranslation();
+  const { anchors, buttons, closeMenus, getSelected, handlers } = useMenubar(onAction, selectedActionIds);
 
   return (
     <Box display="flex" onDoubleClick={(event) => event.stopPropagation()}>
-      <Button onClick={(event) => setFileMenuAnchor(event.currentTarget)} sx={MENUBAR_STYLES.button} variant="text">
-        {t('menu.file.label')}
-      </Button>
-      <Button onClick={(event) => setHelpMenuAnchor(event.currentTarget)} sx={MENUBAR_STYLES.button} variant="text">
-        {t('menu.help.label')}
-      </Button>
-
-      <Menu
-        anchorEl={fileMenuAnchor}
-        onClose={closeMenus}
-        open={Boolean(fileMenuAnchor)}
-        slotProps={{ list: { disablePadding: true } }}
-        sx={MENUBAR_STYLES.menu}
-      >
-        {FILE_MENU_ITEMS.map(({ action, labelKey }) => (
-          <MenuItem data-action={action} key={action} onClick={handleFileAction} sx={MENUBAR_STYLES.menuItem}>
-            {t(labelKey)}
-          </MenuItem>
-        ))}
-      </Menu>
-
-      <Menu
-        anchorEl={helpMenuAnchor}
-        onClose={closeMenus}
-        open={Boolean(helpMenuAnchor)}
-        slotProps={{ list: { disablePadding: true } }}
-        sx={MENUBAR_STYLES.menu}
-      >
-        <MenuItem onClick={(event) => setLanguageMenuAnchor(event.currentTarget)} sx={MENUBAR_STYLES.menuItem}>
-          {t('menu.help.language')}
-          <ChevronRightRounded fontSize="small" sx={{ ml: 'auto' }} />
-        </MenuItem>
-      </Menu>
-
-      <Menu
-        anchorEl={languageMenuAnchor}
-        anchorOrigin={{ horizontal: 'right', vertical: 'top' }}
-        onClose={closeMenus}
-        open={Boolean(languageMenuAnchor)}
-        slotProps={{ list: { disablePadding: true } }}
-        sx={MENUBAR_STYLES.languageMenu}
-        transformOrigin={{ horizontal: 'left', vertical: 'top' }}
-      >
-        {LANGUAGE_MENU_ITEMS.map(({ code, labelKey }) => (
-          <MenuItem
-            key={code}
-            onClick={() => changeLanguage(code)}
-            selected={i18n.language === code}
-            sx={MENUBAR_STYLES.menuItem}
-          >
-            {t(labelKey)}
-          </MenuItem>
-        ))}
-      </Menu>
+      {buttons.map(({ id, labelKey }) => (
+        <Button data-id={id} key={id} onClick={handlers.submenu} sx={MENUBAR_STYLES.button} variant="text">
+          {t(labelKey)}
+        </Button>
+      ))}
+      {MENUS.map(({ anchorOrigin, id, items, style, transformOrigin }) => (
+        <Menu
+          anchorEl={anchors[id]}
+          anchorOrigin={anchorOrigin}
+          key={id}
+          onClose={closeMenus}
+          open={Boolean(anchors[id])}
+          slotProps={MENU_SLOT_PROPS}
+          sx={MENUBAR_STYLES[style]}
+          transformOrigin={transformOrigin}
+        >
+          {items.map(({ id, labelKey, type }) => (
+            <MenuItem
+              data-id={id}
+              key={id}
+              onClick={handlers[type]}
+              selected={getSelected(type, id)}
+              sx={MENUBAR_STYLES.menuItem}
+            >
+              {t(labelKey)}
+              {type === 'submenu' && <ChevronRightRounded fontSize="small" sx={{ ml: 'auto' }} />}
+            </MenuItem>
+          ))}
+        </Menu>
+      ))}
     </Box>
   );
 };
 
-export default Menubar;
+export default memo(Menubar);

@@ -12,10 +12,17 @@ type TitleBarProps = {
   isMaximized: boolean;
   onAction: (action: ApplicationAction) => void;
   onWindowControl: (action: WindowControlAction) => Promise<void>;
+  selectedActionIds: readonly ApplicationAction[];
   showWindowControls: boolean;
 };
 
-const TitleBar: FC<TitleBarProps> = ({ isMaximized, onAction, onWindowControl, showWindowControls }) => {
+const TitleBar: FC<TitleBarProps> = ({
+  isMaximized,
+  onAction,
+  onWindowControl,
+  selectedActionIds,
+  showWindowControls
+}) => {
   const visibleWindowControlButtons = useMemo(
     () =>
       WINDOW_CONTROL_BUTTONS.filter(
@@ -42,7 +49,7 @@ const TitleBar: FC<TitleBarProps> = ({ isMaximized, onAction, onWindowControl, s
     >
       <Box alignItems="center" display="flex" flexGrow={1} gap={1}>
         <Box alt="Manticore Visual Editor" component="img" src="./asset/logo.svg" sx={TITLE_BAR_STYLES.logo} />
-        <Menubar onAction={onAction} />
+        <Menubar onAction={onAction} selectedActionIds={selectedActionIds} />
       </Box>
       {showWindowControls && visibleWindowControlButtons.length > 0 && (
         <Box display="flex" sx={TITLE_BAR_STYLES.controls}>

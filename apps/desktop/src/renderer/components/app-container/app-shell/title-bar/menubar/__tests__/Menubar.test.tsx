@@ -1,14 +1,12 @@
-import { beforeEach, describe, expect, jest, test } from '@jest/globals';
+import { describe, expect, jest, test } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import Menubar from '../Menubar';
 
-const mockChangeLanguage = jest.fn<(language: string) => Promise<void>>();
-
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
-    i18n: { changeLanguage: mockChangeLanguage, language: 'en' },
+    i18n: { language: 'en' },
     t: (key: string) => {
       const translations: Record<string, string> = {
         'menu.file.createFile': 'Create File',
@@ -27,16 +25,11 @@ jest.mock('react-i18next', () => ({
 }));
 
 describe('Menubar', () => {
-  beforeEach(() => {
-    mockChangeLanguage.mockReset();
-    mockChangeLanguage.mockResolvedValue(undefined);
-  });
-
   test('shows configured File menu items and dispatches their action', async () => {
     const onAction = jest.fn();
     const user = userEvent.setup();
 
-    render(<Menubar onAction={onAction} />);
+    render(<Menubar onAction={onAction} selectedActionIds={[]} />);
 
     await user.click(screen.getByRole('button', { name: 'File' }));
 
@@ -47,15 +40,16 @@ describe('Menubar', () => {
     expect(onAction).toHaveBeenCalledWith('create-project');
   });
 
-  test('switches localization from the Language submenu', async () => {
+  test('dispatches language selection from the Language submenu', async () => {
+    const onAction = jest.fn();
     const user = userEvent.setup();
 
-    render(<Menubar onAction={jest.fn()} />);
+    render(<Menubar onAction={onAction} selectedActionIds={[]} />);
 
     await user.click(screen.getByRole('button', { name: 'Help' }));
     await user.click(screen.getByRole('menuitem', { name: 'Language' }));
     await user.click(screen.getByRole('menuitem', { name: 'Spanish' }));
 
-    expect(mockChangeLanguage).toHaveBeenCalledWith('es');
+    expect(onAction).toHaveBeenCalledWith('set-language-es');
   });
 });

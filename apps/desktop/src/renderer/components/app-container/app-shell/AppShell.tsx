@@ -12,9 +12,10 @@ type AppShellProps = {
   children: ReactNode;
   controls?: WindowControls;
   onAction: (action: ApplicationAction) => void;
+  selectedActionIds: readonly ApplicationAction[];
 };
 
-const AppShell: FC<AppShellProps> = ({ children, controls, onAction }) => {
+const AppShell: FC<AppShellProps> = ({ children, controls, onAction, selectedActionIds }) => {
   const { isMaximized, onWindowControl } = useWindowControls(controls);
 
   return (
@@ -23,6 +24,7 @@ const AppShell: FC<AppShellProps> = ({ children, controls, onAction }) => {
         isMaximized={isMaximized}
         onAction={onAction}
         onWindowControl={onWindowControl}
+        selectedActionIds={selectedActionIds}
         showWindowControls={Boolean(controls)}
       />
       <Box display="flex" height={`calc(100vh - ${TITLE_BAR_HEIGHT}px)`} minHeight={0}>

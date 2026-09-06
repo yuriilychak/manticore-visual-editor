@@ -10,7 +10,9 @@ export type ApplicationAction =
   | 'open-help-center'
   | 'open-keyboard-shortcuts'
   | 'open-project'
-  | 'report-issue';
+  | 'report-issue'
+  | 'set-language-en'
+  | 'set-language-es';
 
 export type WindowControls = {
   close: () => Promise<void>;
