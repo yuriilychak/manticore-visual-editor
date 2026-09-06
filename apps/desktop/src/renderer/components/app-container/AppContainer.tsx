@@ -1,6 +1,8 @@
 import { type FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { Alert, Snackbar } from '@mui/material';
+
 import type { ApplicationAction, NewProjectOptions, ProjectCreationValidation, WindowControls } from '../../types';
 
 import { AppShell } from './app-shell';
@@ -26,6 +28,7 @@ const AppContainer: FC = () => {
   const { i18n } = useTranslation();
   const disabledItemIds: readonly MenubarItemId[] = [];
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const [notification, setNotification] = useState('');
   const [projectPath, setProjectPath] = useState('');
   const controls = useMemo<WindowControls>(
     () =>
@@ -51,9 +54,12 @@ const AppContainer: FC = () => {
             notifyUnavailableDesktopApi();
             break;
           }
-          void window.manticore.openProject().then(({ path }) => setProjectPath(path)).catch((reason: unknown) =>
-            window.alert(reason instanceof Error ? reason.message : 'Could not open the project.')
-          );
+          void window.manticore
+            .openProject()
+            .then(({ path }) => setProjectPath(path))
+            .catch((reason: unknown) =>
+              setNotification(reason instanceof Error ? reason.message : 'Could not open the project.')
+            );
           break;
         case 'set-language-en':
           void i18n.changeLanguage('en');
@@ -88,6 +94,8 @@ const AppContainer: FC = () => {
     return window.manticore.canCreateProject(options);
   }, []);
 
+  const handleCloseNotification = () => setNotification('');
+
   return (
     <>
       <AppShell
@@ -105,6 +113,16 @@ const AppContainer: FC = () => {
         onValidate={handleValidateProject}
         open={isNewProjectDialogOpen}
       />
+      <Snackbar
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        autoHideDuration={5000}
+        onClose={handleCloseNotification}
+        open={Boolean(notification)}
+      >
+        <Alert onClose={handleCloseNotification} severity="error" sx={{ width: '100%' }} variant="filled">
+          {notification}
+        </Alert>
+      </Snackbar>
     </>
   );
 };
