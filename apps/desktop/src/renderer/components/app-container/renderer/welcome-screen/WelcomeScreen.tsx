@@ -8,11 +8,11 @@ import type { ApplicationAction } from '../../../../types';
 import { HELP_ACTIONS, LEARN_ACTIONS, START_ACTIONS } from './constants';
 import { WelcomeSection } from './welcome-section';
 
-type AppProps = {
+type WelcomeScreenProps = {
   onAction: (action: ApplicationAction) => void;
 };
 
-const App: FC<AppProps> = ({ onAction }) => {
+const WelcomeScreen: FC<WelcomeScreenProps> = ({ onAction }) => {
   const { t } = useTranslation();
 
   return (
@@ -50,4 +50,4 @@ const App: FC<AppProps> = ({ onAction }) => {
   );
 };
 
-export default App;
+export default WelcomeScreen;

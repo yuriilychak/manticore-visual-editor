@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 const mockInitializeI18n = jest.fn<() => Promise<void>>();
 
 jest.mock('../../../../i18n', () => ({ initializeI18n: mockInitializeI18n }));
-jest.mock('../app', () => ({ App: () => <div>Application ready</div> }));
+jest.mock('../welcome-screen', () => ({ WelcomeScreen: () => <div>Application ready</div> }));
 jest.mock('../splash-screen', () => ({
   SplashScreen: ({ hasError, onRetry }: { hasError?: boolean; onRetry?: () => void }) =>
     hasError ? <button onClick={onRetry}>Retry</button> : <div>Loading application</div>

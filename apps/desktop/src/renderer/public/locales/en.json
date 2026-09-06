@@ -17,9 +17,12 @@
   "menu": {
     "file": {
       "label": "File",
-      "createFile": "Create File",
-      "importFile": "Import File",
-      "createProject": "Create New Project"
+      "createFile": "New file",
+      "createProject": "New project",
+      "createWindow": "New window",
+      "importFile": "Import file",
+      "importProject": "Import project",
+      "openProject": "Open project"
     },
     "help": {
       "label": "Help",
@@ -29,5 +32,17 @@
         "spanish": "Spanish"
       }
     }
+  },
+  "project": {
+    "title": "New project",
+    "name": "Project name",
+    "location": "Location",
+    "selectLocation": "Select location",
+    "cancel": "Cancel",
+    "create": "Create project",
+    "validation": "Enter a project name and select a location.",
+    "invalid-name": "Enter a valid project name.",
+    "already-exists": "A project with this name already exists in this location.",
+    "error": "Could not create the project."
   }
 }

@@ -20,7 +20,7 @@ const WINDOW_CONTROLS: WindowControls = {
 describe('AppShell', () => {
   test('renders window chrome around its children', () => {
     render(
-      <AppShell controls={WINDOW_CONTROLS} onAction={jest.fn()} selectedActionIds={[]}>
+      <AppShell controls={WINDOW_CONTROLS} disabledItemIds={[]} onAction={jest.fn()} selectedActionIds={[]}>
         <div>Editor content</div>
       </AppShell>
     );

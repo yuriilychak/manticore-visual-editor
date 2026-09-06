@@ -3,8 +3,10 @@ export type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'no
 export type ApplicationAction =
   | 'create-file'
   | 'create-project'
+  | 'create-window'
   | 'getting-started'
   | 'import-file'
+  | 'import-project'
   | 'open-community'
   | 'open-documentation'
   | 'open-help-center'
@@ -21,3 +23,10 @@ export type WindowControls = {
   onMaximizeChange: (listener: (isMaximized: boolean) => void) => () => void;
   toggleMaximize: () => Promise<boolean>;
 };
+
+export type NewProjectOptions = {
+  name: string;
+  parentPath: string;
+};
+
+export type ProjectCreationValidation = { isAvailable: boolean; reason?: 'already-exists' | 'invalid-name' };

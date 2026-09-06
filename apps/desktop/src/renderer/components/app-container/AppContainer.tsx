@@ -1,19 +1,50 @@
-import { type FC, useCallback } from 'react';
+import { type FC, useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ApplicationAction } from '../../types';
+import type { ApplicationAction, NewProjectOptions, ProjectCreationValidation, WindowControls } from '../../types';
 
 import { AppShell } from './app-shell';
+import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import { SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
+import { NewProjectDialog } from './new-project-dialog';
 import { Renderer } from './renderer';
+
+const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
+
+const UNAVAILABLE_WINDOW_CONTROLS: WindowControls = {
+  close: async () => notifyUnavailableDesktopApi(),
+  isMaximized: async () => false,
+  minimize: async () => notifyUnavailableDesktopApi(),
+  onMaximizeChange: () => () => undefined,
+  toggleMaximize: async () => {
+    notifyUnavailableDesktopApi();
+    return false;
+  }
+};
 
 const AppContainer: FC = () => {
   const { i18n } = useTranslation();
+  const disabledItemIds: readonly MenubarItemId[] = [];
+  const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const controls = useMemo<WindowControls>(
+    () =>
+      new Proxy(window.manticore?.windowControls ?? UNAVAILABLE_WINDOW_CONTROLS, {
+        get: (target, property) => Reflect.get(target, property) ?? Reflect.get(UNAVAILABLE_WINDOW_CONTROLS, property)
+      }),
+    []
+  );
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
 
   const handleAction = useCallback(
     (action: ApplicationAction) => {
       switch (action) {
+        case 'create-project':
+          setIsNewProjectDialogOpen(true);
+          break;
+        case 'create-window':
+          if (window.manticore) void window.manticore.createWindow(i18n.language);
+          else notifyUnavailableDesktopApi();
+          break;
         case 'set-language-en':
           void i18n.changeLanguage('en');
           break;
@@ -26,11 +57,45 @@ const AppContainer: FC = () => {
     },
     [i18n]
   );
+  const handleCreateProject = useCallback(async (options: NewProjectOptions) => {
+    if (!window.manticore) {
+      notifyUnavailableDesktopApi();
+      return;
+    }
+
+    await window.manticore.createProject(options);
+  }, []);
+  const handleSelectProjectLocation = useCallback(async () => {
+    if (!window.manticore) {
+      notifyUnavailableDesktopApi();
+      return undefined;
+    }
+
+    return window.manticore.selectProjectLocation();
+  }, []);
+  const handleValidateProject = useCallback(async (options: NewProjectOptions): Promise<ProjectCreationValidation> => {
+    if (!window.manticore) return { isAvailable: false, reason: 'invalid-name' };
+    return window.manticore.canCreateProject(options);
+  }, []);
 
   return (
-    <AppShell controls={window.manticore?.windowControls} onAction={handleAction} selectedActionIds={selectedActionIds}>
-      <Renderer onAction={handleAction} />
-    </AppShell>
+    <>
+      <AppShell
+        controls={controls}
+        disabledItemIds={disabledItemIds}
+        onAction={handleAction}
+        selectedActionIds={selectedActionIds}
+      >
+        <Renderer onAction={handleAction} />
+      </AppShell>
+      <NewProjectDialog
+        onClose={() => setIsNewProjectDialogOpen(false)}
+        onCreate={handleCreateProject}
+        onSelectLocation={handleSelectProjectLocation}
+        onValidate={handleValidateProject}
+        open={isNewProjectDialogOpen}
+      />
+    </>
   );
 };
 

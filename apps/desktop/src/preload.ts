@@ -1,7 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('manticore', {
+  createWindow: (language: string) => ipcRenderer.invoke('window:create', language),
+  createProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:create', options),
+  canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
   platform: process.platform,
+  selectProjectLocation: () => ipcRenderer.invoke('project:select-location'),
   windowControls: {
     minimize: () => ipcRenderer.invoke('window:minimize'),
     toggleMaximize: () => ipcRenderer.invoke('window:toggle-maximize'),

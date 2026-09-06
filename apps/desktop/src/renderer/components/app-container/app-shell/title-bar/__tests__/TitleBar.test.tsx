@@ -16,11 +16,11 @@ describe('TitleBar', () => {
     const onWindowControl = jest.fn<(action: WindowControlAction) => Promise<void>>().mockResolvedValue(undefined);
     const { rerender } = render(
       <TitleBar
+        disabledItemIds={[]}
         isMaximized={false}
         onAction={jest.fn()}
         onWindowControl={onWindowControl}
         selectedActionIds={[]}
-        showWindowControls
       />
     );
 
@@ -35,11 +35,11 @@ describe('TitleBar', () => {
 
     rerender(
       <TitleBar
+        disabledItemIds={[]}
         isMaximized
         onAction={jest.fn()}
         onWindowControl={onWindowControl}
         selectedActionIds={[]}
-        showWindowControls
       />
     );
 

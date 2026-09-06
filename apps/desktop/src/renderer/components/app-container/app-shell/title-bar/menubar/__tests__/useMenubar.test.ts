@@ -14,7 +14,7 @@ const createMouseEvent = (id: string) => {
 describe('useMenubar', () => {
   test('opens menus by id and closes them after dispatching an action', () => {
     const onAction = jest.fn();
-    const { result } = renderHook(() => useMenubar(onAction, []));
+    const { result } = renderHook(() => useMenubar(onAction, [], []));
     const fileMenuEvent = createMouseEvent('file');
 
     act(() => result.current.handlers.submenu(fileMenuEvent));
@@ -28,11 +28,24 @@ describe('useMenubar', () => {
   });
 
   test('returns only top-level menu buttons', () => {
-    const { result } = renderHook(() => useMenubar(jest.fn(), ['set-language-es']));
+    const { result } = renderHook(() => useMenubar(jest.fn(), ['set-language-es'], []));
 
     expect(result.current.buttons.map(({ id }) => id)).toEqual(['file', 'help']);
     expect(result.current.getSelected('action', 'set-language-en')).toBe(false);
     expect(result.current.getSelected('action', 'set-language-es')).toBe(true);
     expect(result.current.getSelected('submenu', 'language')).toBe(false);
+  });
+
+  test('does not dispatch disabled actions or open disabled menus', () => {
+    const onAction = jest.fn();
+    const { result } = renderHook(() => useMenubar(onAction, [], ['create-project', 'file']));
+
+    act(() => result.current.handlers.action(createMouseEvent('create-project')));
+    act(() => result.current.handlers.submenu(createMouseEvent('file')));
+
+    expect(result.current.getDisabled('action', 'create-project')).toBe(true);
+    expect(result.current.getDisabled('submenu', 'file')).toBe(true);
+    expect(onAction).not.toHaveBeenCalled();
+    expect(result.current.anchors.file).toBeNull();
   });
 });

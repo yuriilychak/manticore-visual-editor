@@ -5,9 +5,9 @@ import { Box, Fade } from '@mui/material';
 import { initializeI18n } from '../../../i18n';
 import type { ApplicationAction } from '../../../types';
 
-import { App } from './app';
 import { SPLASH_TRANSITION_DURATION } from './constants';
 import { SplashScreen } from './splash-screen';
+import { WelcomeScreen } from './welcome-screen';
 
 type RendererProps = {
   onAction: (action: ApplicationAction) => void;
@@ -37,7 +37,7 @@ const Renderer: FC<RendererProps> = ({ onAction }) => {
     return (
       <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
         <Box display="flex" flexDirection="column" flexGrow={1}>
-          <App onAction={onAction} />
+          <WelcomeScreen onAction={onAction} />
         </Box>
       </Fade>
     );

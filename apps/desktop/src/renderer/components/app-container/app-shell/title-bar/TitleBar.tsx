@@ -6,22 +6,22 @@ import { TITLE_BAR_HEIGHT } from '../../../../constants';
 import type { ApplicationAction, WindowControlAction } from '../../../../types';
 
 import { TITLE_BAR_STYLES, WINDOW_CONTROL_BUTTONS } from './constants';
-import { Menubar } from './menubar';
+import { Menubar, type MenubarItemId } from './menubar';
 
 type TitleBarProps = {
+  disabledItemIds: readonly MenubarItemId[];
   isMaximized: boolean;
   onAction: (action: ApplicationAction) => void;
   onWindowControl: (action: WindowControlAction) => Promise<void>;
   selectedActionIds: readonly ApplicationAction[];
-  showWindowControls: boolean;
 };
 
 const TitleBar: FC<TitleBarProps> = ({
+  disabledItemIds,
   isMaximized,
   onAction,
   onWindowControl,
-  selectedActionIds,
-  showWindowControls
+  selectedActionIds
 }) => {
   const visibleWindowControlButtons = useMemo(
     () =>
@@ -49,9 +49,9 @@ const TitleBar: FC<TitleBarProps> = ({
     >
       <Box alignItems="center" display="flex" flexGrow={1} gap={1}>
         <Box alt="Manticore Visual Editor" component="img" src="./asset/logo.svg" sx={TITLE_BAR_STYLES.logo} />
-        <Menubar onAction={onAction} selectedActionIds={selectedActionIds} />
+        <Menubar disabledItemIds={disabledItemIds} onAction={onAction} selectedActionIds={selectedActionIds} />
       </Box>
-      {showWindowControls && visibleWindowControlButtons.length > 0 && (
+      {visibleWindowControlButtons.length > 0 && (
         <Box display="flex" sx={TITLE_BAR_STYLES.controls}>
           {visibleWindowControlButtons.map(({ action, ariaLabel, Icon, sx }) => (
             <IconButton

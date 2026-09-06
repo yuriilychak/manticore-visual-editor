@@ -3,7 +3,7 @@ import HttpBackend from 'i18next-http-backend';
 import { initReactI18next } from 'react-i18next';
 
 const I18N_OPTIONS = {
-  lng: 'en',
+  lng: new URLSearchParams(window.location.search).get('language') ?? 'en',
   fallbackLng: 'en',
   backend: {
     loadPath: './locales/{{lng}}.json'

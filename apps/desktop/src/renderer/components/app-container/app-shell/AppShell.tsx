@@ -6,26 +6,28 @@ import { TITLE_BAR_HEIGHT } from '../../../constants';
 import type { ApplicationAction, WindowControls } from '../../../types';
 
 import { TitleBar } from './title-bar';
+import type { MenubarItemId } from './title-bar/menubar';
 import { useWindowControls } from './useWindowControls';
 
 type AppShellProps = {
   children: ReactNode;
-  controls?: WindowControls;
+  controls: WindowControls;
+  disabledItemIds: readonly MenubarItemId[];
   onAction: (action: ApplicationAction) => void;
   selectedActionIds: readonly ApplicationAction[];
 };
 
-const AppShell: FC<AppShellProps> = ({ children, controls, onAction, selectedActionIds }) => {
+const AppShell: FC<AppShellProps> = ({ children, controls, disabledItemIds, onAction, selectedActionIds }) => {
   const { isMaximized, onWindowControl } = useWindowControls(controls);
 
   return (
     <Box display="flex" flexDirection="column" height="100vh" overflow="hidden">
       <TitleBar
+        disabledItemIds={disabledItemIds}
         isMaximized={isMaximized}
         onAction={onAction}
         onWindowControl={onWindowControl}
         selectedActionIds={selectedActionIds}
-        showWindowControls={Boolean(controls)}
       />
       <Box display="flex" height={`calc(100vh - ${TITLE_BAR_HEIGHT}px)`} minHeight={0}>
         {children}

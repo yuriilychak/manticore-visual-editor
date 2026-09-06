@@ -2,7 +2,7 @@ import { describe, expect, jest, test } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import App from '../App';
+import WelcomeScreen from '../WelcomeScreen';
 
 jest.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -21,12 +21,12 @@ jest.mock('react-i18next', () => ({
   })
 }));
 
-describe('App', () => {
-  test('renders localized content and propagates start-screen actions', async () => {
+describe('WelcomeScreen', () => {
+  test('renders localized content and propagates welcome-screen actions', async () => {
     const onAction = jest.fn();
     const user = userEvent.setup();
 
-    render(<App onAction={onAction} />);
+    render(<WelcomeScreen onAction={onAction} />);
 
     screen.getByRole('heading', { name: 'Welcome to Manticore' });
     screen.getByRole('heading', { name: 'Start' });
