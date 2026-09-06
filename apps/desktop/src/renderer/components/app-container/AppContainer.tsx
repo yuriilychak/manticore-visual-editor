@@ -26,6 +26,7 @@ const AppContainer: FC = () => {
   const { i18n } = useTranslation();
   const disabledItemIds: readonly MenubarItemId[] = [];
   const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const [projectPath, setProjectPath] = useState('');
   const controls = useMemo<WindowControls>(
     () =>
       new Proxy(window.manticore?.windowControls ?? UNAVAILABLE_WINDOW_CONTROLS, {
@@ -45,6 +46,15 @@ const AppContainer: FC = () => {
           if (window.manticore) void window.manticore.createWindow(i18n.language);
           else notifyUnavailableDesktopApi();
           break;
+        case 'open-project':
+          if (!window.manticore) {
+            notifyUnavailableDesktopApi();
+            break;
+          }
+          void window.manticore.openProject().then(({ path }) => setProjectPath(path)).catch((reason: unknown) =>
+            window.alert(reason instanceof Error ? reason.message : 'Could not open the project.')
+          );
+          break;
         case 'set-language-en':
           void i18n.changeLanguage('en');
           break;
@@ -63,12 +73,12 @@ const AppContainer: FC = () => {
       return;
     }
 
-    await window.manticore.createProject(options);
+    setProjectPath(await window.manticore.createProject(options));
   }, []);
   const handleSelectProjectLocation = useCallback(async () => {
     if (!window.manticore) {
       notifyUnavailableDesktopApi();
-      return undefined;
+      return '';
     }
 
     return window.manticore.selectProjectLocation();
@@ -86,7 +96,7 @@ const AppContainer: FC = () => {
         onAction={handleAction}
         selectedActionIds={selectedActionIds}
       >
-        <Renderer onAction={handleAction} />
+        <Renderer onAction={handleAction} projectPath={projectPath} />
       </AppShell>
       <NewProjectDialog
         onClose={() => setIsNewProjectDialogOpen(false)}

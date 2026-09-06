@@ -56,10 +56,11 @@ describe('AppContainer', () => {
     const createWindow = jest.fn<(language: string) => Promise<void>>().mockResolvedValue(undefined);
     const user = userEvent.setup();
     window.manticore = {
-      createProject: jest.fn<(options: { name: string; parentPath: string }) => Promise<void>>().mockResolvedValue(undefined),
+      createProject: jest.fn<(options: { name: string; parentPath: string }) => Promise<string>>().mockResolvedValue('/tmp/project'),
       createWindow,
+      openProject: jest.fn<() => Promise<{ name: string; path: string }>>().mockResolvedValue({ name: '', path: '' }),
       platform: 'linux',
-      selectProjectLocation: jest.fn<() => Promise<string | undefined>>().mockResolvedValue(undefined),
+      selectProjectLocation: jest.fn<() => Promise<string>>().mockResolvedValue(''),
       windowControls: {} as never
     };
 

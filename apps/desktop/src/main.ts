@@ -1,5 +1,5 @@
 import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'electron';
-import { mkdir, stat, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const IS_DEVELOPMENT = !app.isPackaged;
@@ -66,7 +66,7 @@ ipcMain.handle('project:select-location', async (event) => {
   const parentWindow = getWindow(event.sender);
   const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
 
-  return result.canceled ? undefined : result.filePaths[0];
+  return result.canceled ? '' : result.filePaths[0] ?? '';
 });
 ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
   if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) throw new Error('Project name is invalid.');
@@ -75,6 +75,9 @@ ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: st
   if (path.dirname(projectPath) !== path.resolve(parentPath)) throw new Error('Project path is invalid.');
 
   await mkdir(projectPath);
+  const sourcePath = path.join(projectPath, 'src');
+  await mkdir(sourcePath);
+  await writeFile(path.join(sourcePath, 'config.json'), `${JSON.stringify({ name }, null, 2)}\n`, 'utf8');
   const bundlePath = path.join(projectPath, 'src', '000000');
   await mkdir(bundlePath, { recursive: true });
   await writeFile(
@@ -82,6 +85,22 @@ ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: st
     `${JSON.stringify({ id: '0', name: 'default_bundle', version: 0 }, null, 2)}\n`,
     'utf8'
   );
+  return projectPath;
+});
+ipcMain.handle('project:open', async (event) => {
+  const options: OpenDialogOptions = { properties: ['openDirectory'] };
+  const parentWindow = getWindow(event.sender);
+  const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
+  const projectPath = result.canceled ? '' : result.filePaths[0] ?? '';
+  if (!projectPath) return { name: '', path: '' };
+
+  try {
+    const config = JSON.parse(await readFile(path.join(projectPath, 'src', 'config.json'), 'utf8')) as { name?: unknown };
+    if (typeof config.name !== 'string' || !config.name) throw new Error();
+    return { name: config.name, path: projectPath };
+  } catch {
+    throw new Error('The selected folder is not a valid Manticore project.');
+  }
 });
 ipcMain.handle('project:can-create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
   if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) return { isAvailable: false, reason: 'invalid-name' };

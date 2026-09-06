@@ -1,60 +1,23 @@
-import { type FC, useCallback, useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import type { FC } from 'react';
 
 import FolderOpenRounded from '@mui/icons-material/FolderOpenRounded';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, TextField, Tooltip } from '@mui/material';
 
 import type { NewProjectOptions, ProjectCreationValidation } from '../../../types';
 
+import { useNewProjectDialog } from './useNewProjectDialog';
+
 type NewProjectDialogProps = {
   onClose: () => void;
   onCreate: (options: NewProjectOptions) => Promise<void>;
-  onSelectLocation: () => Promise<string | undefined>;
+  onSelectLocation: () => Promise<string>;
   onValidate: (options: NewProjectOptions) => Promise<ProjectCreationValidation>;
   open: boolean;
 };
 
-const DEFAULT_PROJECT_VALIDATION: ProjectCreationValidation = { isAvailable: false };
-
 const NewProjectDialog: FC<NewProjectDialogProps> = ({ onClose, onCreate, onSelectLocation, onValidate, open }) => {
-  const { t } = useTranslation();
-  const [error, setError] = useState('');
-  const [name, setName] = useState('');
-  const [parentPath, setParentPath] = useState('');
-  const [validation, setValidation] = useState<ProjectCreationValidation>(DEFAULT_PROJECT_VALIDATION);
-  const isCreateDisabled = !name.trim() || !parentPath || !validation.isAvailable;
-
-  useEffect(() => {
-    if (!name.trim() || !parentPath) return;
-    let isCurrent = true;
-    void onValidate({ name: name.trim(), parentPath }).then((result) => isCurrent && setValidation(result));
-    return () => { isCurrent = false; };
-  }, [name, onValidate, parentPath]);
-
-  const handleSelectLocation = useCallback(async () => {
-    const location = await onSelectLocation();
-    if (location) {
-      setParentPath(location);
-      setValidation(DEFAULT_PROJECT_VALIDATION);
-    }
-  }, [onSelectLocation]);
-  
-  const handleCreate = useCallback(async () => {
-    if (!name.trim() || !parentPath) {
-      setError(t('project.validation'));
-      return;
-    }
-
-    try {
-      await onCreate({ name: name.trim(), parentPath });
-      setError('');
-      setName('');
-      setParentPath('');
-      onClose();
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : t('project.error'));
-    }
-  }, [name, onClose, onCreate, parentPath, t]);
+  const { error, handleCreate, handleNameChange, handleSelectLocation, isCreateDisabled, name, parentPath, t, validation } =
+    useNewProjectDialog(onClose, onCreate, onSelectLocation, onValidate);
 
   return (
     <Dialog
@@ -72,10 +35,7 @@ const NewProjectDialog: FC<NewProjectDialogProps> = ({ onClose, onCreate, onSele
           fullWidth
           label={t('project.name')}
           margin="dense"
-          onChange={(event) => {
-            setName(event.target.value);
-            setValidation(DEFAULT_PROJECT_VALIDATION);
-          }}
+          onChange={handleNameChange}
           size="small"
           value={name}
         />

@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import ArrowOutwardRounded from '@mui/icons-material/ArrowOutwardRounded';
 import { Box, Button, Divider, Paper, Typography } from '@mui/material';
 
-import type { ApplicationAction } from '../../../../../types';
+import type { ApplicationAction } from '../../../../../../types';
 
 import type { WelcomeAction } from '../types';
 

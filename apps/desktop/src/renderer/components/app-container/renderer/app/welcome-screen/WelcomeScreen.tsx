@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Box, Typography } from '@mui/material';
 
-import type { ApplicationAction } from '../../../../types';
+import type { ApplicationAction } from '../../../../../types';
 
 import { HELP_ACTIONS, LEARN_ACTIONS, START_ACTIONS } from './constants';
 import { WelcomeSection } from './welcome-section';
