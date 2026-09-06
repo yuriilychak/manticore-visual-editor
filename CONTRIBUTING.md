@@ -12,7 +12,7 @@ Separate import groups with blank lines. Order them as follows:
 2. UI-library packages, alphabetically (currently `@mui/*`).
 3. Local modules, ordered by relative-path depth from deepest to nearest; order paths at the same depth alphabetically. For example, `../../../some-file` comes before `../some-file`.
 
-Import local dependencies from their explicit files instead of a directory barrel such as `..`. Use folder `index.ts` barrels only at a module boundary where their public API is intentionally being consumed.
+Import component dependencies through their folder `index.ts` public API. Tests must import the exact source file under test rather than a barrel. Do not export internal hooks, types, constants, or helpers from a component folder's `index.ts`.
 
 Run `npm run lint` before submitting changes. Use `npm run format` to apply the shared Prettier formatting rules.
 
@@ -20,7 +20,9 @@ Run `npm run lint` before submitting changes. Use `npm run format` to apply the 
 
 Declare components as typed constants to keep component headers compact: `const Component: FC<Props> = ({ prop }) => ...`. Do not use function declarations for React components.
 
-Each component file must define exactly one React component and default-export that component only. Keep bootstrap code, hooks, types, constants, and component-specific helpers in separate files as appropriate. In a folder `index.ts`, expose components as named aliases—for example, `export { default as Component } from './Component'`—so the folder can also export hooks, types, or constants.
+Each component file must define exactly one React component and default-export that component only. Keep bootstrap code, hooks, types, constants, and component-specific helpers in separate files as appropriate. In a folder `index.ts`, expose public components as named aliases—for example, `export { default as Component } from './Component'`.
+
+When a component is used only by its parent component, locate that component's folder inside the parent component's folder.
 
 ## Tests
 

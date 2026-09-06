@@ -3,17 +3,14 @@ import { createRoot } from 'react-dom/client';
 
 import { CssBaseline, ThemeProvider } from '@mui/material';
 
-import AppShell from './components/app-shell/AppShell';
-import Renderer from './components/renderer/Renderer';
+import { AppContainer } from './components';
 import { THEME } from './theme';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <ThemeProvider theme={THEME}>
       <CssBaseline />
-      <AppShell controls={window.manticore?.windowControls}>
-        <Renderer />
-      </AppShell>
+      <AppContainer />
     </ThemeProvider>
   </StrictMode>
 );
