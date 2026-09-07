@@ -1,4 +1,4 @@
-import { type FC, useCallback, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Alert, Snackbar } from '@mui/material';
@@ -38,6 +38,18 @@ const AppContainer: FC = () => {
     []
   );
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
+
+  useEffect(() => {
+    if (!window.manticore || !new URLSearchParams(window.location.search).has('restoreProject')) return;
+
+    void window.manticore
+      .restoreLastOpenedProject()
+      .then(({ error, project }) => {
+        if (project) setProjectPath(project.path);
+        else if (error) setNotification(error);
+      })
+      .catch(() => setNotification('The previously opened project could not be restored.'));
+  }, []);
 
   const handleAction = useCallback(
     (action: ApplicationAction) => {

@@ -32,3 +32,5 @@ export type NewProjectOptions = {
 export type ProjectCreationValidation = { isAvailable: boolean; reason?: 'already-exists' | 'invalid-name' };
 
 export type ProjectInfo = { name: string; path: string };
+
+export type RestoredProject = { error?: string; project: ProjectInfo | null };

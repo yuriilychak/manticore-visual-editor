@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('manticore', {
   createWindow: (language: string) => ipcRenderer.invoke('window:create', language),
   openProject: () => ipcRenderer.invoke('project:open'),
+  restoreLastOpenedProject: () => ipcRenderer.invoke('project:restore-last-opened'),
   createProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:create', options),
   canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
   platform: process.platform,
