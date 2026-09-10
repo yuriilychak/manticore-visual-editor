@@ -33,6 +33,12 @@
       }
     }
   },
+  "common": {
+    "cancelRename": "Cancel renaming",
+    "renameName": "Name",
+    "rename": "Rename",
+    "saveRename": "Save project name"
+  },
   "project": {
     "title": "New project",
     "name": "Project name",
@@ -43,6 +49,7 @@
     "validation": "Enter a project name and select a location.",
     "invalid-name": "Enter a valid project name.",
     "already-exists": "A project with this name already exists in this location.",
-    "error": "Could not create the project."
+    "error": "Could not create the project.",
+    "renameName": "Project name"
   }
 }

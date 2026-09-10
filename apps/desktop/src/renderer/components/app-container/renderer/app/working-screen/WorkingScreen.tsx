@@ -4,10 +4,16 @@ import { Box } from '@mui/material';
 
 import { DIVIDER_SIZE, MIN_PANE_SIZE, PANE_PERCENTAGES_STORAGE_KEY } from './constants';
 import { getResizedPanePercentages, getStoredPanePercentages } from './helpers';
+import { ProjectSection } from './project-section';
 import Separator from './Separator';
 import type { DragState } from './types';
 
-const WorkingScreen: FC = () => {
+type WorkingScreenProps = {
+  onRenameProject?: (name: string) => Promise<void>;
+  projectName: string;
+};
+
+const WorkingScreen: FC<WorkingScreenProps> = ({ onRenameProject, projectName }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [panePercentages, setPanePercentages] = useState(getStoredPanePercentages);
   const [dragState, setDragState] = useState<DragState | null>(null);
@@ -57,7 +63,9 @@ const WorkingScreen: FC = () => {
       overflow="hidden"
       ref={containerRef}
     >
-      <Box aria-label="Left panel" component="section" minWidth={MIN_PANE_SIZE} />
+      <Box aria-label="Left panel" component="section" minWidth={MIN_PANE_SIZE}>
+        <ProjectSection name={projectName} onRename={onRenameProject} />
+      </Box>
       <Separator
         ariaLabel="Resize left panel"
         direction="left"

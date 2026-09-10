@@ -7,6 +7,7 @@ declare global {
     manticore?: {
       createWindow: (language: string) => Promise<void>;
       openProject: () => Promise<ProjectInfo>;
+      renameProject?: (projectPath: string, name: string) => Promise<string>;
       restoreLastOpenedProject: () => Promise<RestoredProject>;
       createProject: (options: NewProjectOptions) => Promise<string>;
       canCreateProject: (options: NewProjectOptions) => Promise<ProjectCreationValidation>;

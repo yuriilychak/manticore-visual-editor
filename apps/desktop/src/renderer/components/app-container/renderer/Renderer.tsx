@@ -11,17 +11,19 @@ import { SplashScreen } from './splash-screen';
 
 type RendererProps = {
   onAction: (action: ApplicationAction) => void;
+  onRenameProject?: (name: string) => Promise<void>;
+  projectName?: string;
   projectPath: string;
 };
 
-const Renderer: FC<RendererProps> = ({ onAction, projectPath }) => {
-  const [isReady, setIsReady] = useState(false);
+const Renderer: FC<RendererProps> = ({ onAction, onRenameProject, projectName, projectPath }) => {
+  const [isReady, setReady] = useState(false);
   const [hasLocalizationError, setHasLocalizationError] = useState(false);
   const [showApp, setShowApp] = useState(false);
 
   const loadLocalization = useCallback(() => {
     void initializeI18n()
-      .then(() => setIsReady(true))
+      .then(() => setReady(true))
       .catch(() => setHasLocalizationError(true));
   }, []);
 
@@ -38,7 +40,7 @@ const Renderer: FC<RendererProps> = ({ onAction, projectPath }) => {
     return (
       <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
         <Box display="flex" flexDirection="column" flexGrow={1}>
-          <App onAction={onAction} projectPath={projectPath} />
+          <App onAction={onAction} onRenameProject={onRenameProject} projectName={projectName} projectPath={projectPath} />
         </Box>
       </Fade>
     );

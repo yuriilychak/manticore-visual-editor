@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Alert, Snackbar } from '@mui/material';
 
-import type { ApplicationAction, NewProjectOptions, ProjectCreationValidation, WindowControls } from '../../types';
+import type { ApplicationAction, NewProjectOptions, ProjectCreationValidation, ProjectInfo, WindowControls } from '../../types';
 
 import { AppShell } from './app-shell';
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
@@ -27,9 +27,9 @@ const UNAVAILABLE_WINDOW_CONTROLS: WindowControls = {
 const AppContainer: FC = () => {
   const { i18n } = useTranslation();
   const disabledItemIds: readonly MenubarItemId[] = [];
-  const [isNewProjectDialogOpen, setIsNewProjectDialogOpen] = useState(false);
+  const [isNewProjectDialogOpen, setNewProjectDialogOpen] = useState(false);
   const [notification, setNotification] = useState('');
-  const [projectPath, setProjectPath] = useState('');
+  const [project, setProject] = useState<ProjectInfo | null>(null);
   const controls = useMemo<WindowControls>(
     () =>
       new Proxy(window.manticore?.windowControls ?? UNAVAILABLE_WINDOW_CONTROLS, {
@@ -45,7 +45,7 @@ const AppContainer: FC = () => {
     void window.manticore
       .restoreLastOpenedProject()
       .then(({ error, project }) => {
-        if (project) setProjectPath(project.path);
+        if (project) setProject(project);
         else if (error) setNotification(error);
       })
       .catch(() => setNotification('The previously opened project could not be restored.'));
@@ -55,7 +55,7 @@ const AppContainer: FC = () => {
     (action: ApplicationAction) => {
       switch (action) {
         case 'create-project':
-          setIsNewProjectDialogOpen(true);
+          setNewProjectDialogOpen(true);
           break;
         case 'create-window':
           if (window.manticore) void window.manticore.createWindow(i18n.language);
@@ -68,7 +68,7 @@ const AppContainer: FC = () => {
           }
           void window.manticore
             .openProject()
-            .then(({ path }) => setProjectPath(path))
+            .then((openedProject) => setProject(openedProject))
             .catch((reason: unknown) =>
               setNotification(reason instanceof Error ? reason.message : 'Could not open the project.')
             );
@@ -91,8 +91,23 @@ const AppContainer: FC = () => {
       return;
     }
 
-    setProjectPath(await window.manticore.createProject(options));
+    const path = await window.manticore.createProject(options);
+    setProject({ name: options.name.trim(), path });
   }, []);
+  const handleRenameProject = useCallback(async (name: string) => {
+    if (!project || !window.manticore?.renameProject) {
+      notifyUnavailableDesktopApi();
+      return;
+    }
+
+    try {
+      const renamedName = await window.manticore.renameProject(project.path, name);
+      setProject((currentProject) => currentProject && { ...currentProject, name: renamedName });
+    } catch (reason) {
+      setNotification(reason instanceof Error ? reason.message : 'Could not rename the project.');
+      throw reason;
+    }
+  }, [project]);
   const handleSelectProjectLocation = useCallback(async () => {
     if (!window.manticore) {
       notifyUnavailableDesktopApi();
@@ -116,10 +131,15 @@ const AppContainer: FC = () => {
         onAction={handleAction}
         selectedActionIds={selectedActionIds}
       >
-        <Renderer onAction={handleAction} projectPath={projectPath} />
+        <Renderer
+          onAction={handleAction}
+          onRenameProject={handleRenameProject}
+          projectName={project?.name ?? ''}
+          projectPath={project?.path ?? ''}
+        />
       </AppShell>
       <NewProjectDialog
-        onClose={() => setIsNewProjectDialogOpen(false)}
+        onClose={() => setNewProjectDialogOpen(false)}
         onCreate={handleCreateProject}
         onSelectLocation={handleSelectProjectLocation}
         onValidate={handleValidateProject}

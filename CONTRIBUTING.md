@@ -20,6 +20,8 @@ Run `npm run lint` before submitting changes. Use `npm run format` to apply the 
 
 Declare components as typed constants to keep component headers compact: `const Component: FC<Props> = ({ prop }) => ...`. Do not use function declarations for React components.
 
+Name boolean state values with an `is` prefix, but omit that prefix from their setters: `const [isEnabled, setEnabled] = useState(false)`.
+
 Each component file must define exactly one React component and default-export that component only. Keep bootstrap code, hooks, types, constants, and component-specific helpers in separate files as appropriate. In a folder `index.ts`, expose public components as named aliases—for example, `export { default as Component } from './Component'`.
 
 When a component is used only by its parent component, locate that component's folder inside the parent component's folder.

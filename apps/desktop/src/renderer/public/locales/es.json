@@ -33,6 +33,12 @@
       }
     }
   },
+  "common": {
+    "cancelRename": "Cancelar cambio de nombre",
+    "renameName": "Nombre",
+    "rename": "Cambiar nombre",
+    "saveRename": "Guardar nombre del proyecto"
+  },
   "project": {
     "title": "Nuevo proyecto",
     "name": "Nombre del proyecto",
@@ -43,6 +49,7 @@
     "validation": "Escribe un nombre de proyecto y selecciona una ubicación.",
     "invalid-name": "Escribe un nombre de proyecto válido.",
     "already-exists": "Ya existe un proyecto con este nombre en esta ubicación.",
-    "error": "No se pudo crear el proyecto."
+    "error": "No se pudo crear el proyecto.",
+    "renameName": "Nombre del proyecto"
   }
 }

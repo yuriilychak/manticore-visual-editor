@@ -1,6 +1,8 @@
 import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'electron';
-import { mkdir, readFile, stat, unlink, writeFile } from 'node:fs/promises';
+import { readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+
+import { createProject, renameProject } from './project/project';
 
 const IS_DEVELOPMENT = !app.isPackaged;
 const WINDOW_ICON_PATH = path.join(__dirname, '../build/icon.png');
@@ -110,22 +112,13 @@ ipcMain.handle('project:select-location', async (event) => {
   return result.canceled ? '' : result.filePaths[0] ?? '';
 });
 ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
-  if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) throw new Error('Project name is invalid.');
+  const projectName = name.trim();
+  if (!projectName || projectName === '.' || projectName === '..' || /[\\/]/.test(projectName)) throw new Error('Project name is invalid.');
 
-  const projectPath = path.resolve(parentPath, name);
+  const projectPath = path.resolve(parentPath, projectName);
   if (path.dirname(projectPath) !== path.resolve(parentPath)) throw new Error('Project path is invalid.');
 
-  await mkdir(projectPath);
-  const sourcePath = path.join(projectPath, 'src');
-  await mkdir(sourcePath);
-  await writeFile(path.join(sourcePath, 'config.json'), `${JSON.stringify({ name }, null, 2)}\n`, 'utf8');
-  const bundlePath = path.join(projectPath, 'src', '000000');
-  await mkdir(bundlePath, { recursive: true });
-  await writeFile(
-    path.join(bundlePath, 'config.json'),
-    `${JSON.stringify({ id: '0', name: 'default_bundle', version: 0 }, null, 2)}\n`,
-    'utf8'
-  );
+  await createProject(projectPath, projectName);
   await storeLastOpenedProject(projectPath);
   return projectPath;
 });
@@ -145,6 +138,7 @@ ipcMain.handle('project:open', async (event) => {
   }
 });
 ipcMain.handle('project:restore-last-opened', () => restoreLastOpenedProject());
+ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
 ipcMain.handle('project:can-create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
   if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) return { isAvailable: false, reason: 'invalid-name' };
   const projectPath = path.resolve(parentPath, name);
