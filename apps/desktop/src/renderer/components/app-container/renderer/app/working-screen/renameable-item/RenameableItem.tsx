@@ -1,18 +1,20 @@
 import { type ChangeEvent, type FC, type FormEvent, useMemo, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import { Box, FilledInput, InputAdornment, Typography } from '@mui/material';
+
+import { withLocalizedProps } from '../../../../../localization/withLocalizedProps';
 
 import {
   EDITING_BOX_PROPS,
   ITEM_GAP,
   RENAMEABLE_ITEM_ACTIONS,
+  RENAMEABLE_ITEM_LOCALE_KEYS,
   RENAMEABLE_ITEM_STYLES,
   VIEW_BOX_PROPS
 } from './constants';
 import RenameableItemActions from './RenameableItemActions';
-import type { ActionButtonConfig } from './types';
+import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 
 type RenameableItemProps = {
   Icon: SvgIconComponent;
@@ -23,15 +25,15 @@ type RenameableItemProps = {
   actions?: ActionButtonConfig[];
 };
 
-const RenameableItem: FC<RenameableItemProps> = ({
+const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
   Icon,
   name,
   onAction,
   onRename,
+  renameNameLabel,
   disabledActions = {},
   actions = RENAMEABLE_ITEM_ACTIONS.empty
 }) => {
-  const { t } = useTranslation();
   const [isEditing, setEditing] = useState(false);
   const [editedName, setEditedName] = useState(name);
   const [isSaving, setSaving] = useState(false);
@@ -110,7 +112,7 @@ const RenameableItem: FC<RenameableItemProps> = ({
           }
           error={!trimmedName}
           fullWidth
-          inputProps={{ 'aria-label': t('common.renameName') }}
+          inputProps={{ 'aria-label': renameNameLabel }}
           onChange={handleNameChange}
           size="small"
           sx={RENAMEABLE_ITEM_STYLES.editingNameInput}
@@ -131,4 +133,4 @@ const RenameableItem: FC<RenameableItemProps> = ({
   );
 };
 
-export default RenameableItem;
+export default withLocalizedProps(RENAMEABLE_ITEM_LOCALE_KEYS)(RenameableItem);

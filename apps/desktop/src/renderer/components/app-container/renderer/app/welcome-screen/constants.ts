@@ -9,6 +9,14 @@ import RocketLaunchOutlined from '@mui/icons-material/RocketLaunchOutlined';
 
 import type { WelcomeAction } from './types';
 
+export const WELCOME_SCREEN_LOCALE_KEYS = {
+  helpTitle: 'welcome.help',
+  learnTitle: 'welcome.learn',
+  startTitle: 'welcome.start',
+  subtitle: 'welcome.subtitle',
+  title: 'welcome.title'
+} as const;
+
 export const START_ACTIONS: readonly WelcomeAction[] = [
   { action: 'create-project', Icon: AddRounded, labelKey: 'welcome.newProject' },
   { action: 'open-project', Icon: FolderOpenRounded, labelKey: 'welcome.openProject' }

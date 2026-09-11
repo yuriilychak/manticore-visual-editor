@@ -5,6 +5,10 @@ import type { SxProps, Theme } from '@mui/material';
 
 import type { ActionButtonConfig } from './types';
 
+export const RENAMEABLE_ITEM_LOCALE_KEYS = {
+  renameNameLabel: 'common.renameName'
+} as const;
+
 export const RENAMEABLE_ITEM_ACTIONS: Record<'editing' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
   editing: [
     { action: 'save', tooltipLocale: 'common.saveRename', Icon: CheckRounded },

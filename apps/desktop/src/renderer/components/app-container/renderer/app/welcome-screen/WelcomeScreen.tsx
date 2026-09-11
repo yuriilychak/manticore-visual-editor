@@ -1,19 +1,26 @@
 import type { FC } from 'react';
-import { useTranslation } from 'react-i18next';
 
 import { Box, Typography } from '@mui/material';
 
 import type { ApplicationAction } from '../../../../../types';
+import { withLocalizedProps } from '../../../../localization/withLocalizedProps';
 
-import { HELP_ACTIONS, LEARN_ACTIONS, START_ACTIONS } from './constants';
+import { HELP_ACTIONS, LEARN_ACTIONS, START_ACTIONS, WELCOME_SCREEN_LOCALE_KEYS } from './constants';
+import type { WelcomeScreenLocalizedProps } from './types';
 import { WelcomeSection } from './welcome-section';
 
 type WelcomeScreenProps = {
   onAction: (action: ApplicationAction) => void;
 };
 
-const WelcomeScreen: FC<WelcomeScreenProps> = ({ onAction }) => {
-  const { t } = useTranslation();
+const WelcomeScreen: FC<WelcomeScreenProps & WelcomeScreenLocalizedProps> = ({
+  helpTitle,
+  learnTitle,
+  onAction,
+  startTitle,
+  subtitle,
+  title
+}) => {
 
   return (
     <Box
@@ -26,10 +33,10 @@ const WelcomeScreen: FC<WelcomeScreenProps> = ({ onAction }) => {
     >
       <Box display="flex" flexDirection="column" flexGrow={1} width="100%">
         <Typography component="h1" fontWeight={600} variant="h3">
-          {t('welcome.title')}
+          {title}
         </Typography>
         <Typography color="text.secondary" mb={6} mt={1} variant="body1">
-          {t('welcome.subtitle')}
+          {subtitle}
         </Typography>
 
         <Box alignItems="stretch" display="grid" gap={3} gridTemplateColumns={{ md: 'repeat(2, minmax(0, 1fr))' }}>
@@ -38,11 +45,11 @@ const WelcomeScreen: FC<WelcomeScreenProps> = ({ onAction }) => {
             actions={START_ACTIONS}
             iconSize="medium"
             onAction={onAction}
-            title={t('welcome.start')}
+            title={startTitle}
           />
           <Box display="flex" flexDirection="column" gap={3} minWidth={0}>
-            <WelcomeSection actions={LEARN_ACTIONS} isExternal onAction={onAction} title={t('welcome.learn')} />
-            <WelcomeSection actions={HELP_ACTIONS} onAction={onAction} title={t('welcome.help')} />
+            <WelcomeSection actions={LEARN_ACTIONS} isExternal onAction={onAction} title={learnTitle} />
+            <WelcomeSection actions={HELP_ACTIONS} onAction={onAction} title={helpTitle} />
           </Box>
         </Box>
       </Box>
@@ -50,4 +57,4 @@ const WelcomeScreen: FC<WelcomeScreenProps> = ({ onAction }) => {
   );
 };
 
-export default WelcomeScreen;
+export default withLocalizedProps(WELCOME_SCREEN_LOCALE_KEYS)(WelcomeScreen);
