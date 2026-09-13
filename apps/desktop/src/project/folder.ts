@@ -1,5 +1,5 @@
 import type { FolderConfig } from './types';
 
-export function createFolder(name: string, items: string[]): FolderConfig {
-  return { name, items };
+export function createFolder(id: number, name: string, items: string[]): FolderConfig {
+  return { id, name, items };
 }

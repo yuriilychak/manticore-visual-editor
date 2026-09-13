@@ -3,7 +3,8 @@ import { type ChangeEvent, type FC, type FormEvent, useMemo, useState } from 're
 import type { SvgIconComponent } from '@mui/icons-material';
 import { Box, FilledInput, InputAdornment, Typography } from '@mui/material';
 
-import { withLocalizedProps } from '../../../../../localization/withLocalizedProps';
+import type { ContentType, ProjectActionHandler } from '../../../../../../../types';
+import { withLocalizedProps } from '../../../../../../localization';
 
 import {
   EDITING_BOX_PROPS,
@@ -17,19 +18,21 @@ import RenameableItemActions from './RenameableItemActions';
 import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 
 type RenameableItemProps = {
+  contentType: ContentType;
+  id: number;
   Icon: SvgIconComponent;
   name: string;
-  onAction: (action: string) => void;
-  onRename: (newName: string) => void | Promise<void>;
+  onAction: ProjectActionHandler;
   disabledActions?: Record<string, boolean>;
   actions?: ActionButtonConfig[];
 };
 
 const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
+  contentType,
+  id,
   Icon,
   name,
   onAction,
-  onRename,
   renameNameLabel,
   disabledActions = {},
   actions = RENAMEABLE_ITEM_ACTIONS.empty
@@ -53,7 +56,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
 
     setSaving(true);
     try {
-      await onRename(trimmedName);
+      await onAction('rename', contentType, id, trimmedName);
       setEditing(false);
     } catch {
       // The caller is responsible for presenting a failed-save notification.
@@ -82,7 +85,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
         void saveName();
         break;
       default:
-        onAction(action);
+        void onAction(action, contentType, id);
     }
   };
 

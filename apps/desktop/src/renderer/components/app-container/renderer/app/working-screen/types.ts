@@ -11,10 +11,3 @@ export type PanePercentages = {
   right: number;
   top: number;
 };
-
-export type SeparatorProps = {
-  ariaLabel: string;
-  direction: ResizeDirection;
-  onResizeStart: (dragState: DragState) => void;
-  panePercentages: PanePercentages;
-};

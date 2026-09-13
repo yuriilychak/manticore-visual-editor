@@ -1,4 +1,4 @@
-import { type FC, memo } from 'react';
+import { type FC, memo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Button } from '@mui/material';
@@ -23,9 +23,10 @@ const Menubar: FC<MenubarProps> = ({ disabledItemIds, onAction, selectedActionId
     selectedActionIds,
     disabledItemIds
   );
+  const handleDoubleClick = useCallback((event: React.MouseEvent) => event.stopPropagation(), []);
 
   return (
-    <Box display="flex" onDoubleClick={(event) => event.stopPropagation()}>
+    <Box display="flex" onDoubleClick={handleDoubleClick}>
       {buttons.map(({ id, labelKey }) => (
         <Button
           data-id={id}

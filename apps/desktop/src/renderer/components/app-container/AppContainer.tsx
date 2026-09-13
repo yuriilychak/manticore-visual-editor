@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next';
 
 import { Alert, Snackbar } from '@mui/material';
 
+import type { ProjectActionHandler } from '../../../types';
+
 import type { ApplicationAction, NewProjectOptions, ProjectCreationValidation, ProjectInfo, WindowControls } from '../../types';
 
 import { AppShell } from './app-shell';
@@ -108,6 +110,13 @@ const AppContainer: FC = () => {
       throw reason;
     }
   }, [project]);
+  const handleWorkingScreenAction = useCallback<ProjectActionHandler>((action, contentType, id, data) => {
+    if (action === 'rename' && contentType === 'project' && id === 0 && typeof data === 'string') {
+      return handleRenameProject(data);
+    }
+
+    return undefined;
+  }, [handleRenameProject]);
   const handleSelectProjectLocation = useCallback(async () => {
     if (!window.manticore) {
       notifyUnavailableDesktopApi();
@@ -122,6 +131,7 @@ const AppContainer: FC = () => {
   }, []);
 
   const handleCloseNotification = () => setNotification('');
+  const handleCloseNewProjectDialog = () => setNewProjectDialogOpen(false);
 
   return (
     <>
@@ -133,13 +143,13 @@ const AppContainer: FC = () => {
       >
         <Renderer
           onAction={handleAction}
-          onRenameProject={handleRenameProject}
+          onWorkingScreenAction={handleWorkingScreenAction}
           projectName={project?.name ?? ''}
           projectPath={project?.path ?? ''}
         />
       </AppShell>
       <NewProjectDialog
-        onClose={() => setNewProjectDialogOpen(false)}
+        onClose={handleCloseNewProjectDialog}
         onCreate={handleCreateProject}
         onSelectLocation={handleSelectProjectLocation}
         onValidate={handleValidateProject}

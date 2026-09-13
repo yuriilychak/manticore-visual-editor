@@ -25,6 +25,12 @@ const getClampedPercentage = (
   return Math.min(Math.max(valuePercentage, minimumPercentage), maximumPercentage);
 };
 
+export const getGridTemplateColumns = (left: number, right: number) =>
+  `minmax(${MIN_PANE_SIZE}px, calc((100% - ${DIVIDER_SIZE * 2}px) * ${left / 100})) ${DIVIDER_SIZE}px minmax(${MIN_PANE_SIZE}px, calc((100% - ${DIVIDER_SIZE * 2}px) * ${(100 - left - right) / 100})) ${DIVIDER_SIZE}px minmax(${MIN_PANE_SIZE}px, calc((100% - ${DIVIDER_SIZE * 2}px) * ${right / 100}))`;
+
+export const getGridTemplateRows = (top: number) =>
+  `minmax(${MIN_PANE_SIZE}px, calc((100% - ${DIVIDER_SIZE}px) * ${top / 100})) ${DIVIDER_SIZE}px minmax(${MIN_PANE_SIZE}px, calc((100% - ${DIVIDER_SIZE}px) * ${(100 - top) / 100}))`;
+
 export const getStoredPanePercentages = (): PanePercentages => {
   try {
     const storedPercentages = JSON.parse(

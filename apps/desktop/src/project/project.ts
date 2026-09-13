@@ -2,11 +2,9 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { createBundle } from './bundle';
+import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID } from './constants';
 import { createFolder } from './folder';
 import type { ProjectConfig } from './types';
-
-const DEFAULT_BUNDLE_ID = 0;
-const DEFAULT_BUNDLE_NAME = 'default_bundle';
 
 export async function createProject(projectPath: string, name: string): Promise<void> {
   await mkdir(projectPath);
@@ -17,7 +15,7 @@ export async function createProject(projectPath: string, name: string): Promise<
   const bundleDirectoryName = await createBundle(sourcePath, DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME);
   const config: ProjectConfig = {
     name,
-    folders: [createFolder('', [bundleDirectoryName])]
+    folders: [createFolder(DEFAULT_FOLDER_ID, '', [bundleDirectoryName])]
   };
   await writeFile(path.join(sourcePath, 'config.json'), `${JSON.stringify(config, null, 2)}\n`, 'utf8');
 }

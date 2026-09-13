@@ -15,7 +15,13 @@ export const withLocalizedProps = <Keys extends LocaleKeys>(keys: Keys) =>
     const LocalizedComponent: FC<Omit<Props, keyof Keys>> = (props) => {
       const { t } = useTranslation();
       const localizedProps = useMemo(
-        () => Object.fromEntries(Object.entries(keys).map(([name, key]) => [name, t(key)])) as LocalizedProps<Keys>,
+        () => (Object.keys(keys) as Array<keyof Keys>).reduce<LocalizedProps<Keys>>(
+          (props, name) => {
+            props[name] = t(keys[name]);
+            return props;
+          },
+          { ...keys }
+        ),
         [t]
       );
 

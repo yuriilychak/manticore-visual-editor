@@ -2,7 +2,8 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { Box, Fade } from '@mui/material';
 
-import { initializeI18n } from '../../../i18n';
+import type { ProjectActionHandler } from '../../../../types';
+import { initializeI18n } from '../../../localization';
 import type { ApplicationAction } from '../../../types';
 
 import { App } from './app';
@@ -11,12 +12,12 @@ import { SplashScreen } from './splash-screen';
 
 type RendererProps = {
   onAction: (action: ApplicationAction) => void;
-  onRenameProject?: (name: string) => Promise<void>;
+  onWorkingScreenAction: ProjectActionHandler;
   projectName?: string;
   projectPath: string;
 };
 
-const Renderer: FC<RendererProps> = ({ onAction, onRenameProject, projectName, projectPath }) => {
+const Renderer: FC<RendererProps> = ({ onAction, onWorkingScreenAction, projectName, projectPath }) => {
   const [isReady, setReady] = useState(false);
   const [hasLocalizationError, setHasLocalizationError] = useState(false);
   const [showApp, setShowApp] = useState(false);
@@ -31,23 +32,25 @@ const Renderer: FC<RendererProps> = ({ onAction, onRenameProject, projectName, p
     setHasLocalizationError(false);
     loadLocalization();
   }, [loadLocalization]);
+  const handleAppExited = useCallback(() => setShowApp(true), []);
 
   useEffect(() => {
     loadLocalization();
   }, [loadLocalization]);
 
-  if (showApp) {
-    return (
-      <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
-        <Box display="flex" flexDirection="column" flexGrow={1}>
-          <App onAction={onAction} onRenameProject={onRenameProject} projectName={projectName} projectPath={projectPath} />
-        </Box>
-      </Fade>
-    );
-  }
-
-  return (
-    <Fade in={!isReady} onExited={() => setShowApp(true)} timeout={SPLASH_TRANSITION_DURATION}>
+  return showApp ? (
+    <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
+      <Box display="flex" flexDirection="column" flexGrow={1}>
+        <App
+          onAction={onAction}
+          onWorkingScreenAction={onWorkingScreenAction}
+          projectName={projectName}
+          projectPath={projectPath}
+        />
+      </Box>
+    </Fade>
+  ) : (
+    <Fade in={!isReady} onExited={handleAppExited} timeout={SPLASH_TRANSITION_DURATION}>
       <Box display="flex" flexDirection="column" flexGrow={1}>
         <SplashScreen hasError={hasLocalizationError} onRetry={handleRetry} />
       </Box>

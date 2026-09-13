@@ -9,9 +9,9 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) =>
 describe('ProjectSection', () => {
   test('renames the project with a trimmed name', async () => {
     const user = userEvent.setup();
-    const onRename = jest.fn<(name: string) => Promise<void>>().mockResolvedValue();
+    const onAction = jest.fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>().mockResolvedValue();
 
-    render(<ProjectSection name="Initial project" onRename={onRename} />);
+    render(<ProjectSection name="Initial project" onAction={onAction} />);
 
     await user.click(screen.getByRole('button', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
@@ -19,15 +19,15 @@ describe('ProjectSection', () => {
     await user.type(input, '  Renamed project  ');
     await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
 
-    expect(onRename).toHaveBeenCalledWith('Renamed project');
+    expect(onAction).toHaveBeenCalledWith('rename', 'project', 0, 'Renamed project');
     expect(screen.getByRole('heading', { name: 'Initial project' })).toBeInTheDocument();
   });
 
   test('does not allow an empty trimmed project name to be submitted', async () => {
     const user = userEvent.setup();
-    const onRename = jest.fn<(name: string) => Promise<void>>().mockResolvedValue();
+    const onAction = jest.fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>().mockResolvedValue();
 
-    render(<ProjectSection name="Initial project" onRename={onRename} />);
+    render(<ProjectSection name="Initial project" onAction={onAction} />);
 
     await user.click(screen.getByRole('button', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
@@ -35,6 +35,6 @@ describe('ProjectSection', () => {
     await user.type(input, '   ');
 
     expect(screen.getByRole('button', { name: 'common.saveRename' })).toBeDisabled();
-    expect(onRename).not.toHaveBeenCalled();
+    expect(onAction).not.toHaveBeenCalled();
   });
 });

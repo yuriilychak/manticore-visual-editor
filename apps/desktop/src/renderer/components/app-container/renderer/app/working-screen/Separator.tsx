@@ -3,7 +3,14 @@ import { type FC, type PointerEvent as ReactPointerEvent } from 'react';
 import { Box } from '@mui/material';
 
 import { STYLES } from './constants';
-import type { SeparatorProps } from './types';
+import type { DragState, PanePercentages, ResizeDirection } from './types';
+
+type SeparatorProps = {
+  ariaLabel: string;
+  direction: ResizeDirection;
+  onResizeStart: (dragState: DragState) => void;
+  panePercentages: PanePercentages;
+};
 
 const Separator: FC<SeparatorProps> = ({ ariaLabel, direction, onResizeStart, panePercentages }) => {
   const orientation = direction === 'top' ? 'horizontal' : 'vertical';

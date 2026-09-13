@@ -6,6 +6,7 @@ export type BundleConfig = {
 };
 
 export type FolderConfig = {
+  id: number;
   name: string;
   items: string[];
 };

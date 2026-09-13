@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, jest, test } from '@jest/globals';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import type { ReactNode } from 'react';
+import type { MouseEvent, ReactNode } from 'react';
 
 import type { NewProjectOptions, ProjectCreationValidation, RestoredProject } from '../../../types';
 
@@ -27,14 +27,20 @@ jest.mock('../renderer', () => ({
   }: {
     onAction: (action: 'create-project' | 'create-window' | 'set-language-es') => void;
     projectPath: string;
-  }) => (
-    <>
-      <div data-project-path={projectPath} data-testid="renderer" />
-      <button onClick={() => onAction('set-language-es')}>Renderer content</button>
-      <button onClick={() => onAction('create-window')}>New window</button>
-      <button onClick={() => onAction('create-project')}>New project</button>
-    </>
-  )
+  }) => {
+    const handleAction = (event: MouseEvent<HTMLButtonElement>) => {
+      onAction(event.currentTarget.dataset.action as 'create-project' | 'create-window' | 'set-language-es');
+    };
+
+    return (
+      <>
+        <div data-project-path={projectPath} data-testid="renderer" />
+        <button data-action="set-language-es" onClick={handleAction}>Renderer content</button>
+        <button data-action="create-window" onClick={handleAction}>New window</button>
+        <button data-action="create-project" onClick={handleAction}>New project</button>
+      </>
+    );
+  }
 }));
 
 const mockReactI18next = jest.requireMock('react-i18next') as { mockChangeLanguage: jest.Mock };
