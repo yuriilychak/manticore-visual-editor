@@ -14,9 +14,7 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'editing' | 'viewProject' | 'empty'
     { action: 'save', tooltipLocale: 'common.saveRename', Icon: CheckRounded },
     { action: 'cancel', tooltipLocale: 'common.cancelRename', Icon: CloseRounded }
   ],
-  viewProject: [
-    { action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }
-  ],
+  viewProject: [{ action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }],
   empty: []
 };
 
@@ -34,9 +32,3 @@ export const RENAMEABLE_ITEM_STYLES: Record<'editingNameInput' | 'viewActions' |
   },
   name: { flexGrow: 1 }
 };
-
-export const EDITING_BOX_PROPS = { component: 'form' } as const;
-export const VIEW_BOX_PROPS = {
-  component: 'div',
-  sx: RENAMEABLE_ITEM_STYLES.viewActions
-} as const;

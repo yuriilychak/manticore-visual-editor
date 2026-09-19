@@ -1,21 +1,15 @@
-import { type ChangeEvent, type FC, type FormEvent, useMemo, useState } from 'react';
+import type { FC } from 'react';
+import { useTranslation } from 'react-i18next';
 
 import type { SvgIconComponent } from '@mui/icons-material';
-import { Box, FilledInput, InputAdornment, Typography } from '@mui/material';
+import { Box, FilledInput, IconButton, Tooltip, Typography } from '@mui/material';
 
 import type { ContentType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
-import {
-  EDITING_BOX_PROPS,
-  ITEM_GAP,
-  RENAMEABLE_ITEM_ACTIONS,
-  RENAMEABLE_ITEM_LOCALE_KEYS,
-  RENAMEABLE_ITEM_STYLES,
-  VIEW_BOX_PROPS
-} from './constants';
-import RenameableItemActions from './RenameableItemActions';
+import { ITEM_GAP, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
 import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
+import { useRenameableItem } from './useRenameableItem';
 
 type RenameableItemProps = {
   contentType: ContentType;
@@ -34,85 +28,36 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   name,
   onAction,
   renameNameLabel,
-  disabledActions = {},
-  actions = RENAMEABLE_ITEM_ACTIONS.empty
+  disabledActions,
+  actions
 }) => {
-  const [isEditing, setEditing] = useState(false);
-  const [editedName, setEditedName] = useState(name);
-  const [isSaving, setSaving] = useState(false);
-  const allActions = useMemo(
-    () => actions.concat(RENAMEABLE_ITEM_ACTIONS.viewProject),
-    [actions]
-  );
-  const trimmedName = editedName.trim();
-  const disabledByAction: Record<string, boolean> = {
-    ...disabledActions,
-    cancel: isSaving,
-    save: !trimmedName || isSaving
-  };
-
-  const saveName = async () => {
-    if (!trimmedName) return;
-
-    setSaving(true);
-    try {
-      await onAction('rename', contentType, id, trimmedName);
-      setEditing(false);
-    } catch {
-      // The caller is responsible for presenting a failed-save notification.
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleSubmit = (event: FormEvent) => {
-    event.preventDefault();
-    void saveName();
-  };
-  
-  const handleNameChange = (event: ChangeEvent<HTMLInputElement>) => setEditedName(event.target.value);
-
-  const handleButtonClick = (action: string) => {
-    switch (action) {
-      case 'cancel':
-        setEditedName(name);
-        setEditing(false);
-        break;
-      case 'rename':
-        setEditing(true);
-        break;
-      case 'save':
-        void saveName();
-        break;
-      default:
-        void onAction(action, contentType, id);
-    }
-  };
-
-  const boxProps = isEditing ? EDITING_BOX_PROPS : VIEW_BOX_PROPS;
+  const { t } = useTranslation();
+  const {
+    boxComponent,
+    disabledByAction,
+    editedName,
+    handleActionButtonClick,
+    handleNameChange,
+    handleSubmit,
+    isEditing,
+    itemActions,
+    trimmedName
+  } = useRenameableItem(contentType, id, name, onAction, disabledActions, actions);
 
   return (
     <Box
-      {...boxProps}
       alignItems="center"
+      component={boxComponent}
       display="flex"
       gap={ITEM_GAP}
-      onSubmit={isEditing ? handleSubmit : undefined}
+      onSubmit={handleSubmit}
+      sx={RENAMEABLE_ITEM_STYLES.viewActions}
     >
       <Icon color="action" fontSize="small" />
       {isEditing ? (
         <FilledInput
           autoFocus
           disableUnderline
-          endAdornment={
-            <InputAdornment position="end">
-              <RenameableItemActions
-                actions={RENAMEABLE_ITEM_ACTIONS.editing}
-                disabledByAction={disabledByAction}
-                onClick={handleButtonClick}
-              />
-            </InputAdornment>
-          }
           error={!trimmedName}
           fullWidth
           inputProps={{ 'aria-label': renameNameLabel }}
@@ -122,16 +67,27 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
           value={editedName}
         />
       ) : (
-        <>
-          <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">{name}</Typography>
-          <RenameableItemActions
-            actions={allActions}
-            className="renameable-item-view-action"
-            disabledByAction={disabledByAction}
-            onClick={handleButtonClick}
-          />
-        </>
+        <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">
+          {name}
+        </Typography>
       )}
+      {itemActions.map(({ action, tooltipLocale, Icon: ActionIcon }) => (
+        <Tooltip key={action} title={t(tooltipLocale)}>
+          <span>
+            <IconButton
+              aria-label={t(tooltipLocale)}
+              className="renameable-item-view-action"
+              data-action={action}
+              disabled={disabledByAction[action]}
+              onClick={handleActionButtonClick}
+              size="small"
+              type="button"
+            >
+              <ActionIcon fontSize="small" />
+            </IconButton>
+          </span>
+        </Tooltip>
+      ))}
     </Box>
   );
 };

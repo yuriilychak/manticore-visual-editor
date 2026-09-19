@@ -28,6 +28,8 @@ When a component is used only by its parent component, locate that component's f
 
 Do not create inline functions in JSX props. Declare the callback as a named constant before the `return` statement, using `useCallback` when the callback is passed to a memoized component or hook dependency.
 
+Pass data to custom hooks as individual arguments, rather than as a props object.
+
 ## Tests
 
 Place tests in a `__tests__` folder at the same directory level as the file under test. Test filenames must match the source filename with a `.test` suffix, such as `AppShell.test.tsx` for `AppShell.tsx`.
