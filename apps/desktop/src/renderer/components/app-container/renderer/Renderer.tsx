@@ -2,7 +2,6 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 
 import { Box, Fade } from '@mui/material';
 
-import type { ProjectActionHandler } from '../../../../types';
 import { initializeI18n } from '../../../localization';
 import type { ApplicationAction } from '../../../types';
 
@@ -12,12 +11,9 @@ import { SplashScreen } from './splash-screen';
 
 type RendererProps = {
   onAction: (action: ApplicationAction) => void;
-  onWorkingScreenAction: ProjectActionHandler;
-  projectName?: string;
-  projectPath: string;
 };
 
-const Renderer: FC<RendererProps> = ({ onAction, onWorkingScreenAction, projectName, projectPath }) => {
+const Renderer: FC<RendererProps> = ({ onAction }) => {
   const [isReady, setReady] = useState(false);
   const [hasLocalizationError, setHasLocalizationError] = useState(false);
   const [showApp, setShowApp] = useState(false);
@@ -41,12 +37,7 @@ const Renderer: FC<RendererProps> = ({ onAction, onWorkingScreenAction, projectN
   return showApp ? (
     <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
       <Box display="flex" flexDirection="column" flexGrow={1}>
-        <App
-          onAction={onAction}
-          onWorkingScreenAction={onWorkingScreenAction}
-          projectName={projectName}
-          projectPath={projectPath}
-        />
+        <App onAction={onAction} />
       </Box>
     </Fade>
   ) : (

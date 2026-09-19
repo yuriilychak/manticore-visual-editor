@@ -51,5 +51,14 @@
     "already-exists": "A project with this name already exists in this location.",
     "error": "Could not create the project.",
     "renameName": "Project name"
+  },
+  "folder": {
+    "add": "Add folder",
+    "title": "New folder",
+    "name": "Folder name",
+    "alreadyExists": "A folder with this name already exists at this level.",
+    "cancel": "Cancel",
+    "create": "Create folder",
+    "error": "Could not create the folder."
   }
 }

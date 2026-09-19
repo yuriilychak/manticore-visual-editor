@@ -51,5 +51,14 @@
     "already-exists": "Ya existe un proyecto con este nombre en esta ubicación.",
     "error": "No se pudo crear el proyecto.",
     "renameName": "Nombre del proyecto"
+  },
+  "folder": {
+    "add": "Añadir carpeta",
+    "title": "Nueva carpeta",
+    "name": "Nombre de la carpeta",
+    "alreadyExists": "Ya existe una carpeta con este nombre en este nivel.",
+    "cancel": "Cancelar",
+    "create": "Crear carpeta",
+    "error": "No se pudo crear la carpeta."
   }
 }

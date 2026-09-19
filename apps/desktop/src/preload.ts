@@ -4,9 +4,14 @@ contextBridge.exposeInMainWorld('manticore', {
   createWindow: (language: string) => ipcRenderer.invoke('window:create', language),
   openProject: () => ipcRenderer.invoke('project:open'),
   renameProject: (projectPath: string, name: string) => ipcRenderer.invoke('project:rename', projectPath, name),
+  renameProjectFolder: (projectPath: string, id: number, name: string) =>
+    ipcRenderer.invoke('project:rename-folder', projectPath, id, name),
+  createProjectFolder: (projectPath: string, name: string) =>
+    ipcRenderer.invoke('project:create-folder', projectPath, name),
   restoreLastOpenedProject: () => ipcRenderer.invoke('project:restore-last-opened'),
   createProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:create', options),
-  canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
+  canCreateProject: (options: { name: string; parentPath: string }) =>
+    ipcRenderer.invoke('project:can-create', options),
   platform: process.platform,
   selectProjectLocation: () => ipcRenderer.invoke('project:select-location'),
   windowControls: {

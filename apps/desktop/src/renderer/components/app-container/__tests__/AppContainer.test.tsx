@@ -3,9 +3,10 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MouseEvent, ReactNode } from 'react';
 
-import type { NewProjectOptions, ProjectCreationValidation, RestoredProject } from '../../../types';
+import type { NewProjectOptions, ProjectCreationValidation, ProjectInfo, RestoredProject } from '../../../types';
 
 import AppContainer from '../AppContainer';
+import { ProjectStructureContext } from '../ProjectStructureContext';
 
 jest.mock('react-i18next', () => {
   const mockChangeLanguage = jest.fn();
@@ -21,23 +22,38 @@ jest.mock('../app-shell', () => ({
   )
 }));
 jest.mock('../renderer', () => ({
-  Renderer: ({
-    onAction,
-    projectPath
-  }: {
-    onAction: (action: 'create-project' | 'create-window' | 'set-language-es') => void;
-    projectPath: string;
-  }) => {
+  Renderer: ({ onAction }: { onAction: (action: 'create-project' | 'create-window' | 'set-language-es') => void }) => {
     const handleAction = (event: MouseEvent<HTMLButtonElement>) => {
       onAction(event.currentTarget.dataset.action as 'create-project' | 'create-window' | 'set-language-es');
     };
 
     return (
       <>
-        <div data-project-path={projectPath} data-testid="renderer" />
-        <button data-action="set-language-es" onClick={handleAction}>Renderer content</button>
-        <button data-action="create-window" onClick={handleAction}>New window</button>
-        <button data-action="create-project" onClick={handleAction}>New project</button>
+        <ProjectStructureContext.Consumer>
+          {(projectStructure) => (
+            <>
+              <div
+                data-bundle-count={projectStructure?.bundles.size}
+                data-folder-count={projectStructure?.folders.length}
+                data-project-path={projectStructure?.path}
+                data-testid="renderer"
+              />
+              <button onClick={() => void projectStructure?.onAction('add-folder', 'project', 0)}>Add folder</button>
+              <button onClick={() => void projectStructure?.onAction('add-folder', 'project-folder', 1, 'Assets')}>
+                Add nested folder
+              </button>
+            </>
+          )}
+        </ProjectStructureContext.Consumer>
+        <button data-action="set-language-es" onClick={handleAction}>
+          Renderer content
+        </button>
+        <button data-action="create-window" onClick={handleAction}>
+          New window
+        </button>
+        <button data-action="create-project" onClick={handleAction}>
+          New project
+        </button>
       </>
     );
   }
@@ -75,9 +91,15 @@ describe('AppContainer', () => {
       canCreateProject: jest
         .fn<(options: NewProjectOptions) => Promise<ProjectCreationValidation>>()
         .mockResolvedValue({ isAvailable: true }),
-      createProject: jest.fn<(options: { name: string; parentPath: string }) => Promise<string>>().mockResolvedValue('/tmp/project'),
+      createProjectFolder:
+        jest.fn<(projectPath: string, name: string) => Promise<{ id: number; items: string[]; name: string }>>(),
+      createProject: jest
+        .fn<(options: { name: string; parentPath: string }) => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: 'Project', path: '/tmp/project' }),
       createWindow,
-      openProject: jest.fn<() => Promise<{ name: string; path: string }>>().mockResolvedValue({ name: '', path: '' }),
+      openProject: jest
+        .fn<() => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: '', path: '' }),
       platform: 'linux',
       restoreLastOpenedProject: jest.fn<() => Promise<RestoredProject>>().mockResolvedValue({ project: null }),
       selectProjectLocation: jest.fn<() => Promise<string>>().mockResolvedValue(''),
@@ -97,19 +119,81 @@ describe('AppContainer', () => {
       canCreateProject: jest
         .fn<(options: NewProjectOptions) => Promise<ProjectCreationValidation>>()
         .mockResolvedValue({ isAvailable: true }),
-      createProject: jest.fn<(options: NewProjectOptions) => Promise<string>>().mockResolvedValue('/tmp/project'),
+      createProjectFolder:
+        jest.fn<(projectPath: string, name: string) => Promise<{ id: number; items: string[]; name: string }>>(),
+      createProject: jest
+        .fn<(options: NewProjectOptions) => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: 'Project', path: '/tmp/project' }),
       createWindow: jest.fn<(language: string) => Promise<void>>().mockResolvedValue(undefined),
-      openProject: jest.fn<() => Promise<{ name: string; path: string }>>().mockResolvedValue({ name: '', path: '' }),
+      openProject: jest
+        .fn<() => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: '', path: '' }),
       platform: 'linux',
-      restoreLastOpenedProject: jest
-        .fn<() => Promise<RestoredProject>>()
-        .mockResolvedValue({ project: { name: 'Restored project', path: '/tmp/restored-project' } }),
+      restoreLastOpenedProject: jest.fn<() => Promise<RestoredProject>>().mockResolvedValue({
+        project: {
+          bundles: new Map([['0', { id: '0', name: 'default_bundle', version: 0 }]]),
+          folders: [{ id: 1, items: ['bundle'], name: 'Bundles' }],
+          name: 'Restored project',
+          path: '/tmp/restored-project'
+        }
+      }),
       selectProjectLocation: jest.fn<() => Promise<string>>().mockResolvedValue(''),
       windowControls: {} as never
     };
 
     render(<AppContainer />);
 
-    await waitFor(() => expect(screen.getByTestId('renderer')).toHaveAttribute('data-project-path', '/tmp/restored-project'));
+    await waitFor(() =>
+      expect(screen.getByTestId('renderer')).toHaveAttribute('data-project-path', '/tmp/restored-project')
+    );
+    expect(screen.getByTestId('renderer')).toHaveAttribute('data-bundle-count', '1');
+    expect(screen.getByTestId('renderer')).toHaveAttribute('data-folder-count', '1');
+  });
+
+  test('creates a project folder and updates the project structure', async () => {
+    const createProjectFolder = jest
+      .fn<(projectPath: string, name: string) => Promise<{ id: number; items: string[]; name: string }>>()
+      .mockResolvedValueOnce({ id: 1, items: [], name: 'Assets' })
+      .mockResolvedValueOnce({ id: 2, items: [], name: 'Assets/Images' });
+    const user = userEvent.setup();
+    window.manticore = {
+      canCreateProject: jest
+        .fn<(options: NewProjectOptions) => Promise<ProjectCreationValidation>>()
+        .mockResolvedValue({ isAvailable: true }),
+      createProjectFolder,
+      createProject: jest
+        .fn<(options: NewProjectOptions) => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: 'Project', path: '/tmp/project' }),
+      createWindow: jest.fn<(language: string) => Promise<void>>().mockResolvedValue(undefined),
+      openProject: jest
+        .fn<() => Promise<ProjectInfo>>()
+        .mockResolvedValue({ bundles: new Map(), folders: [], name: 'Project', path: '/tmp/project' }),
+      platform: 'linux',
+      renameProject: jest.fn<(projectPath: string, name: string) => Promise<string>>(),
+      restoreLastOpenedProject: jest
+        .fn<() => Promise<RestoredProject>>()
+        .mockResolvedValue({ project: { bundles: new Map(), folders: [], name: 'Project', path: '/tmp/project' } }),
+      selectProjectLocation: jest.fn<() => Promise<string>>().mockResolvedValue(''),
+      windowControls: {} as never
+    };
+    window.history.replaceState({}, '', '/?restoreProject=true');
+
+    render(<AppContainer />);
+
+    await waitFor(() => expect(screen.getByTestId('renderer')).toHaveAttribute('data-project-path', '/tmp/project'));
+    await user.click(screen.getByRole('button', { name: 'Add folder' }));
+    await user.type(screen.getByRole('textbox', { name: 'folder.name' }), 'Assets');
+    await user.click(screen.getByRole('button', { name: 'folder.create' }));
+
+    expect(createProjectFolder).toHaveBeenCalledWith('/tmp/project', 'Assets');
+    await waitFor(() => expect(screen.getByTestId('renderer')).toHaveAttribute('data-folder-count', '1'));
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+
+    await user.click(screen.getByRole('button', { name: 'Add nested folder' }));
+    await user.type(screen.getByRole('textbox', { name: 'folder.name' }), 'Images');
+    await user.click(screen.getByRole('button', { name: 'folder.create' }));
+
+    expect(createProjectFolder).toHaveBeenCalledWith('/tmp/project', 'Assets/Images');
+    await waitFor(() => expect(screen.getByTestId('renderer')).toHaveAttribute('data-folder-count', '2'));
   });
 });

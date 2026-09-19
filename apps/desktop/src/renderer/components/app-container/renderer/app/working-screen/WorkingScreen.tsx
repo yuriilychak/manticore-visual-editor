@@ -2,19 +2,12 @@ import { type FC } from 'react';
 
 import { Box } from '@mui/material';
 
-import type { ProjectActionHandler } from '../../../../../../types';
-
 import { DIVIDER_SIZE, MIN_PANE_SIZE } from './constants';
 import { ProjectSection } from './project-section';
 import Separator from './Separator';
 import { useSectionResize } from './useSectionResize';
 
-type WorkingScreenProps = {
-  onAction: ProjectActionHandler;
-  projectName: string;
-};
-
-const WorkingScreen: FC<WorkingScreenProps> = ({ onAction, projectName }) => {
+const WorkingScreen: FC = () => {
   const { containerRef, gridTemplateColumns, gridTemplateRows, panePercentages, startResize } = useSectionResize();
 
   return (
@@ -28,7 +21,7 @@ const WorkingScreen: FC<WorkingScreenProps> = ({ onAction, projectName }) => {
       ref={containerRef}
     >
       <Box aria-label="Left panel" component="section" minWidth={MIN_PANE_SIZE}>
-        <ProjectSection name={projectName} onAction={onAction} />
+        <ProjectSection />
       </Box>
       <Separator
         ariaLabel="Resize left panel"

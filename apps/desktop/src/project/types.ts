@@ -1,15 +1,6 @@
-export type BundleConfig = {
-  id: string;
-  name: string;
-  version: number;
-  atlases?: FolderConfig[];
-};
+import type { FolderConfig } from '../types';
 
-export type FolderConfig = {
-  id: number;
-  name: string;
-  items: string[];
-};
+export type { FolderConfig } from '../types';
 
 export type ProjectConfig = {
   name: string;

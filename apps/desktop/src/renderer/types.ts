@@ -1,3 +1,5 @@
+import type { ProjectInfo as ProjectInfoData } from '../types';
+
 export type WindowControlAction = 'minimize' | 'toggle-maximize' | 'close' | 'none';
 
 export type ApplicationAction =
@@ -31,6 +33,6 @@ export type NewProjectOptions = {
 
 export type ProjectCreationValidation = { isAvailable: boolean; reason?: 'already-exists' | 'invalid-name' };
 
-export type ProjectInfo = { name: string; path: string };
+export type ProjectInfo = ProjectInfoData;
 
 export type RestoredProject = { error?: string; project: ProjectInfo | null };

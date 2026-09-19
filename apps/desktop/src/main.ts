@@ -2,12 +2,17 @@ import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'ele
 import { readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { createProject, renameProject } from './project/project';
+import {
+  createProject,
+  createProjectFolder,
+  getProjectInfo,
+  renameProject,
+  renameProjectFolder
+} from './project/project';
+import type { ProjectInfo } from './types';
 
 const IS_DEVELOPMENT = !app.isPackaged;
 const WINDOW_ICON_PATH = path.join(__dirname, '../build/icon.png');
-
-type ProjectInfo = { name: string; path: string };
 
 type RestoredProject = { error?: string; project: ProjectInfo | null };
 
@@ -59,13 +64,6 @@ function getWindow(sender: Electron.WebContents): BrowserWindow | null {
 
 const getLastProjectFilePath = () => path.join(app.getPath('userData'), LAST_PROJECT_FILE_NAME);
 
-async function getProjectInfo(projectPath: string): Promise<ProjectInfo> {
-  const config = JSON.parse(await readFile(path.join(projectPath, 'src', 'config.json'), 'utf8')) as { name?: unknown };
-  if (typeof config.name !== 'string' || !config.name) throw new Error('Project configuration is invalid.');
-
-  return { name: config.name, path: projectPath };
-}
-
 async function storeLastOpenedProject(projectPath: string): Promise<void> {
   await writeFile(getLastProjectFilePath(), `${JSON.stringify({ path: projectPath })}\n`, 'utf8');
 }
@@ -107,27 +105,32 @@ ipcMain.handle('project:select-location', async (event) => {
     properties: ['createDirectory', 'openDirectory']
   };
   const parentWindow = getWindow(event.sender);
-  const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
+  const result = parentWindow
+    ? await dialog.showOpenDialog(parentWindow, options)
+    : await dialog.showOpenDialog(options);
 
-  return result.canceled ? '' : result.filePaths[0] ?? '';
+  return result.canceled ? '' : (result.filePaths[0] ?? '');
 });
 ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
   const projectName = name.trim();
-  if (!projectName || projectName === '.' || projectName === '..' || /[\\/]/.test(projectName)) throw new Error('Project name is invalid.');
+  if (!projectName || projectName === '.' || projectName === '..' || /[\\/]/.test(projectName))
+    throw new Error('Project name is invalid.');
 
   const projectPath = path.resolve(parentPath, projectName);
   if (path.dirname(projectPath) !== path.resolve(parentPath)) throw new Error('Project path is invalid.');
 
   await createProject(projectPath, projectName);
   await storeLastOpenedProject(projectPath);
-  return projectPath;
+  return getProjectInfo(projectPath);
 });
 ipcMain.handle('project:open', async (event) => {
   const options: OpenDialogOptions = { properties: ['openDirectory'] };
   const parentWindow = getWindow(event.sender);
-  const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
-  const projectPath = result.canceled ? '' : result.filePaths[0] ?? '';
-  if (!projectPath) return { name: '', path: '' };
+  const result = parentWindow
+    ? await dialog.showOpenDialog(parentWindow, options)
+    : await dialog.showOpenDialog(options);
+  const projectPath = result.canceled ? '' : (result.filePaths[0] ?? '');
+  if (!projectPath) return { bundles: new Map(), folders: [], name: '', path: '' };
 
   try {
     const project = await getProjectInfo(projectPath);
@@ -139,8 +142,15 @@ ipcMain.handle('project:open', async (event) => {
 });
 ipcMain.handle('project:restore-last-opened', () => restoreLastOpenedProject());
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
+ipcMain.handle('project:create-folder', (_event, projectPath: string, name: string) =>
+  createProjectFolder(projectPath, name)
+);
+ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) =>
+  renameProjectFolder(projectPath, id, name)
+);
 ipcMain.handle('project:can-create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
-  if (!name || name === '.' || name === '..' || /[\\/]/.test(name)) return { isAvailable: false, reason: 'invalid-name' };
+  if (!name || name === '.' || name === '..' || /[\\/]/.test(name))
+    return { isAvailable: false, reason: 'invalid-name' };
   const projectPath = path.resolve(parentPath, name);
   if (path.dirname(projectPath) !== path.resolve(parentPath)) return { isAvailable: false, reason: 'invalid-name' };
 
