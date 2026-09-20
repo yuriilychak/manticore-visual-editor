@@ -1,12 +1,12 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, useMemo, useState } from 'react';
 
-import type { ContentType, ProjectActionHandler } from '../../../../../../../types';
+import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 
 import { RENAMEABLE_ITEM_ACTIONS } from './constants';
 import type { ActionButtonConfig } from './types';
 
 export const useRenameableItem = (
-  contentType: ContentType,
+  contentType: AssetType,
   id: number,
   name: string,
   onAction: ProjectActionHandler,

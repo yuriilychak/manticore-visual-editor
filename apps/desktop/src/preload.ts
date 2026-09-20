@@ -4,10 +4,12 @@ contextBridge.exposeInMainWorld('manticore', {
   createWindow: (language: string) => ipcRenderer.invoke('window:create', language),
   openProject: () => ipcRenderer.invoke('project:open'),
   renameProject: (projectPath: string, name: string) => ipcRenderer.invoke('project:rename', projectPath, name),
-  renameProjectFolder: (projectPath: string, id: number, name: string) =>
-    ipcRenderer.invoke('project:rename-folder', projectPath, id, name),
-  createProjectFolder: (projectPath: string, name: string) =>
-    ipcRenderer.invoke('project:create-folder', projectPath, name),
+  renameProjectBundle: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-bundle', projectPath, id, name),
+  createProjectBundle: (projectPath: string, parentPath: string, name: string) => ipcRenderer.invoke('project:create-bundle', projectPath, parentPath, name),
+  moveProjectBundle: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-bundle', projectPath, id, targetPath),
+  renameProjectFolder: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-folder', projectPath, id, name),
+  moveProjectFolder: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-folder', projectPath, id, targetPath),
+  createProjectFolder: (projectPath: string, name: string) => ipcRenderer.invoke('project:create-folder', projectPath, name),
   restoreLastOpenedProject: () => ipcRenderer.invoke('project:restore-last-opened'),
   createProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:create', options),
   canCreateProject: (options: { name: string; parentPath: string }) =>

@@ -60,5 +60,14 @@
     "cancel": "Cancel",
     "create": "Create folder",
     "error": "Could not create the folder."
+  },
+  "bundle": {
+    "add": "Add bundle",
+    "title": "New bundle",
+    "name": "Bundle name",
+    "alreadyExists": "An item with this name already exists at this level.",
+    "cancel": "Cancel",
+    "create": "Create bundle",
+    "error": "Could not create the bundle."
   }
 }

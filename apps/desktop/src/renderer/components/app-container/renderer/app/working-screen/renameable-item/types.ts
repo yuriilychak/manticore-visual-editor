@@ -1,3 +1,5 @@
+import type { ReactNode } from 'react';
+
 import type { SvgIconComponent } from '@mui/icons-material';
 
 export type RenameableItemLocalizedProps = {
@@ -7,5 +9,6 @@ export type RenameableItemLocalizedProps = {
 export type ActionButtonConfig = {
   action: string;
   tooltipLocale: string;
-  Icon: SvgIconComponent;
+  Icon?: SvgIconComponent;
+  icon?: ReactNode;
 };

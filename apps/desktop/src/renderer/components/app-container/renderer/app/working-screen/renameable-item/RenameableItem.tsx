@@ -1,10 +1,10 @@
-import type { FC } from 'react';
+import type { FC, ReactNode } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import { Box, FilledInput, IconButton, Tooltip, Typography } from '@mui/material';
 
-import type { ContentType, ProjectActionHandler } from '../../../../../../../types';
+import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
 import { ITEM_GAP, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
@@ -12,9 +12,10 @@ import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
 type RenameableItemProps = {
-  contentType: ContentType;
+  contentType: AssetType;
   id: number;
-  Icon: SvgIconComponent;
+  Icon?: SvgIconComponent;
+  icon?: ReactNode;
   name: string;
   onAction: ProjectActionHandler;
   disabledActions?: Record<string, boolean>;
@@ -25,6 +26,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   contentType,
   id,
   Icon,
+  icon,
   name,
   onAction,
   renameNameLabel,
@@ -53,7 +55,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
       onSubmit={handleSubmit}
       sx={RENAMEABLE_ITEM_STYLES.viewActions}
     >
-      <Icon color="action" fontSize="small" />
+      {Icon ? <Icon color="action" fontSize="small" /> : icon}
       {isEditing ? (
         <FilledInput
           autoFocus
@@ -71,7 +73,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
           {name}
         </Typography>
       )}
-      {itemActions.map(({ action, tooltipLocale, Icon: ActionIcon }) => (
+      {itemActions.map(({ action, tooltipLocale, Icon: ActionIcon, icon: actionIcon }) => (
         <Tooltip key={action} title={t(tooltipLocale)}>
           <span>
             <IconButton
@@ -83,7 +85,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
               size="small"
               type="button"
             >
-              <ActionIcon fontSize="small" />
+              {ActionIcon ? <ActionIcon fontSize="small" /> : actionIcon}
             </IconButton>
           </span>
         </Tooltip>

@@ -1,28 +1,32 @@
-export type ContentType = 'project' | 'bundle' | 'atalas' | 'image' | 'project-folder' | 'bundle-folder';
+import type { ProjectContent } from './project/types';
 
-export type FolderConfig = {
-  id: number;
-  name: string;
-  items: string[];
+export enum AssetType {
+  Project = 0,
+  ProjectFolder = 1,
+  Bundle = 2,
+  BundleFolder = 3,
+  Image = 4,
+  TextureAtlas = 5
+}
+
+export const ASSET_TYPE_LOCALE_KEY: Record<AssetType, string> = {
+  [AssetType.Project]: 'project',
+  [AssetType.ProjectFolder]: 'folder',
+  [AssetType.Bundle]: 'bundle',
+  [AssetType.BundleFolder]: 'bundleFolder',
+  [AssetType.Image]: 'image',
+  [AssetType.TextureAtlas]: 'textureAtlas'
 };
 
-export type BundleConfig = {
-  id: string;
-  name: string;
-  version: number;
-  folders?: FolderConfig[];
-};
+/** A UI projection of project content; it is not persisted. */
+export type FolderConfig = { id: number; items: string[]; name: string };
 
 export type ProjectInfo = {
-  bundles: Map<string, BundleConfig>;
+  content?: ProjectContent[];
   folders: FolderConfig[];
   name: string;
   path: string;
+  version?: number;
 };
 
-export type ProjectActionHandler = (
-  action: string,
-  contentType: ContentType,
-  id: number,
-  data?: unknown
-) => void | Promise<void>;
+export type ProjectActionHandler = (action: string, assetType: AssetType, id: number, data?: unknown) => void | Promise<void>;

@@ -1,8 +1,9 @@
 import { describe, expect, jest, test } from '@jest/globals';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { FolderConfig } from '../../../../../../../../types';
+import type { ProjectContent } from '../../../../../../../../project/types';
+import { AssetType, type FolderConfig, type ProjectActionHandler } from '../../../../../../../../types';
 import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
@@ -11,12 +12,13 @@ jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) =>
 
 describe('ProjectSection', () => {
   const renderProjectSection = (
-    onAction: (action: string, contentType: string, id: number, data?: unknown) => Promise<void>,
-    folders: FolderConfig[] = []
+    onAction: ProjectActionHandler,
+    folders: FolderConfig[] = [],
+    content: ProjectContent[] = []
   ) =>
     render(
       <ProjectStructureContext.Provider
-        value={{ bundles: new Map(), folders, name: 'Initial project', onAction, path: '/tmp/project' }}
+        value={{ content, folders, name: 'Initial project', onAction, path: '/tmp/project' }}
       >
         <ProjectSection />
       </ProjectStructureContext.Provider>
@@ -25,7 +27,7 @@ describe('ProjectSection', () => {
   test('renames the project with a trimmed name', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction);
@@ -36,14 +38,14 @@ describe('ProjectSection', () => {
     await user.type(input, '  Renamed project  ');
     await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
 
-    expect(onAction).toHaveBeenCalledWith('rename', 'project', 0, 'Renamed project');
+    expect(onAction).toHaveBeenCalledWith('rename', AssetType.Project, 0, 'Renamed project');
     expect(screen.getByRole('heading', { name: 'Initial project' })).toBeInTheDocument();
   });
 
   test('does not allow an empty trimmed project name to be submitted', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction);
@@ -60,7 +62,7 @@ describe('ProjectSection', () => {
   test('renders nested folders in an expandable tree without the unnamed root folder', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction, [
@@ -80,23 +82,113 @@ describe('ProjectSection', () => {
     expect(screen.getAllByRole('heading')).toHaveLength(3);
   });
 
+  test('resets a folder icon when it no longer has children', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+    const { rerender } = renderProjectSection(onAction, [
+      { id: 1, items: [], name: 'Assets' },
+      { id: 2, items: [], name: 'Assets/Images' }
+    ]);
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets folder' });
+
+    await user.click(assetsAccordion);
+    expect(within(assetsAccordion).getByTestId('FolderOpenIcon')).toBeInTheDocument();
+
+    rerender(
+      <ProjectStructureContext.Provider
+        value={{
+          content: [],
+          folders: [{ id: 1, items: [], name: 'Assets' }],
+          name: 'Initial project',
+          onAction,
+          path: '/tmp/project'
+        }}
+      >
+        <ProjectSection />
+      </ProjectStructureContext.Provider>
+    );
+
+    expect(screen.getByTestId('FolderIcon')).toBeInTheDocument();
+    expect(screen.queryByTestId('FolderOpenIcon')).not.toBeInTheDocument();
+  });
+
+  test('renders root folder bundles with their configured names', () => {
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(
+      onAction,
+      [
+        { id: 0, items: ['00015', 'missing'], name: '' },
+        { id: 1, items: [], name: 'Assets' }
+      ],
+      [{ data: null, id: 15, name: 'Main bundle', parentId: 0, type: 2, version: 1 }]
+    );
+
+    expect(screen.getByRole('heading', { name: 'Main bundle' })).toBeInTheDocument();
+    expect(screen.getByTestId('bundle-icon')).toHaveAttribute('src', './icons/bundle.svg');
+    expect(screen.queryByRole('heading', { name: 'missing' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
+      'Initial project',
+      'Assets',
+      'Main bundle'
+    ]);
+  });
+
+  test('renames a bundle using its ID', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: ['2'], name: '' }],
+      [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }]
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'common.rename' })[1]);
+    const input = screen.getByRole('textbox', { name: 'common.renameName' });
+    await user.clear(input);
+    await user.type(input, 'Main bundle');
+    await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
+
+    expect(onAction).toHaveBeenCalledWith('rename', AssetType.Bundle, 2, 'Main bundle');
+  });
+
   test('dispatches the add-folder action', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction);
 
     await user.click(screen.getByRole('button', { name: 'folder.add' }));
 
-    expect(onAction).toHaveBeenCalledWith('add-folder', 'project', 0);
+    expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.Project, 0);
+  });
+
+  test('dispatches the add-bundle action from the project', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(onAction);
+
+    await user.click(screen.getByRole('button', { name: 'bundle.add' }));
+
+    expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.Project, 0);
   });
 
   test('dispatches the full parent path when adding a nested folder', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets/Images' }]);
@@ -104,13 +196,143 @@ describe('ProjectSection', () => {
     await user.click(screen.getByRole('button', { name: 'Assets folder' }));
     await user.click(screen.getAllByRole('button', { name: 'folder.add' })[1]);
 
-    expect(onAction).toHaveBeenCalledWith('add-folder', 'project-folder', 1, 'Assets/Images');
+    expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.ProjectFolder, 1, 'Assets/Images');
+  });
+
+  test('dispatches the full parent path when adding a bundle to a folder', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets/Images' }]);
+
+    await user.click(screen.getByRole('button', { name: 'Assets folder' }));
+    await user.click(screen.getAllByRole('button', { name: 'bundle.add' })[1]);
+
+    expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.ProjectFolder, 1, 'Assets/Images');
+  });
+
+  test('moves a folder only when it is dropped on another project folder', () => {
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+    const dragData = new Map<string, string>();
+    const dataTransfer = {
+      dropEffect: '',
+      effectAllowed: '',
+      getData: (type: string) => dragData.get(type) ?? '',
+      setData: (type: string, value: string) => dragData.set(type, value),
+      types: ['application/x-manticore-project-folder']
+    };
+
+    renderProjectSection(onAction, [
+      { id: 1, items: [], name: 'Assets' },
+      { id: 2, items: [], name: 'Resources' }
+    ]);
+
+    const source = screen.getByRole('heading', { name: 'Assets' }).closest('[draggable="true"]');
+    const target = screen.getByRole('heading', { name: 'Resources' }).closest('[draggable="true"]');
+
+    expect(source).not.toBeNull();
+    expect(target).not.toBeNull();
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+    fireEvent.drop(target as HTMLElement, { dataTransfer });
+
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, 'Resources');
+  });
+
+  test('moves a folder to the root when it is dropped on the project item', () => {
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+    const dragData = new Map<string, string>();
+    const dataTransfer = {
+      dropEffect: '',
+      effectAllowed: '',
+      getData: (type: string) => dragData.get(type) ?? '',
+      setData: (type: string, value: string) => dragData.set(type, value),
+      types: ['application/x-manticore-project-folder']
+    };
+
+    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }]);
+
+    const source = screen.getByRole('heading', { name: 'Assets' }).closest('[draggable="true"]');
+    const projectItem = screen.getByRole('heading', { name: 'Initial project' }).parentElement?.parentElement;
+
+    expect(source).not.toBeNull();
+    expect(projectItem).not.toBeNull();
+
+    fireEvent.dragStart(source as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(projectItem as HTMLElement, { dataTransfer });
+    fireEvent.drop(projectItem as HTMLElement, { dataTransfer });
+
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, '');
+  });
+
+  test('moves a bundle into a project folder and back to the root', () => {
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+    const dragData = new Map<string, string>();
+    const dataTransfer = {
+      dropEffect: '',
+      effectAllowed: '',
+      getData: (type: string) => dragData.get(type) ?? '',
+      setData: (type: string, value: string) => dragData.set(type, value),
+      types: ['application/x-manticore-project-bundle']
+    };
+
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: ['2'], name: '' }, { id: 3, items: [], name: 'Assets' }],
+      [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }]
+    );
+
+    const bundle = screen.getByRole('heading', { name: 'default_bundle' }).closest('[draggable="true"]');
+    const target = screen.getByRole('heading', { name: 'Assets' }).closest('[draggable="true"]');
+    const projectItem = screen.getByRole('heading', { name: 'Initial project' }).parentElement?.parentElement;
+
+    expect(bundle).not.toBeNull();
+    expect(target).not.toBeNull();
+    expect(projectItem).not.toBeNull();
+
+    fireEvent.dragStart(bundle as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(target as HTMLElement, { dataTransfer });
+    fireEvent.drop(target as HTMLElement, { dataTransfer });
+    fireEvent.dragOver(projectItem as HTMLElement, { dataTransfer });
+    fireEvent.drop(projectItem as HTMLElement, { dataTransfer });
+
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, 'Assets');
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, '');
+  });
+
+  test('indents bundles and makes a folder containing them expandable', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: [], name: '' }, { id: 3, items: ['2'], name: 'Assets' }],
+      [{ data: null, id: 2, name: 'default_bundle', parentId: 3, type: 2, version: 0 }]
+    );
+
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets folder' });
+    expect(screen.queryByRole('heading', { name: 'default_bundle' })).not.toBeInTheDocument();
+
+    await user.click(assetsAccordion);
+
+    expect(screen.getByRole('heading', { name: 'default_bundle' }).parentElement?.parentElement?.parentElement).toHaveStyle({ paddingLeft: '8px' });
   });
 
   test('renames a folder using its ID', async () => {
     const user = userEvent.setup();
     const onAction = jest
-      .fn<(action: string, contentType: string, id: number, data?: unknown) => Promise<void>>()
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
     renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }]);
@@ -121,6 +343,6 @@ describe('ProjectSection', () => {
     await user.type(input, 'Resources');
     await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
 
-    expect(onAction).toHaveBeenCalledWith('rename', 'project-folder', 1, 'Resources');
+    expect(onAction).toHaveBeenCalledWith('rename', AssetType.ProjectFolder, 1, 'Resources');
   });
 });

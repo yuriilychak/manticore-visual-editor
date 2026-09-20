@@ -1,9 +1,10 @@
 import { createContext, useContext } from 'react';
 
-import type { BundleConfig, FolderConfig, ProjectActionHandler } from '../../../types';
+import type { FolderConfig, ProjectActionHandler } from '../../../types';
+import type { ProjectContent } from '../../../project/types';
 
 type ProjectStructureContextValue = {
-  bundles: Map<string, BundleConfig>;
+  content: ProjectContent[];
   folders: FolderConfig[];
   name: string;
   onAction: ProjectActionHandler;

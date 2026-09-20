@@ -4,6 +4,10 @@
 
 Use `UPPER_SNAKE_CASE` for module-level constants. This applies to values declared outside React components or functions that do not change after module initialization. Keep component props, local variables, functions, and exported types in their usual `camelCase` or `PascalCase` forms.
 
+Use ECMAScript `#private` fields and methods for class implementation details. Expose state required by subclasses through protected getters rather than TypeScript `private` members.
+
+Use a bare `return;` when a function exits without a value; do not write `return undefined;`.
+
 ## Import order
 
 Separate import groups with blank lines. Order them as follows:

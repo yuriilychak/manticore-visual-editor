@@ -1,24 +1,28 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import type { FolderConfig } from '../types';
+import { AssetType } from '../types';
 
 import { MAX_U16 } from './constants';
-import { createFolder, isFolderConfig } from './folder';
-import type { ProjectConfig } from './types';
+import { createProjectContent, isAssetName, isProjectContent } from './content';
+import type { ProjectConfig, ProjectContent } from './types';
 
 export class ProjectConfigProxy {
   static async load(projectPath: string): Promise<ProjectConfigProxy> {
     const configPath = path.join(projectPath, 'src', 'config.json');
-    const config = JSON.parse(await readFile(configPath, 'utf8')) as { folders?: unknown; name?: unknown };
+    const config = JSON.parse(await readFile(configPath, 'utf8')) as { content?: unknown; name?: unknown; version?: unknown };
     if (
-      typeof config.name !== 'string' ||
-      !config.name ||
-      !Array.isArray(config.folders) ||
-      !config.folders.every(isFolderConfig)
+      !isAssetName(config.name) ||
+      typeof config.version !== 'number' || !Number.isInteger(config.version) || config.version < 0 || config.version > MAX_U16 ||
+      !Array.isArray(config.content) || !config.content.every(isProjectContent)
     ) {
       throw new Error('Project configuration is invalid.');
     }
+    const content = config.content as ProjectContent[];
+    if (
+      new Set(content.map((item) => item.id)).size !== content.length ||
+      content.some((item) => item.parentId !== 0 && !content.some((parent) => parent.id === item.parentId))
+    ) throw new Error('Project configuration is invalid.');
 
     return new ProjectConfigProxy(configPath, config as ProjectConfig);
   }
@@ -28,71 +32,113 @@ export class ProjectConfigProxy {
     private readonly config: ProjectConfig
   ) {}
 
-  get folders(): FolderConfig[] {
-    return this.config.folders;
+  get content(): ProjectContent[] {
+    return this.config.content;
   }
 
   get name(): string {
     return this.config.name;
   }
 
-  async addFolder(name: string): Promise<FolderConfig> {
-    const folderName = name.trim();
-    const pathSegments = folderName.split('/');
-    if (
-      !folderName ||
-      /\\/.test(folderName) ||
-      pathSegments.some((segment) => !segment || segment === '.' || segment === '..')
-    ) {
-      throw new Error('Folder name is invalid.');
-    }
-    if (this.config.folders.some((folder) => folder.name === folderName)) {
-      throw new Error('A folder with this name already exists.');
-    }
+  get version(): number {
+    return this.config.version;
+  }
 
-    const folderId = Math.max(...this.config.folders.map((folder) => folder.id)) + 1;
-    if (folderId > MAX_U16) throw new Error('The maximum number of folders has been reached.');
+  async addFolder(name: string, parentId: number): Promise<ProjectContent> {
+    if (!isAssetName(name) || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
+      throw new Error('Folder is invalid.');
+    }
+    if (this.config.content.some((item) => item.parentId === parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+    const id = Math.max(0, ...this.config.content.map((item) => item.id)) + 1;
+    if (id > MAX_U16) throw new Error('The maximum number of assets has been reached.');
 
-    const folder = createFolder(folderId, folderName, []);
-    this.config.folders.push(folder);
+    const folder = createProjectContent(id, name, parentId, AssetType.ProjectFolder);
+    this.config.content.push(folder);
     await this.save();
-
     return folder;
   }
 
-  async renameFolder(id: number, name: string): Promise<FolderConfig> {
-    const folderName = name.trim();
-    if (
-      !Number.isInteger(id) ||
-      id < 0 ||
-      !folderName ||
-      folderName === '.' ||
-      folderName === '..' ||
-      /[\\/]/.test(folderName)
-    ) {
-      throw new Error('Folder name is invalid.');
+  async addBundle(name: string, parentId: number): Promise<ProjectContent> {
+    if (!isAssetName(name) || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
+      throw new Error('Bundle is invalid.');
     }
-
-    const folder = this.config.folders.find((folder) => folder.id === id);
-    if (!folder || !folder.name) throw new Error('Folder not found.');
-
-    const parentPath = folder.name.includes('/') ? `${folder.name.slice(0, folder.name.lastIndexOf('/'))}/` : '';
-    const renamedFolder = { ...folder, name: `${parentPath}${folderName}` };
-    if (
-      this.config.folders.some((currentFolder) => currentFolder.id !== id && currentFolder.name === renamedFolder.name)
-    ) {
-      throw new Error('A folder with this name already exists.');
+    if (this.config.content.some((item) => item.parentId === parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
     }
+    const id = Math.max(0, ...this.config.content.map((item) => item.id)) + 1;
+    if (id > MAX_U16) throw new Error('The maximum number of assets has been reached.');
 
-    this.config.folders[this.config.folders.indexOf(folder)] = renamedFolder;
+    const bundle = createProjectContent(id, name, parentId, AssetType.Bundle);
+    this.config.content.push(bundle);
     await this.save();
+    return bundle;
+  }
 
-    return renamedFolder;
+  async renameFolder(id: number, name: string): Promise<ProjectContent> {
+    if (!isAssetName(name)) throw new Error('Folder name must be 1 to 32 printable ASCII characters.');
+    const folder = this.config.content.find((item) => item.id === id && item.type === AssetType.ProjectFolder);
+    if (!folder || folder.parentId === 0) throw new Error('Folder not found.');
+    if (this.config.content.some((item) => item.id !== id && item.parentId === folder.parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+    const renamed = { ...folder, name };
+    this.config.content[this.config.content.indexOf(folder)] = renamed;
+    await this.save();
+    return renamed;
+  }
+
+  async renameBundle(id: number, name: string): Promise<ProjectContent> {
+    if (!isAssetName(name)) throw new Error('Bundle name must be 1 to 32 printable ASCII characters.');
+    const bundle = this.config.content.find((item) => item.id === id && item.type === AssetType.Bundle);
+    if (!bundle) throw new Error('Bundle not found.');
+    if (this.config.content.some((item) => item.id !== id && item.parentId === bundle.parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+
+    const renamed = { ...bundle, name };
+    this.config.content[this.config.content.indexOf(bundle)] = renamed;
+    await this.save();
+    return renamed;
+  }
+
+  async moveFolder(id: number, parentId: number): Promise<ProjectContent> {
+    const folder = this.config.content.find((item) => item.id === id && item.type === AssetType.ProjectFolder);
+    if (!folder || folder.parentId === 0 || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
+      throw new Error('Folder not found.');
+    }
+    for (let ancestorId = parentId; ancestorId !== 0;) {
+      if (ancestorId === id) throw new Error('A folder cannot be moved into itself.');
+      ancestorId = this.config.content.find((item) => item.id === ancestorId)?.parentId ?? 0;
+    }
+    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === folder.name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+    const moved = { ...folder, parentId };
+    this.config.content[this.config.content.indexOf(folder)] = moved;
+    await this.save();
+    return moved;
+  }
+
+  async moveBundle(id: number, parentId: number): Promise<ProjectContent> {
+    const bundle = this.config.content.find((item) => item.id === id && item.type === AssetType.Bundle);
+    if (!bundle || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
+      throw new Error('Bundle or target folder not found.');
+    }
+    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === bundle.name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+
+    const moved = { ...bundle, parentId };
+    this.config.content[this.config.content.indexOf(bundle)] = moved;
+    await this.save();
+    return moved;
   }
 
   async renameProject(name: string): Promise<string> {
     const projectName = name.trim();
-    if (!projectName) throw new Error('Project name cannot be empty.');
+    if (!isAssetName(projectName)) throw new Error('Project name must be 1 to 32 printable ASCII characters.');
 
     this.config.name = projectName;
     await this.save();

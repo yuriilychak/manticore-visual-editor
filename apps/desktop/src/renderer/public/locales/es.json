@@ -60,5 +60,14 @@
     "cancel": "Cancelar",
     "create": "Crear carpeta",
     "error": "No se pudo crear la carpeta."
+  },
+  "bundle": {
+    "add": "Añadir paquete",
+    "title": "Nuevo paquete",
+    "name": "Nombre del paquete",
+    "alreadyExists": "Ya existe un elemento con este nombre en este nivel.",
+    "cancel": "Cancelar",
+    "create": "Crear paquete",
+    "error": "No se pudo crear el paquete."
   }
 }

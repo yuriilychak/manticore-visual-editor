@@ -2,11 +2,16 @@ import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'ele
 import { readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { isAssetName } from './project/content';
 import {
   createProject,
+  createProjectBundle,
   createProjectFolder,
   getProjectInfo,
+  moveProjectBundle,
+  moveProjectFolder,
   renameProject,
+  renameProjectBundle,
   renameProjectFolder
 } from './project/project';
 import type { ProjectInfo } from './types';
@@ -113,7 +118,7 @@ ipcMain.handle('project:select-location', async (event) => {
 });
 ipcMain.handle('project:create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
   const projectName = name.trim();
-  if (!projectName || projectName === '.' || projectName === '..' || /[\\/]/.test(projectName))
+  if (!isAssetName(projectName) || projectName === '.' || projectName === '..' || /[\\/]/.test(projectName))
     throw new Error('Project name is invalid.');
 
   const projectPath = path.resolve(parentPath, projectName);
@@ -130,7 +135,7 @@ ipcMain.handle('project:open', async (event) => {
     ? await dialog.showOpenDialog(parentWindow, options)
     : await dialog.showOpenDialog(options);
   const projectPath = result.canceled ? '' : (result.filePaths[0] ?? '');
-  if (!projectPath) return { bundles: new Map(), folders: [], name: '', path: '' };
+  if (!projectPath) return { content: [], folders: [], name: '', path: '', version: 0 };
 
   try {
     const project = await getProjectInfo(projectPath);
@@ -142,14 +147,14 @@ ipcMain.handle('project:open', async (event) => {
 });
 ipcMain.handle('project:restore-last-opened', () => restoreLastOpenedProject());
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
-ipcMain.handle('project:create-folder', (_event, projectPath: string, name: string) =>
-  createProjectFolder(projectPath, name)
-);
-ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) =>
-  renameProjectFolder(projectPath, id, name)
-);
+ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number, name: string) => renameProjectBundle(projectPath, id, name));
+ipcMain.handle('project:create-bundle', (_event, projectPath: string, parentPath: string, name: string) => createProjectBundle(projectPath, parentPath, name));
+ipcMain.handle('project:move-bundle', (_event, projectPath: string, id: number, targetPath: string) => moveProjectBundle(projectPath, id, targetPath));
+ipcMain.handle('project:create-folder', (_event, projectPath: string, name: string) => createProjectFolder(projectPath, name));
+ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) => renameProjectFolder(projectPath, id, name));
+ipcMain.handle('project:move-folder', (_event, projectPath: string, id: number, targetPath: string) => moveProjectFolder(projectPath, id, targetPath));
 ipcMain.handle('project:can-create', async (_event, { name, parentPath }: { name: string; parentPath: string }) => {
-  if (!name || name === '.' || name === '..' || /[\\/]/.test(name))
+  if (!isAssetName(name) || name === '.' || name === '..' || /[\\/]/.test(name))
     return { isAvailable: false, reason: 'invalid-name' };
   const projectPath = path.resolve(parentPath, name);
   if (path.dirname(projectPath) !== path.resolve(parentPath)) return { isAvailable: false, reason: 'invalid-name' };

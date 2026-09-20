@@ -3,8 +3,7 @@ import type { FC } from 'react';
 import { Alert, Snackbar } from '@mui/material';
 
 import { AppShell } from './app-shell';
-import { NewFolderDialog } from './new-folder-dialog';
-import { NewProjectDialog } from './new-project-dialog';
+import { NewContentDialog } from './new-content-dialog';
 import { ProjectStructureContext } from './ProjectStructureContext';
 import { Renderer } from './renderer';
 import { useAppContainer } from './useAppContainer';
@@ -14,18 +13,12 @@ const AppContainer: FC = () => {
     controls,
     disabledItemIds,
     handleAction,
-    handleCloseNewFolderDialog,
-    handleCloseNewProjectDialog,
+    handleCloseNewContentDialog,
     handleCloseNotification,
-    handleCreateFolder,
-    handleCreateProject,
-    handleSelectProjectLocation,
-    handleValidateProject,
-    isNewFolderDialogOpen,
-    isNewProjectDialogOpen,
+    isNewContentDialogOpen,
+    newContentStrategy,
     notification,
     projectStructure,
-    folderNamesAtNewFolderLevel,
     selectedActionIds
   } = useAppContainer();
 
@@ -41,18 +34,10 @@ const AppContainer: FC = () => {
           <Renderer onAction={handleAction} />
         </ProjectStructureContext.Provider>
       </AppShell>
-      <NewProjectDialog
-        onClose={handleCloseNewProjectDialog}
-        onCreate={handleCreateProject}
-        onSelectLocation={handleSelectProjectLocation}
-        onValidate={handleValidateProject}
-        open={isNewProjectDialogOpen}
-      />
-      <NewFolderDialog
-        existingFolderNames={folderNamesAtNewFolderLevel}
-        onClose={handleCloseNewFolderDialog}
-        onCreate={handleCreateFolder}
-        open={isNewFolderDialogOpen}
+      <NewContentDialog
+        onClose={handleCloseNewContentDialog}
+        open={isNewContentDialogOpen}
+        strategy={newContentStrategy}
       />
       <Snackbar
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}

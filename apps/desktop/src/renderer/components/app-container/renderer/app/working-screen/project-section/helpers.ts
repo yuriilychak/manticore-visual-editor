@@ -1,5 +1,8 @@
 import type { FolderConfig } from '../../../../../../../types';
 
+export const PROJECT_FOLDER_DRAG_TYPE = 'application/x-manticore-project-folder';
+export const PROJECT_BUNDLE_DRAG_TYPE = 'application/x-manticore-project-bundle';
+
 export type FolderTreeNode = {
   children: FolderTreeNode[];
   folder?: FolderConfig;
