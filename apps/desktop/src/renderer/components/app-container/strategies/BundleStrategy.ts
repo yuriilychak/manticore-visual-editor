@@ -28,6 +28,15 @@ export class BundleStrategy extends ContentStrategyBase {
   }
 
   async handle(action: string, id: number, data?: unknown) {
+    switch (action) {
+      case 'add-folder':
+        return { action: 'open-new-content', assetType: AssetType.BundleFolder, parentId: id } as const;
+      case 'add-atlas':
+        return { action: 'open-new-content', assetType: AssetType.TextureAtlas, parentId: id } as const;
+      default:
+        break;
+    }
+
     if (typeof data !== 'string') return;
 
     const project = this.projectProxy.project;

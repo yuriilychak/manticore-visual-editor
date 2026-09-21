@@ -6,7 +6,9 @@ import { isAssetName } from './project/content';
 import {
   createProject,
   createProjectBundle,
+  createProjectBundleFolder,
   createProjectFolder,
+  createProjectTextureAtlas,
   getProjectInfo,
   moveProjectBundle,
   moveProjectFolder,
@@ -149,6 +151,8 @@ ipcMain.handle('project:restore-last-opened', () => restoreLastOpenedProject());
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
 ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number, name: string) => renameProjectBundle(projectPath, id, name));
 ipcMain.handle('project:create-bundle', (_event, projectPath: string, parentPath: string, name: string) => createProjectBundle(projectPath, parentPath, name));
+ipcMain.handle('project:create-bundle-folder', (_event, projectPath: string, parentId: number, name: string) => createProjectBundleFolder(projectPath, parentId, name));
+ipcMain.handle('project:create-texture-atlas', (_event, projectPath: string, parentId: number, name: string) => createProjectTextureAtlas(projectPath, parentId, name));
 ipcMain.handle('project:move-bundle', (_event, projectPath: string, id: number, targetPath: string) => moveProjectBundle(projectPath, id, targetPath));
 ipcMain.handle('project:create-folder', (_event, projectPath: string, name: string) => createProjectFolder(projectPath, name));
 ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) => renameProjectFolder(projectPath, id, name));

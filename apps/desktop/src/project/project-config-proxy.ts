@@ -76,6 +76,14 @@ export class ProjectConfigProxy {
     return bundle;
   }
 
+  async addBundleFolder(name: string, parentId: number): Promise<ProjectContent> {
+    return this.addBundleContent(name, parentId, AssetType.BundleFolder);
+  }
+
+  async addTextureAtlas(name: string, parentId: number): Promise<ProjectContent> {
+    return this.addBundleContent(name, parentId, AssetType.TextureAtlas);
+  }
+
   async renameFolder(id: number, name: string): Promise<ProjectContent> {
     if (!isAssetName(name)) throw new Error('Folder name must be 1 to 32 printable ASCII characters.');
     const folder = this.config.content.find((item) => item.id === id && item.type === AssetType.ProjectFolder);
@@ -144,6 +152,22 @@ export class ProjectConfigProxy {
     await this.save();
 
     return projectName;
+  }
+
+  private async addBundleContent(name: string, parentId: number, type: AssetType.BundleFolder | AssetType.TextureAtlas): Promise<ProjectContent> {
+    if (!isAssetName(name) || !this.config.content.some((item) => item.id === parentId && (item.type === AssetType.Bundle || item.type === AssetType.BundleFolder))) {
+      throw new Error('Bundle content is invalid.');
+    }
+    if (this.config.content.some((item) => item.parentId === parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+    const id = Math.max(0, ...this.config.content.map((item) => item.id)) + 1;
+    if (id > MAX_U16) throw new Error('The maximum number of assets has been reached.');
+
+    const content = createProjectContent(id, name, parentId, type);
+    this.config.content.push(content);
+    await this.save();
+    return content;
   }
 
   private async save(): Promise<void> {

@@ -69,5 +69,23 @@
     "cancel": "Cancelar",
     "create": "Crear paquete",
     "error": "No se pudo crear el paquete."
+  },
+  "bundleFolder": {
+    "add": "Añadir carpeta",
+    "title": "Nueva carpeta de paquete",
+    "name": "Nombre de la carpeta",
+    "alreadyExists": "Ya existe un elemento con este nombre en este nivel.",
+    "cancel": "Cancelar",
+    "create": "Crear carpeta",
+    "error": "No se pudo crear la carpeta."
+  },
+  "textureAtlas": {
+    "add": "Añadir atlas",
+    "title": "Nuevo atlas de texturas",
+    "name": "Nombre del atlas",
+    "alreadyExists": "Ya existe un elemento con este nombre en este nivel.",
+    "cancel": "Cancelar",
+    "create": "Crear atlas",
+    "error": "No se pudo crear el atlas."
   }
 }

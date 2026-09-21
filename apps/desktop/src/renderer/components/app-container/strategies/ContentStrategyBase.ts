@@ -42,6 +42,13 @@ export abstract class ContentStrategyBase {
     return content.filter((item) => item.parentId === parentId).map((item) => item.name);
   }
 
+  protected getNamesAtParentId(parentId: number) {
+    return this.#proxy.project?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
+  }
+
+  setParentId(parentId: number) {
+    void parentId;
+  }
   setParentPath(parentPath: string) {
     void parentPath;
   }

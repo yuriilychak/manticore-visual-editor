@@ -138,4 +138,28 @@ describe('ProjectConfigProxy', () => {
       'A sibling with this name already exists.'
     );
   });
+
+  test('adds bundle folders and texture atlases beneath a bundle', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    await mkdir(path.join(projectPath, 'src'));
+    await writeFile(
+      path.join(projectPath, 'src', 'config.json'),
+      JSON.stringify({
+        content: [
+          { data: null, id: 1, name: '', parentId: 0, type: 1, version: 0 },
+          { data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }
+        ],
+        name: 'Project',
+        version: 0
+      })
+    );
+    const projectConfig = await ProjectConfigProxy.load(projectPath);
+
+    await expect(projectConfig.addBundleFolder('Sprites', 2)).resolves.toEqual({
+      data: null, id: 3, name: 'Sprites', parentId: 2, type: 3, version: 0
+    });
+    await expect(projectConfig.addTextureAtlas('Characters', 3)).resolves.toEqual({
+      data: null, id: 4, name: 'Characters', parentId: 3, type: 5, version: 0
+    });
+  });
 });

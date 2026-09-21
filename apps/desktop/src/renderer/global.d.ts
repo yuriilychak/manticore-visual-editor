@@ -17,6 +17,7 @@ declare global {
       createWindow: (language: string) => Promise<void>;
       createProjectFolder: (projectPath: string, name: string) => Promise<FolderConfig>;
       createProjectBundle: (projectPath: string, parentPath: string, name: string) => Promise<ProjectContent>;
+      createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
       moveProjectFolder?: (projectPath: string, id: number, targetPath: string) => Promise<FolderConfig[]>;
       moveProjectBundle?: (projectPath: string, id: number, targetPath: string) => Promise<ProjectContent>;
@@ -24,6 +25,7 @@ declare global {
       renameProjectBundle?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       renameProjectFolder?: (projectPath: string, id: number, name: string) => Promise<FolderConfig>;
       restoreLastOpenedProject: () => Promise<RestoredProject>;
+      createProjectTextureAtlas?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       createProject: (options: NewProjectOptions) => Promise<ProjectInfo>;
       canCreateProject: (options: NewProjectOptions) => Promise<ProjectCreationValidation>;
       platform: string;

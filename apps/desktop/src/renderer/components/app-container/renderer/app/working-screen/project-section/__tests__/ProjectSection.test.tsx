@@ -129,7 +129,9 @@ describe('ProjectSection', () => {
     );
 
     expect(screen.getByRole('heading', { name: 'Main bundle' })).toBeInTheDocument();
-    expect(screen.getByTestId('bundle-icon')).toHaveAttribute('src', './icons/bundle.svg');
+    expect(screen.getByTestId('BundleIcon')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'bundleFolder.add' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'textureAtlas.add' })).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'missing' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
       'Initial project',
@@ -157,6 +159,29 @@ describe('ProjectSection', () => {
     await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
 
     expect(onAction).toHaveBeenCalledWith('rename', AssetType.Bundle, 2, 'Main bundle');
+  });
+
+  test('renders bundle folders and texture atlases beneath an expandable bundle', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: ['2'], name: '' }],
+      [
+        { data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { data: null, id: 3, name: 'Sprites', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+        { data: null, id: 4, name: 'Characters', parentId: 2, type: AssetType.TextureAtlas, version: 0 }
+      ]
+    );
+
+    await user.click(screen.getByRole('button', { name: 'default_bundle bundle' }));
+
+    expect(screen.getByRole('heading', { name: 'Sprites' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Characters' })).toBeInTheDocument();
+    expect(screen.getByTestId('AtlasIcon')).toBeInTheDocument();
   });
 
   test('dispatches the add-folder action', async () => {

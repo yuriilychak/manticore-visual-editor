@@ -9,7 +9,7 @@ import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import { SELECTED_ACTION_IDS_BY_LANGUAGE, UNAVAILABLE_WINDOW_CONTROLS } from './constants';
 import { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy } from './strategies';
-import { BundleStrategy, ProjectFolderStrategy, ProjectStrategy } from './strategies';
+import { BundleFolderStrategy, BundleStrategy, ProjectFolderStrategy, ProjectStrategy, TextureAtlasStrategy, type OpenNewContentResult } from './strategies';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
 
 export const useAppContainer = () => {
@@ -79,14 +79,19 @@ export const useAppContainer = () => {
   const contentStrategies = useMemo<Partial<Record<AssetType, ContentStrategy>>>(
     () => ({
       [AssetType.Bundle]: new BundleStrategy(projectProxy),
+      [AssetType.BundleFolder]: new BundleFolderStrategy(projectProxy),
       [AssetType.Project]: new ProjectStrategy(projectProxy),
-      [AssetType.ProjectFolder]: new ProjectFolderStrategy(projectProxy)
+      [AssetType.ProjectFolder]: new ProjectFolderStrategy(projectProxy),
+      [AssetType.TextureAtlas]: new TextureAtlasStrategy(projectProxy)
     }),
     [projectProxy]
   );
-  const openNewContent = useCallback((assetType: AssetType.Bundle | AssetType.ProjectFolder, parentPath: string) => {
-    contentStrategies[assetType]?.setParentPath(parentPath);
-    setNewContentAssetType(assetType);
+  const openNewContent = useCallback((result: OpenNewContentResult) => {
+    const strategy = contentStrategies[result.assetType];
+    if ('parentPath' in result) strategy?.setParentPath(result.parentPath);
+    else strategy?.setParentId(result.parentId);
+
+    setNewContentAssetType(result.assetType);
     setNewContentDialogOpen(true);
   }, [contentStrategies]);
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
@@ -96,7 +101,7 @@ export const useAppContainer = () => {
 
       switch (result.action) {
         case 'open-new-content':
-          openNewContent(result.assetType, result.parentPath);
+          openNewContent(result);
           break;
         case 'show-notification':
           setNotification(result.message);

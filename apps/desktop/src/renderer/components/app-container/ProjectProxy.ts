@@ -18,7 +18,11 @@ export class ProjectProxy {
   }
 
   addBundle(bundle: ProjectContent) {
-    this.#update((project) => ({ ...project, content: project.content?.concat(bundle) }));
+    this.addContent(bundle);
+  }
+
+  addContent(content: ProjectContent) {
+    this.#update((project) => ({ ...project, content: project.content?.concat(content) }));
   }
 
   addFolder(folder: FolderConfig) {
