@@ -80,6 +80,14 @@ export async function createProjectTextureAtlas(projectPath: string, parentId: n
   return (await ProjectConfigProxy.load(projectPath)).addTextureAtlas(name, parentId);
 }
 
+export async function renameProjectBundleFolder(projectPath: string, id: number, name: string): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).renameBundleFolder(id, name);
+}
+
+export async function renameProjectTextureAtlas(projectPath: string, id: number, name: string): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).renameTextureAtlas(id, name);
+}
+
 async function getFolderByPath(projectPath: string, folderPath: string): Promise<FolderConfig | undefined> {
   return (await getProjectInfo(projectPath)).folders.find((folder) => folder.name === folderPath);
 }

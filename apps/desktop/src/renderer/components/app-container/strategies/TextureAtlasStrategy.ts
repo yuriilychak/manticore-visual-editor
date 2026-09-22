@@ -4,7 +4,7 @@ import type { NewContentField, NewContentValidation, NewContentValues } from '..
 import { ProjectProxy } from '../ProjectProxy';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { notifyUnavailableDesktopApi } from './helpers';
+import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
 
 export class TextureAtlasStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
@@ -25,8 +25,17 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
     this.projectProxy.addContent(await window.manticore.createProjectTextureAtlas(project.path, this.#parentId, name.trim()));
   }
 
-  async handle() {
-    return;
+  async handle(action: string, id: number, data?: unknown) {
+    if (action !== 'rename' || typeof data !== 'string') return;
+
+    const project = this.projectProxy.project;
+    if (!project || !window.manticore?.renameProjectTextureAtlas) return notifyUnavailableDesktopApi();
+
+    try {
+      this.projectProxy.renameBundle(id, await window.manticore.renameProjectTextureAtlas(project.path, id, data));
+    } catch (reason) {
+      return createErrorResult(reason, 'Could not rename the texture atlas.');
+    }
   }
 
   async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {

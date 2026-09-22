@@ -14,7 +14,9 @@ import {
   moveProjectFolder,
   renameProject,
   renameProjectBundle,
-  renameProjectFolder
+  renameProjectBundleFolder,
+  renameProjectFolder,
+  renameProjectTextureAtlas
 } from './project/project';
 import type { ProjectInfo } from './types';
 
@@ -153,6 +155,8 @@ ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number
 ipcMain.handle('project:create-bundle', (_event, projectPath: string, parentPath: string, name: string) => createProjectBundle(projectPath, parentPath, name));
 ipcMain.handle('project:create-bundle-folder', (_event, projectPath: string, parentId: number, name: string) => createProjectBundleFolder(projectPath, parentId, name));
 ipcMain.handle('project:create-texture-atlas', (_event, projectPath: string, parentId: number, name: string) => createProjectTextureAtlas(projectPath, parentId, name));
+ipcMain.handle('project:rename-bundle-folder', (_event, projectPath: string, id: number, name: string) => renameProjectBundleFolder(projectPath, id, name));
+ipcMain.handle('project:rename-texture-atlas', (_event, projectPath: string, id: number, name: string) => renameProjectTextureAtlas(projectPath, id, name));
 ipcMain.handle('project:move-bundle', (_event, projectPath: string, id: number, targetPath: string) => moveProjectBundle(projectPath, id, targetPath));
 ipcMain.handle('project:create-folder', (_event, projectPath: string, name: string) => createProjectFolder(projectPath, name));
 ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) => renameProjectFolder(projectPath, id, name));

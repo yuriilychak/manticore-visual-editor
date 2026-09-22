@@ -162,4 +162,28 @@ describe('ProjectConfigProxy', () => {
       data: null, id: 4, name: 'Characters', parentId: 3, type: 5, version: 0
     });
   });
+
+  test('renames bundle folders and texture atlases while enforcing sibling names', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    await mkdir(path.join(projectPath, 'src'));
+    await writeFile(
+      path.join(projectPath, 'src', 'config.json'),
+      JSON.stringify({
+        content: [
+          { data: null, id: 1, name: '', parentId: 0, type: 1, version: 0 },
+          { data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 },
+          { data: null, id: 3, name: 'Sprites', parentId: 2, type: 3, version: 0 },
+          { data: null, id: 4, name: 'Characters', parentId: 3, type: 5, version: 0 },
+          { data: null, id: 5, name: 'UI', parentId: 3, type: 5, version: 0 }
+        ],
+        name: 'Project',
+        version: 0
+      })
+    );
+    const projectConfig = await ProjectConfigProxy.load(projectPath);
+
+    await expect(projectConfig.renameBundleFolder(3, 'Images')).resolves.toMatchObject({ id: 3, name: 'Images' });
+    await expect(projectConfig.renameTextureAtlas(4, 'UI')).rejects.toThrow('A sibling with this name already exists.');
+    await expect(projectConfig.renameTextureAtlas(4, 'Characters HD')).resolves.toMatchObject({ id: 4, name: 'Characters HD' });
+  });
 });

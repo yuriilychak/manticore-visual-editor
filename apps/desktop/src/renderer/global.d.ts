@@ -23,7 +23,9 @@ declare global {
       moveProjectBundle?: (projectPath: string, id: number, targetPath: string) => Promise<ProjectContent>;
       renameProject?: (projectPath: string, name: string) => Promise<string>;
       renameProjectBundle?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
+      renameProjectBundleFolder?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       renameProjectFolder?: (projectPath: string, id: number, name: string) => Promise<FolderConfig>;
+      renameProjectTextureAtlas?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       restoreLastOpenedProject: () => Promise<RestoredProject>;
       createProjectTextureAtlas?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       createProject: (options: NewProjectOptions) => Promise<ProjectInfo>;

@@ -111,6 +111,14 @@ export class ProjectConfigProxy {
     return renamed;
   }
 
+  async renameBundleFolder(id: number, name: string): Promise<ProjectContent> {
+    return this.renameBundleContent(id, name, AssetType.BundleFolder, 'Bundle folder');
+  }
+
+  async renameTextureAtlas(id: number, name: string): Promise<ProjectContent> {
+    return this.renameBundleContent(id, name, AssetType.TextureAtlas, 'Texture atlas');
+  }
+
   async moveFolder(id: number, parentId: number): Promise<ProjectContent> {
     const folder = this.config.content.find((item) => item.id === id && item.type === AssetType.ProjectFolder);
     if (!folder || folder.parentId === 0 || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
@@ -168,6 +176,25 @@ export class ProjectConfigProxy {
     this.config.content.push(content);
     await this.save();
     return content;
+  }
+
+  private async renameBundleContent(
+    id: number,
+    name: string,
+    type: AssetType.BundleFolder | AssetType.TextureAtlas,
+    label: string
+  ): Promise<ProjectContent> {
+    if (!isAssetName(name)) throw new Error(`${label} name must be 1 to 32 printable ASCII characters.`);
+    const content = this.config.content.find((item) => item.id === id && item.type === type);
+    if (!content) throw new Error(`${label} not found.`);
+    if (this.config.content.some((item) => item.id !== id && item.parentId === content.parentId && item.name === name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+
+    const renamed = { ...content, name };
+    this.config.content[this.config.content.indexOf(content)] = renamed;
+    await this.save();
+    return renamed;
   }
 
   private async save(): Promise<void> {

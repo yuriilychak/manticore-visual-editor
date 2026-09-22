@@ -8,6 +8,8 @@ contextBridge.exposeInMainWorld('manticore', {
   createProjectBundle: (projectPath: string, parentPath: string, name: string) => ipcRenderer.invoke('project:create-bundle', projectPath, parentPath, name),
   createProjectBundleFolder: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-bundle-folder', projectPath, parentId, name),
   createProjectTextureAtlas: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-texture-atlas', projectPath, parentId, name),
+  renameProjectBundleFolder: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-bundle-folder', projectPath, id, name),
+  renameProjectTextureAtlas: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-texture-atlas', projectPath, id, name),
   moveProjectBundle: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-bundle', projectPath, id, targetPath),
   renameProjectFolder: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-folder', projectPath, id, name),
   moveProjectFolder: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-folder', projectPath, id, targetPath),

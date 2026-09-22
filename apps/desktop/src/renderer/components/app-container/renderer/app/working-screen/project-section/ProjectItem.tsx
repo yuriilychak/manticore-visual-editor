@@ -138,7 +138,7 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, expanded = false, id, 
       onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
-      width={config.dropTargets ? '100%' : undefined}
+      width="100%"
     >
       <RenameableItem
         actions={config.actions}

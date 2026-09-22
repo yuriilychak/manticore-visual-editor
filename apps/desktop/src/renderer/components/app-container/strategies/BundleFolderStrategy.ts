@@ -4,7 +4,7 @@ import type { NewContentField, NewContentValidation, NewContentValues } from '..
 import { ProjectProxy } from '../ProjectProxy';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { notifyUnavailableDesktopApi } from './helpers';
+import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
 
 export class BundleFolderStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
@@ -25,14 +25,25 @@ export class BundleFolderStrategy extends ContentStrategyBase {
     this.projectProxy.addContent(await window.manticore.createProjectBundleFolder(project.path, this.#parentId, name.trim()));
   }
 
-  async handle(action: string, id: number) {
+  async handle(action: string, id: number, data?: unknown) {
     switch (action) {
       case 'add-folder':
         return { action: 'open-new-content', assetType: AssetType.BundleFolder, parentId: id } as const;
       case 'add-atlas':
         return { action: 'open-new-content', assetType: AssetType.TextureAtlas, parentId: id } as const;
       default:
-        return;
+        break;
+    }
+
+    if (action !== 'rename' || typeof data !== 'string') return;
+
+    const project = this.projectProxy.project;
+    if (!project || !window.manticore?.renameProjectBundleFolder) return notifyUnavailableDesktopApi();
+
+    try {
+      this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundleFolder(project.path, id, data));
+    } catch (reason) {
+      return createErrorResult(reason, 'Could not rename the bundle folder.');
     }
   }
 
