@@ -210,6 +210,36 @@ describe('ProjectSection', () => {
     expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.Project, 0);
   });
 
+  test('dispatches the import action from the project root', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(onAction);
+
+    await user.click(screen.getByRole('button', { name: 'common.import' }));
+
+    expect(onAction).toHaveBeenCalledWith('import', AssetType.Project, 0);
+  });
+
+  test('dispatches the import action from a bundle', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: ['2'], name: '' }],
+      [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }]
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'common.import' })[1]);
+
+    expect(onAction).toHaveBeenCalledWith('import', AssetType.Bundle, 2);
+  });
+
   test('dispatches the full parent path when adding a nested folder', async () => {
     const user = userEvent.setup();
     const onAction = jest

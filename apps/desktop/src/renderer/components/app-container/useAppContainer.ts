@@ -6,10 +6,11 @@ import { AssetType, type ProjectActionHandler } from '../../../types';
 import type { ApplicationAction, ProjectInfo, WindowControls } from '../../types';
 
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
-import { SELECTED_ACTION_IDS_BY_LANGUAGE, UNAVAILABLE_WINDOW_CONTROLS } from './constants';
+import { ContentAction } from './common';
+import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE, UNAVAILABLE_WINDOW_CONTROLS } from './constants';
 import { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy } from './strategies';
-import { BundleFolderStrategy, BundleStrategy, ProjectFolderStrategy, ProjectStrategy, TextureAtlasStrategy, type OpenNewContentResult } from './strategies';
+import { CONTENT_STRATEGY_CONSTRUCTORS, type OpenNewContentData } from './strategies';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
 
 export const useAppContainer = () => {
@@ -17,7 +18,7 @@ export const useAppContainer = () => {
   const disabledItemIds: readonly MenubarItemId[] = [];
   const [isNewContentDialogOpen, setNewContentDialogOpen] = useState(false);
   const [newContentAssetType, setNewContentAssetType] = useState<AssetType>(AssetType.ProjectFolder);
-  const [notification, setNotification] = useState('');
+  const [notificationError, setNotificationError] = useState(NotificationError.None);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const projectProxy = useMemo(() => new ProjectProxy(setProject), []);
   const controls = useMemo<WindowControls>(
@@ -36,9 +37,9 @@ export const useAppContainer = () => {
       .restoreLastOpenedProject()
       .then(({ error, project }) => {
         if (project) projectProxy.replaceProject(project);
-        else if (error) setNotification(error);
+        else if (error) setNotificationError(NotificationError.RestoreProject);
       })
-      .catch(() => setNotification('The previously opened project could not be restored.'));
+      .catch(() => setNotificationError(NotificationError.RestoreProject));
   }, [projectProxy]);
 
   const handleAction = useCallback(
@@ -60,9 +61,7 @@ export const useAppContainer = () => {
           void window.manticore
             .openProject()
             .then(projectProxy.replaceProject.bind(projectProxy))
-            .catch((reason: unknown) =>
-              setNotification(reason instanceof Error ? reason.message : 'Could not open the project.')
-            );
+            .catch(() => setNotificationError(NotificationError.OpenProject));
           break;
         case 'set-language-en':
           void i18n.changeLanguage('en');
@@ -76,38 +75,55 @@ export const useAppContainer = () => {
     },
     [i18n, projectProxy]
   );
-  const contentStrategies = useMemo<Partial<Record<AssetType, ContentStrategy>>>(
-    () => ({
-      [AssetType.Bundle]: new BundleStrategy(projectProxy),
-      [AssetType.BundleFolder]: new BundleFolderStrategy(projectProxy),
-      [AssetType.Project]: new ProjectStrategy(projectProxy),
-      [AssetType.ProjectFolder]: new ProjectFolderStrategy(projectProxy),
-      [AssetType.TextureAtlas]: new TextureAtlasStrategy(projectProxy)
-    }),
+  const contentStrategies = useMemo<ReadonlyMap<AssetType, ContentStrategy>>(
+    () => CONTENT_STRATEGY_CONSTRUCTORS.reduce<Map<AssetType, ContentStrategy>>(
+      (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
+      new Map()
+    ),
     [projectProxy]
   );
-  const openNewContent = useCallback((result: OpenNewContentResult) => {
-    const strategy = contentStrategies[result.assetType];
-    if ('parentPath' in result) strategy?.setParentPath(result.parentPath);
-    else strategy?.setParentId(result.parentId);
 
-    setNewContentAssetType(result.assetType);
-    setNewContentDialogOpen(true);
+  const openNewContent = useCallback(({ assetType, fields }: OpenNewContentData) => {
+    const strategy = contentStrategies.get(assetType);
+    if (!strategy) {
+      setNotificationError(NotificationError.ContentTypeUnavailable);
+      return;
+    }
+
+    try {
+      strategy.setFields(fields);
+      setNewContentAssetType(assetType);
+      setNewContentDialogOpen(true);
+    } catch {
+      setNotificationError(NotificationError.ContentConfiguration);
+    }
   }, [contentStrategies]);
+
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
-      const result = await contentStrategies[assetType]?.handle(action, id, data);
+      const contentAction = ContentAction.create(id, action, data);
+      const result = await (async () => {
+        try {
+          return await contentStrategies.get(assetType)?.handle(contentAction);
+        } finally {
+          contentAction.clean();
+        }
+      })();
       if (!result) return;
 
-      switch (result.action) {
-        case 'open-new-content':
-          openNewContent(result);
-          break;
-        case 'show-notification':
-          setNotification(result.message);
-          break;
-        default:
-          break;
+      try {
+        switch (result.action) {
+          case 'open-new-content':
+            openNewContent(result.data);
+            break;
+          case 'show-notification':
+            setNotificationError(result.data.error);
+            break;
+          default:
+            break;
+        }
+      } finally {
+        result.clean();
       }
     },
     [contentStrategies, openNewContent]
@@ -122,11 +138,13 @@ export const useAppContainer = () => {
     }),
     [handleWorkingScreenAction, project]
   );
+
+  const newContentStrategy = contentStrategies.get(newContentAssetType)!;
   const handleCloseNewContentDialog = () => {
     setNewContentDialogOpen(false);
-    contentStrategies[newContentAssetType]?.setParentPath('');
+    newContentStrategy.setField('parentPath', '');
   };
-  const handleCloseNotification = () => setNotification('');
+  const handleCloseNotification = () => setNotificationError(NotificationError.None);
 
   return {
     controls,
@@ -135,9 +153,9 @@ export const useAppContainer = () => {
     handleCloseNewContentDialog,
     handleCloseNotification,
     isNewContentDialogOpen,
-    notification,
+    notificationError,
     projectStructure,
-    newContentStrategy: contentStrategies[newContentAssetType]!,
+    newContentStrategy,
     selectedActionIds
   };
 };

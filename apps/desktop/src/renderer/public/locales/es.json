@@ -35,6 +35,18 @@
   },
   "common": {
     "cancelRename": "Cancelar cambio de nombre",
+    "contentConfigurationError": "No se pudo configurar el contenido solicitado.",
+    "contentTypeUnavailable": "El tipo de contenido solicitado no está disponible.",
+    "import": "Importar",
+    "moveBundleError": "No se pudo mover el paquete.",
+    "moveFolderError": "No se pudo mover la carpeta.",
+    "openProjectError": "No se pudo abrir el proyecto.",
+    "renameBundleError": "No se pudo cambiar el nombre del paquete.",
+    "renameBundleFolderError": "No se pudo cambiar el nombre de la carpeta del paquete.",
+    "renameFolderError": "No se pudo cambiar el nombre de la carpeta.",
+    "renameProjectError": "No se pudo cambiar el nombre del proyecto.",
+    "renameTextureAtlasError": "No se pudo cambiar el nombre del atlas de texturas.",
+    "restoreProjectError": "No se pudo restaurar el proyecto abierto anteriormente.",
     "renameName": "Nombre",
     "rename": "Cambiar nombre",
     "saveRename": "Guardar nombre del proyecto"

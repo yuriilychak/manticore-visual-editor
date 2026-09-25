@@ -4,3 +4,4 @@ export { default as AtlasOpenIcon } from './AtlasOpenIcon';
 export { default as BundleAddIcon } from './BundleAddIcon';
 export { default as BundleIcon } from './BundleIcon';
 export { default as BundleOpenIcon } from './BundleOpenIcon';
+export { default as ImportIcon } from './ImportIcon';

@@ -1,11 +1,11 @@
-import type { FC } from 'react';
+import { memo, type FC } from 'react';
 
 import FolderOpenRounded from '@mui/icons-material/FolderOpenRounded';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, TextField, Tooltip } from '@mui/material';
 
 import { ASSET_TYPE_LOCALE_KEY } from '../../../../types';
 
-import type { NewContentStrategy } from './types';
+import type { NewContentStrategy } from '../types';
 import { useNewContentDialog } from './useNewContentDialog';
 
 type NewContentDialogProps = {
@@ -78,4 +78,4 @@ const NewContentDialog: FC<NewContentDialogProps> = ({ onClose, open, strategy }
   );
 };
 
-export default NewContentDialog;
+export default memo(NewContentDialog);

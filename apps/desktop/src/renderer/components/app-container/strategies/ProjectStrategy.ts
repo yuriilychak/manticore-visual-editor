@@ -1,6 +1,8 @@
 import { AssetType } from '../../../../types';
 
-import type { NewContentField, NewContentValidation, NewContentValues } from '../new-content-dialog/types';
+import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
+import { NotificationError } from '../constants';
+import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
@@ -29,12 +31,12 @@ export class ProjectStrategy extends ContentStrategyBase {
     this.projectProxy.replaceProject(await window.manticore.createProject({ name: name.trim(), parentPath: location }));
   }
 
-  async handle(action: string, _id: number, data?: unknown) {
+  async handle({ action, data, id }: ContentAction) {
     switch (action) {
       case 'add-folder':
-        return { action: 'open-new-content', assetType: AssetType.ProjectFolder, parentPath: '' } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: '' }));
       case 'add-bundle':
-        return { action: 'open-new-content', assetType: AssetType.Bundle, parentPath: '' } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: '' }));
       case 'rename':
         if (typeof data !== 'string') return;
 
@@ -44,8 +46,8 @@ export class ProjectStrategy extends ContentStrategyBase {
 
           try {
             this.projectProxy.renameProject(await window.manticore.renameProject(project.path, data));
-          } catch (reason) {
-            return createErrorResult(reason, 'Could not rename the project.');
+          } catch {
+            return createErrorResult(id, NotificationError.RenameProject);
           }
           return;
         }
@@ -55,11 +57,11 @@ export class ProjectStrategy extends ContentStrategyBase {
   }
 
   async validate({ location = '', name = '' }: NewContentValues): Promise<NewContentValidation> {
-    if (!name.trim() || !location) return { fieldKey: '', isValid: false, reason: '' };
+    if (!name.trim() || !location) return new NewContentValidation();
 
-    if (!window.manticore?.canCreateProject) return { fieldKey: '', isValid: false, reason: 'invalid-name' };
+    if (!window.manticore?.canCreateProject) return new NewContentValidation('', false, 'invalid-name');
 
     const validation = await window.manticore.canCreateProject({ name: name.trim(), parentPath: location });
-    return { fieldKey: '', isValid: validation.isAvailable, reason: validation.reason ?? '' };
+    return new NewContentValidation('', validation.isAvailable, validation.reason ?? '');
   }
 }

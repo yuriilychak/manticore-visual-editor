@@ -1,6 +1,8 @@
 import { AssetType } from '../../../../types';
 
-import type { NewContentField, NewContentValidation, NewContentValues } from '../new-content-dialog/types';
+import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
+import { NotificationError } from '../constants';
+import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
@@ -8,29 +10,24 @@ import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
 
 export class BundleFolderStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
-  #parentId = 0;
 
   constructor(projectProxy: ProjectProxy) {
     super(projectProxy, AssetType.BundleFolder);
-  }
-
-  setParentId(parentId: number) {
-    this.#parentId = parentId;
   }
 
   async create({ name = '' }: NewContentValues) {
     const project = this.projectProxy.project;
     if (!project || !window.manticore?.createProjectBundleFolder) return notifyUnavailableDesktopApi();
 
-    this.projectProxy.addContent(await window.manticore.createProjectBundleFolder(project.path, this.#parentId, name.trim()));
+    this.projectProxy.addContent(await window.manticore.createProjectBundleFolder(project.path, this.getField('parentId', 0), name.trim()));
   }
 
-  async handle(action: string, id: number, data?: unknown) {
+  async handle({ action, data, id }: ContentAction) {
     switch (action) {
       case 'add-folder':
-        return { action: 'open-new-content', assetType: AssetType.BundleFolder, parentId: id } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.BundleFolder, { parentId: id }));
       case 'add-atlas':
-        return { action: 'open-new-content', assetType: AssetType.TextureAtlas, parentId: id } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.TextureAtlas, { parentId: id }));
       default:
         break;
     }
@@ -42,19 +39,19 @@ export class BundleFolderStrategy extends ContentStrategyBase {
 
     try {
       this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundleFolder(project.path, id, data));
-    } catch (reason) {
-      return createErrorResult(reason, 'Could not rename the bundle folder.');
+    } catch {
+      return createErrorResult(id, NotificationError.RenameBundleFolder);
     }
   }
 
   async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {
     const trimmedName = name.trim();
-    const hasDuplicateName = this.getNamesAtParentId(this.#parentId).includes(trimmedName);
+    const hasDuplicateName = this.getNamesAtParentId(this.getField('parentId', 0)).includes(trimmedName);
 
-    return {
-      fieldKey: hasDuplicateName ? 'name' : '',
-      isValid: Boolean(trimmedName) && !hasDuplicateName,
-      reason: hasDuplicateName ? 'alreadyExists' : ''
-    };
+    return new NewContentValidation(
+      hasDuplicateName ? 'name' : '',
+      Boolean(trimmedName) && !hasDuplicateName,
+      hasDuplicateName ? 'alreadyExists' : ''
+    );
   }
 }

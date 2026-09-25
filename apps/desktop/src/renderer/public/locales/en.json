@@ -35,6 +35,18 @@
   },
   "common": {
     "cancelRename": "Cancel renaming",
+    "contentConfigurationError": "Could not configure the requested content.",
+    "contentTypeUnavailable": "The requested content type is unavailable.",
+    "import": "Import",
+    "moveBundleError": "Could not move the bundle.",
+    "moveFolderError": "Could not move the folder.",
+    "openProjectError": "Could not open the project.",
+    "renameBundleError": "Could not rename the bundle.",
+    "renameBundleFolderError": "Could not rename the bundle folder.",
+    "renameFolderError": "Could not rename the folder.",
+    "renameProjectError": "Could not rename the project.",
+    "renameTextureAtlasError": "Could not rename the texture atlas.",
+    "restoreProjectError": "The previously opened project could not be restored.",
     "renameName": "Name",
     "rename": "Rename",
     "saveRename": "Save project name"

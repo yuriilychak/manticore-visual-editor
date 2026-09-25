@@ -1,9 +1,8 @@
 import type { FC } from 'react';
 
-import { Alert, Snackbar } from '@mui/material';
-
 import { AppShell } from './app-shell';
 import { NewContentDialog } from './new-content-dialog';
+import NotificationSnackbar from './NotificationSnackbar';
 import { ProjectStructureContext } from './ProjectStructureContext';
 import { Renderer } from './renderer';
 import { useAppContainer } from './useAppContainer';
@@ -17,7 +16,7 @@ const AppContainer: FC = () => {
     handleCloseNotification,
     isNewContentDialogOpen,
     newContentStrategy,
-    notification,
+    notificationError,
     projectStructure,
     selectedActionIds
   } = useAppContainer();
@@ -39,16 +38,7 @@ const AppContainer: FC = () => {
         open={isNewContentDialogOpen}
         strategy={newContentStrategy}
       />
-      <Snackbar
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-        autoHideDuration={5000}
-        onClose={handleCloseNotification}
-        open={Boolean(notification)}
-      >
-        <Alert onClose={handleCloseNotification} severity="error" sx={{ width: '100%' }} variant="filled">
-          {notification}
-        </Alert>
-      </Snackbar>
+      <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />
     </>
   );
 };

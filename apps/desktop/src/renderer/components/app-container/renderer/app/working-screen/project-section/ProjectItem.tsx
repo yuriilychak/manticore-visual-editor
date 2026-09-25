@@ -8,7 +8,7 @@ import type { SvgIconComponent } from '@mui/icons-material';
 import { Box } from '@mui/material';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
-import { AtlasAddIcon, AtlasIcon, AtlasOpenIcon, BundleAddIcon, BundleIcon, BundleOpenIcon } from '../../../../../custom-icons';
+import { AtlasAddIcon, AtlasIcon, AtlasOpenIcon, BundleAddIcon, BundleIcon, BundleOpenIcon, ImportIcon } from '../../../../../custom-icons';
 
 import { RenameableItem } from '../renameable-item';
 import type { ActionButtonConfig } from '../renameable-item/types';
@@ -31,9 +31,15 @@ const ADD_CONTENT_ACTIONS: ActionButtonConfig[] = [
   { action: 'add-bundle', tooltipLocale: 'bundle.add', Icon: BundleAddIcon }
 ];
 
+const ROOT_CONTENT_ACTIONS: ActionButtonConfig[] = [
+  ...ADD_CONTENT_ACTIONS,
+  { action: 'import', tooltipLocale: 'common.import', Icon: ImportIcon }
+];
+
 const BUNDLE_CONTENT_ACTIONS: ActionButtonConfig[] = [
   { action: 'add-folder', tooltipLocale: 'bundleFolder.add', Icon: CreateNewFolderIcon },
-  { action: 'add-atlas', tooltipLocale: 'textureAtlas.add', Icon: AtlasAddIcon }
+  { action: 'add-atlas', tooltipLocale: 'textureAtlas.add', Icon: AtlasAddIcon },
+  { action: 'import', tooltipLocale: 'common.import', Icon: ImportIcon }
 ];
 
 const FOLDER_AND_BUNDLE_DROP_TARGETS = {
@@ -43,7 +49,7 @@ const FOLDER_AND_BUNDLE_DROP_TARGETS = {
 
 export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
   [AssetType.Project]: {
-    actions: ADD_CONTENT_ACTIONS,
+    actions: ROOT_CONTENT_ACTIONS,
     dropTargets: FOLDER_AND_BUNDLE_DROP_TARGETS,
     icon: WorkIcon
   },

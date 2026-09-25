@@ -1,31 +1,28 @@
 import type { AssetType } from '../../../../types';
 
-import type { NewContentStrategy } from '../new-content-dialog/types';
+import type { ProjectProxy } from '../ProjectProxy';
+import type { NewContentStrategy } from '../types';
+import { ContentAction, OpenNewContent } from '../common';
+import type { NotificationError } from '../constants';
 
-export type OpenNewContentResult =
-  | {
-      action: 'open-new-content';
-      assetType: AssetType.Bundle | AssetType.ProjectFolder;
-      parentPath: string;
-    }
-  | {
-      action: 'open-new-content';
-      assetType: AssetType.BundleFolder | AssetType.TextureAtlas;
-      parentId: number;
-    };
 
-export type ContentStrategyResult = OpenNewContentResult
-  | {
-      action: 'show-notification';
-      message: string;
-    };
+export type OpenNewContentData =
+  | OpenNewContent<AssetType.Bundle | AssetType.ProjectFolder, { parentPath: string }>
+  | OpenNewContent<AssetType.BundleFolder | AssetType.TextureAtlas, { parentId: number }>;
 
-export type WorkingScreenActionStrategy = {
-  handle: (action: string, id: number, data?: unknown) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
-};
+export type OpenNewContentResult = ContentAction<'open-new-content', OpenNewContentData>;
 
-export type ContentStrategy = NewContentStrategy &
-  WorkingScreenActionStrategy & {
-    setParentId: (parentId: number) => void;
-    setParentPath: (parentPath: string) => void;
-  };
+export type ContentStrategyResult = OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
+
+export interface WorkingScreenActionStrategy {
+  handle: (contentAction: ContentAction) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
+}
+
+export interface ContentStrategy extends NewContentStrategy, WorkingScreenActionStrategy {
+  setField: (key: string, value: unknown) => void;
+  setFields: (fields: Record<string, unknown>) => void;
+}
+
+export type ContentStrategyConstructor = new (projectProxy: ProjectProxy) => ContentStrategy;
+export type ContentStrategyAssetType = AssetType.Bundle | AssetType.BundleFolder | AssetType.Project | AssetType.ProjectFolder | AssetType.TextureAtlas;
+export type ContentStrategyConfig = readonly (readonly [ContentStrategyAssetType, ContentStrategyConstructor])[];

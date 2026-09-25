@@ -1,6 +1,8 @@
 import { AssetType } from '../../../../types';
 
-import type { NewContentField, NewContentValidation, NewContentValues } from '../new-content-dialog/types';
+import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
+import { NotificationError } from '../constants';
+import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
@@ -8,42 +10,38 @@ import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
 
 export class ProjectFolderStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
-  #parentPath = '';
 
   constructor(projectProxy: ProjectProxy) {
     super(projectProxy, AssetType.ProjectFolder);
-  }
-
-  setParentPath(parentPath: string) {
-    this.#parentPath = parentPath;
   }
 
   async create({ name = '' }: NewContentValues) {
     const project = this.projectProxy.project;
     if (!project || !window.manticore?.createProjectFolder) return notifyUnavailableDesktopApi();
 
-    const folderPath = this.#parentPath ? `${this.#parentPath}/${name.trim()}` : name.trim();
+    const parentPath = this.getField('parentPath', '');
+    const folderPath = parentPath ? `${parentPath}/${name.trim()}` : name.trim();
     this.projectProxy.addFolder(await window.manticore.createProjectFolder(project.path, folderPath));
   }
 
-  async handle(action: string, id: number, data?: unknown) {
+  async handle({ action, data, id }: ContentAction) {
     if (typeof data !== 'string') {
       return;
     }
 
     switch (action) {
       case 'add-folder':
-        return { action: 'open-new-content', assetType: AssetType.ProjectFolder, parentPath: data } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: data }));
       case 'add-bundle':
-        return { action: 'open-new-content', assetType: AssetType.Bundle, parentPath: data } as const;
+        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: data }));
       case 'move': {
         const project = this.projectProxy.project;
         if (!project || !window.manticore?.moveProjectFolder) return notifyUnavailableDesktopApi();
 
         try {
           this.projectProxy.moveFolders(await window.manticore.moveProjectFolder(project.path, id, data));
-        } catch (reason) {
-          return createErrorResult(reason, 'Could not move the folder.');
+        } catch {
+          return createErrorResult(id, NotificationError.MoveFolder);
         }
         return;
       }
@@ -53,8 +51,8 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
 
         try {
           this.projectProxy.renameFolder(id, await window.manticore.renameProjectFolder(project.path, id, data));
-        } catch (reason) {
-          return createErrorResult(reason, 'Could not rename the folder.');
+        } catch {
+          return createErrorResult(id, NotificationError.RenameFolder);
         }
         return;
       }
@@ -65,12 +63,12 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
 
   async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {
     const trimmedName = name.trim();
-    const hasDuplicateName = this.getNamesAtProjectPath(this.#parentPath).includes(trimmedName);
+    const hasDuplicateName = this.getNamesAtProjectPath(this.getField('parentPath', '')).includes(trimmedName);
 
-    return {
-      fieldKey: hasDuplicateName ? 'name' : '',
-      isValid: Boolean(trimmedName) && !hasDuplicateName,
-      reason: hasDuplicateName ? 'alreadyExists' : ''
-    };
+    return new NewContentValidation(
+      hasDuplicateName ? 'name' : '',
+      Boolean(trimmedName) && !hasDuplicateName,
+      hasDuplicateName ? 'alreadyExists' : ''
+    );
   }
 }

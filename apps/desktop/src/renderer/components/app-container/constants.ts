@@ -1,8 +1,38 @@
 import type { ApplicationAction, WindowControls } from '../../types';
 
+export enum NotificationError {
+  None = 0,
+  ContentConfiguration,
+  ContentTypeUnavailable,
+  MoveBundle,
+  MoveFolder,
+  OpenProject,
+  RenameBundle,
+  RenameBundleFolder,
+  RenameFolder,
+  RenameProject,
+  RenameTextureAtlas,
+  RestoreProject
+}
+
 export const SELECTED_ACTION_IDS_BY_LANGUAGE: Readonly<Record<string, readonly ApplicationAction[]>> = {
   en: ['set-language-en'],
   es: ['set-language-es']
+};
+
+export const NOTIFICATION_LOCALE_KEYS: Readonly<Record<NotificationError, string>> = {
+  [NotificationError.None]: '',
+  [NotificationError.ContentConfiguration]: 'common.contentConfigurationError',
+  [NotificationError.ContentTypeUnavailable]: 'common.contentTypeUnavailable',
+  [NotificationError.MoveBundle]: 'common.moveBundleError',
+  [NotificationError.MoveFolder]: 'common.moveFolderError',
+  [NotificationError.OpenProject]: 'common.openProjectError',
+  [NotificationError.RenameBundle]: 'common.renameBundleError',
+  [NotificationError.RenameBundleFolder]: 'common.renameBundleFolderError',
+  [NotificationError.RenameFolder]: 'common.renameFolderError',
+  [NotificationError.RenameProject]: 'common.renameProjectError',
+  [NotificationError.RenameTextureAtlas]: 'common.renameTextureAtlasError',
+  [NotificationError.RestoreProject]: 'common.restoreProjectError'
 };
 
 const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');

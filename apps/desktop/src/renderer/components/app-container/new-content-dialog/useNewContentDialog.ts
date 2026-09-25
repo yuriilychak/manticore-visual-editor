@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next';
 
 import { ASSET_TYPE_LOCALE_KEY } from '../../../../types';
 
-import type { NewContentStrategy, NewContentValidation, NewContentValues } from './types';
+import { NewContentValidation } from '../common';
+import type { NewContentStrategy, NewContentValues } from '../types';
 
-const INITIAL_VALIDATION: NewContentValidation = { fieldKey: '', isValid: false, reason: '' };
+const INITIAL_VALIDATION = new NewContentValidation();
 
 export const useNewContentDialog = (strategy: NewContentStrategy, onClose: () => void) => {
   const { t } = useTranslation();
