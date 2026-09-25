@@ -31,9 +31,9 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
 
     switch (action) {
       case 'add-folder':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: data }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: data }));
       case 'add-bundle':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: data }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: data }));
       case 'move': {
         const project = this.projectProxy.project;
         if (!project || !window.manticore?.moveProjectFolder) return notifyUnavailableDesktopApi();

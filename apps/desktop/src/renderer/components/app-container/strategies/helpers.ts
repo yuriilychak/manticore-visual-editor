@@ -5,4 +5,4 @@ import type { ContentStrategyResult } from './types';
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
 export const createErrorResult = (id: number, error: NotificationError): ContentStrategyResult =>
-  ContentAction.create(id, 'show-notification', { error });
+  new ContentAction(id, 'show-notification', { error });

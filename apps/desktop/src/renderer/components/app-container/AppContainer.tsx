@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 
 import { AppShell } from './app-shell';
+import { WINDOW_CONTROLS } from './constants';
 import { NewContentDialog } from './new-content-dialog';
 import NotificationSnackbar from './NotificationSnackbar';
 import { ProjectStructureContext } from './ProjectStructureContext';
@@ -9,7 +10,6 @@ import { useAppContainer } from './useAppContainer';
 
 const AppContainer: FC = () => {
   const {
-    controls,
     disabledItemIds,
     handleAction,
     handleCloseNewContentDialog,
@@ -24,7 +24,7 @@ const AppContainer: FC = () => {
   return (
     <>
       <AppShell
-        controls={controls}
+        controls={WINDOW_CONTROLS}
         disabledItemIds={disabledItemIds}
         onAction={handleAction}
         selectedActionIds={selectedActionIds}

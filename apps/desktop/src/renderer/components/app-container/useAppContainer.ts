@@ -3,11 +3,11 @@ import { useTranslation } from 'react-i18next';
 
 import { AssetType, type ProjectActionHandler } from '../../../types';
 
-import type { ApplicationAction, ProjectInfo, WindowControls } from '../../types';
+import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import { ContentAction } from './common';
-import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE, UNAVAILABLE_WINDOW_CONTROLS } from './constants';
+import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy } from './strategies';
 import { CONTENT_STRATEGY_CONSTRUCTORS, type OpenNewContentData } from './strategies';
@@ -21,13 +21,6 @@ export const useAppContainer = () => {
   const [notificationError, setNotificationError] = useState(NotificationError.None);
   const [project, setProject] = useState<ProjectInfo | null>(null);
   const projectProxy = useMemo(() => new ProjectProxy(setProject), []);
-  const controls = useMemo<WindowControls>(
-    () =>
-      new Proxy(window.manticore?.windowControls ?? UNAVAILABLE_WINDOW_CONTROLS, {
-        get: (target, property) => Reflect.get(target, property) ?? Reflect.get(UNAVAILABLE_WINDOW_CONTROLS, property)
-      }),
-    []
-  );
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
 
   useEffect(() => {
@@ -101,53 +94,37 @@ export const useAppContainer = () => {
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
-      const contentAction = ContentAction.create(id, action, data);
-      const result = await (async () => {
-        try {
-          return await contentStrategies.get(assetType)?.handle(contentAction);
-        } finally {
-          contentAction.clean();
-        }
-      })();
+      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
       if (!result) return;
 
-      try {
-        switch (result.action) {
-          case 'open-new-content':
-            openNewContent(result.data);
-            break;
-          case 'show-notification':
-            setNotificationError(result.data.error);
-            break;
-          default:
-            break;
-        }
-      } finally {
-        result.clean();
+      switch (result.action) {
+        case 'open-new-content':
+          openNewContent(result.data);
+          break;
+        case 'show-notification':
+          setNotificationError(result.data.error);
+          break;
+        default:
+          break;
       }
     },
     [contentStrategies, openNewContent]
   );
+
   const projectStructure = useMemo(
-    () => ({
-      content: project?.content ?? [],
-      folders: project?.folders ?? [],
-      name: project?.name ?? '',
-      onAction: handleWorkingScreenAction,
-      path: project?.path ?? ''
-    }),
+    () => ({ onAction: handleWorkingScreenAction,  project }),
     [handleWorkingScreenAction, project]
   );
 
   const newContentStrategy = contentStrategies.get(newContentAssetType)!;
-  const handleCloseNewContentDialog = () => {
+  const handleCloseNewContentDialog = useCallback(() => {
     setNewContentDialogOpen(false);
     newContentStrategy.setField('parentPath', '');
-  };
-  const handleCloseNotification = () => setNotificationError(NotificationError.None);
+  }, [newContentStrategy]);
+
+  const handleCloseNotification = useCallback(() => setNotificationError(NotificationError.None), []);
 
   return {
-    controls,
     disabledItemIds,
     handleAction,
     handleCloseNewContentDialog,

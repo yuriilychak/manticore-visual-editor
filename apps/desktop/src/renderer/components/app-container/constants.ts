@@ -47,3 +47,9 @@ export const UNAVAILABLE_WINDOW_CONTROLS: WindowControls = {
     return false;
   }
 };
+
+export const WINDOW_CONTROLS = new Proxy<WindowControls>(UNAVAILABLE_WINDOW_CONTROLS, {
+  get: (_target, property) =>
+    Reflect.get(window.manticore?.windowControls ?? UNAVAILABLE_WINDOW_CONTROLS, property) ??
+    Reflect.get(UNAVAILABLE_WINDOW_CONTROLS, property)
+});

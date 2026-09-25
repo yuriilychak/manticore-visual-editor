@@ -25,9 +25,9 @@ export class BundleFolderStrategy extends ContentStrategyBase {
   async handle({ action, data, id }: ContentAction) {
     switch (action) {
       case 'add-folder':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.BundleFolder, { parentId: id }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.BundleFolder, { parentId: id }));
       case 'add-atlas':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.TextureAtlas, { parentId: id }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.TextureAtlas, { parentId: id }));
       default:
         break;
     }

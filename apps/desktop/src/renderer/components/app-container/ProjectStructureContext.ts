@@ -1,14 +1,11 @@
 import { createContext, useContext } from 'react';
 
-import type { FolderConfig, ProjectActionHandler } from '../../../types';
-import type { ProjectContent } from '../../../project/types';
+import type { ProjectActionHandler } from '../../../types';
+import type { ProjectInfo } from '../../types';
 
 type ProjectStructureContextValue = {
-  content: ProjectContent[];
-  folders: FolderConfig[];
-  name: string;
   onAction: ProjectActionHandler;
-  path: string;
+  project: ProjectInfo | null;
 };
 
 export const ProjectStructureContext = createContext<ProjectStructureContextValue | null>(null);

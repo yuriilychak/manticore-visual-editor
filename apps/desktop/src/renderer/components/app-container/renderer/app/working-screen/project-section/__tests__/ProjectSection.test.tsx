@@ -18,7 +18,7 @@ describe('ProjectSection', () => {
   ) =>
     render(
       <ProjectStructureContext.Provider
-        value={{ content, folders, name: 'Initial project', onAction, path: '/tmp/project' }}
+        value={{ onAction, project: { content, folders, name: 'Initial project', path: '/tmp/project' } }}
       >
         <ProjectSection />
       </ProjectStructureContext.Provider>
@@ -99,11 +99,13 @@ describe('ProjectSection', () => {
     rerender(
       <ProjectStructureContext.Provider
         value={{
-          content: [],
-          folders: [{ id: 1, items: [], name: 'Assets' }],
-          name: 'Initial project',
           onAction,
-          path: '/tmp/project'
+          project: {
+            content: [],
+            folders: [{ id: 1, items: [], name: 'Assets' }],
+            name: 'Initial project',
+            path: '/tmp/project'
+          }
         }}
       >
         <ProjectSection />

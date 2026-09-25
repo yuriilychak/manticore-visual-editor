@@ -12,9 +12,9 @@ type AppProps = {
 };
 
 const App: FC<AppProps> = ({ onAction }) => {
-  const { path } = useProjectStructure();
+  const { project } = useProjectStructure();
 
-  return path ? <WorkingScreen /> : <WelcomeScreen onAction={onAction} />;
+  return project?.path ? <WorkingScreen /> : <WelcomeScreen onAction={onAction} />;
 };
 
 export default App;

@@ -11,7 +11,10 @@ import ProjectFolderTree from './ProjectFolderTree';
 import ProjectItem from './ProjectItem';
 
 const ProjectSection: FC = () => {
-  const { content, folders, name, onAction } = useProjectStructure();
+  const { onAction, project } = useProjectStructure();
+  if (!project) return null;
+
+  const { content = [], folders = [], name } = project;
   const folderTree = getFolderTree(folders);
   const rootFolder = folders.find((folder) => !folder.name);
 

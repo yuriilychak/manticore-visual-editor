@@ -34,9 +34,9 @@ export class ProjectStrategy extends ContentStrategyBase {
   async handle({ action, data, id }: ContentAction) {
     switch (action) {
       case 'add-folder':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: '' }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: '' }));
       case 'add-bundle':
-        return ContentAction.create(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: '' }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: '' }));
       case 'rename':
         if (typeof data !== 'string') return;
 
