@@ -1,6 +1,6 @@
 import { AssetType } from '../../../../types';
 
-import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
+import { ContentAction, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError } from '../constants';
 import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
@@ -37,6 +37,8 @@ export class ProjectStrategy extends ContentStrategyBase {
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentPath: '' }));
       case 'add-bundle':
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentPath: '' }));
+      case 'import':
+        return new ContentAction(id, 'open-import-assets', new OpenImportAssets());
       case 'rename':
         if (typeof data !== 'string') return;
 

@@ -1,6 +1,6 @@
 import { AssetType } from '../../../../types';
 
-import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
+import { ContentAction, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError } from '../constants';
 import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
@@ -30,6 +30,8 @@ export class BundleStrategy extends ContentStrategyBase {
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.BundleFolder, { parentId: id }));
       case 'add-atlas':
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.TextureAtlas, { parentId: id }));
+      case 'import':
+        return new ContentAction(id, 'open-import-assets', new OpenImportAssets(id));
       default:
         break;
     }

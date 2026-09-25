@@ -2,7 +2,7 @@ import type { AssetType } from '../../../../types';
 
 import type { ProjectProxy } from '../ProjectProxy';
 import type { NewContentStrategy } from '../types';
-import { ContentAction, OpenNewContent } from '../common';
+import { ContentAction, OpenImportAssets, OpenNewContent } from '../common';
 import type { NotificationError } from '../constants';
 
 
@@ -11,8 +11,9 @@ export type OpenNewContentData =
   | OpenNewContent<AssetType.BundleFolder | AssetType.TextureAtlas, { parentId: number }>;
 
 export type OpenNewContentResult = ContentAction<'open-new-content', OpenNewContentData>;
+export type OpenImportAssetsResult = ContentAction<'open-import-assets', OpenImportAssets>;
 
-export type ContentStrategyResult = OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
+export type ContentStrategyResult = OpenImportAssetsResult | OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
 
 export interface WorkingScreenActionStrategy {
   handle: (contentAction: ContentAction) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;

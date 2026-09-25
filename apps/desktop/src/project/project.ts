@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import type { FolderConfig, ProjectInfo } from '../types';
@@ -78,6 +78,25 @@ export async function createProjectBundleFolder(projectPath: string, parentId: n
 
 export async function createProjectTextureAtlas(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {
   return (await ProjectConfigProxy.load(projectPath)).addTextureAtlas(name, parentId);
+}
+
+const IMAGE_EXTENSIONS = new Set(['.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
+const FONT_EXTENSIONS = new Set(['.eot', '.otf', '.ttf', '.woff', '.woff2']);
+
+export async function importProjectAssets(projectPath: string, bundleId: number, filePaths: readonly string[]): Promise<void> {
+  const config = await ProjectConfigProxy.load(projectPath);
+  if (!config.content.some((item) => item.id === bundleId && item.type === AssetType.Bundle)) throw new Error('Bundle not found.');
+
+  await Promise.all(filePaths.map(async (filePath) => {
+    const extension = path.extname(filePath).toLocaleLowerCase();
+    const assetType = IMAGE_EXTENSIONS.has(extension) ? 'images' : FONT_EXTENSIONS.has(extension) ? 'fonts' : null;
+    const fileName = path.basename(filePath);
+    if (!assetType || !fileName || fileName !== path.basename(fileName)) throw new Error('Asset type is not supported.');
+
+    const destinationPath = path.join(projectPath, 'src', 'bundles', String(bundleId), assetType);
+    await mkdir(destinationPath, { recursive: true });
+    await copyFile(filePath, path.join(destinationPath, fileName));
+  }));
 }
 
 export async function renameProjectBundleFolder(projectPath: string, id: number, name: string): Promise<ProjectContent> {

@@ -10,6 +10,18 @@ export const THEME = createTheme({
   },
   typography: { fontFamily: 'Inter, ui-sans-serif, system-ui, sans-serif' },
   components: {
+    MuiCssBaseline: {
+      styleOverrides: {
+        '*': {
+          scrollbarColor: '#53575b #242424',
+          scrollbarWidth: 'thin'
+        },
+        '*::-webkit-scrollbar': { height: 10, width: 10 },
+        '*::-webkit-scrollbar-thumb': { backgroundColor: '#53575b', border: '2px solid #242424', borderRadius: 5 },
+        '*::-webkit-scrollbar-thumb:hover': { backgroundColor: '#66b8f0' },
+        '*::-webkit-scrollbar-track': { backgroundColor: '#242424' }
+      }
+    },
     MuiButton: {
       styleOverrides: {
         root: { borderRadius: 6, textTransform: 'none' }

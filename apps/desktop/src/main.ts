@@ -10,6 +10,7 @@ import {
   createProjectFolder,
   createProjectTextureAtlas,
   getProjectInfo,
+  importProjectAssets,
   moveProjectBundle,
   moveProjectFolder,
   renameProject,
@@ -150,6 +151,18 @@ ipcMain.handle('project:open', async (event) => {
   }
 });
 ipcMain.handle('project:restore-last-opened', () => restoreLastOpenedProject());
+ipcMain.handle('project:select-import-files', async (event) => {
+  const options: OpenDialogOptions = {
+    filters: [{ extensions: ['avif', 'bmp', 'eot', 'gif', 'jpeg', 'jpg', 'otf', 'png', 'svg', 'ttf', 'webp', 'woff', 'woff2'], name: 'Images and fonts' }],
+    properties: ['multiSelections', 'openFile']
+  };
+  const parentWindow = getWindow(event.sender);
+  const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
+  return result.canceled ? [] : result.filePaths;
+});
+ipcMain.handle('project:import-assets', (_event, projectPath: string, bundleId: number, filePaths: string[]) =>
+  importProjectAssets(projectPath, bundleId, filePaths)
+);
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
 ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number, name: string) => renameProjectBundle(projectPath, id, name));
 ipcMain.handle('project:create-bundle', (_event, projectPath: string, parentPath: string, name: string) => createProjectBundle(projectPath, parentPath, name));

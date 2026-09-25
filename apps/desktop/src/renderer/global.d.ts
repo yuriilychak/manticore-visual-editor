@@ -19,6 +19,8 @@ declare global {
       createProjectBundle: (projectPath: string, parentPath: string, name: string) => Promise<ProjectContent>;
       createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
+      selectImportFiles?: () => Promise<string[]>;
+      importAssets?: (projectPath: string, bundleId: number, filePaths: string[]) => Promise<void>;
       moveProjectFolder?: (projectPath: string, id: number, targetPath: string) => Promise<FolderConfig[]>;
       moveProjectBundle?: (projectPath: string, id: number, targetPath: string) => Promise<ProjectContent>;
       renameProject?: (projectPath: string, name: string) => Promise<string>;

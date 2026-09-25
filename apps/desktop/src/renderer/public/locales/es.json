@@ -34,10 +34,12 @@
     }
   },
   "common": {
+    "cancel": "Cancelar",
     "cancelRename": "Cancelar cambio de nombre",
     "contentConfigurationError": "No se pudo configurar el contenido solicitado.",
     "contentTypeUnavailable": "El tipo de contenido solicitado no está disponible.",
     "import": "Importar",
+    "importAssetsError": "No se pudieron importar los recursos seleccionados.",
     "moveBundleError": "No se pudo mover el paquete.",
     "moveFolderError": "No se pudo mover la carpeta.",
     "openProjectError": "No se pudo abrir el proyecto.",
@@ -50,6 +52,22 @@
     "renameName": "Nombre",
     "rename": "Cambiar nombre",
     "saveRename": "Guardar nombre del proyecto"
+  },
+  "importAssets": {
+    "actions": "Acciones",
+    "asset": "Recurso",
+    "addFiles": "Añadir archivos",
+    "assets": "Recursos",
+    "bundle": "Paquete",
+    "fileName": "Nombre del archivo",
+    "fileType": "Tipo de archivo",
+    "font": "Fuente",
+    "image": "Imagen",
+    "noAssets": "No hay recursos seleccionados.",
+    "preview": "Vista previa",
+    "remove": "Eliminar",
+    "search": "Buscar recursos",
+    "title": "Importar recursos"
   },
   "project": {
     "title": "Nuevo proyecto",

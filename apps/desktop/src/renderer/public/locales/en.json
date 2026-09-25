@@ -34,10 +34,12 @@
     }
   },
   "common": {
+    "cancel": "Cancel",
     "cancelRename": "Cancel renaming",
     "contentConfigurationError": "Could not configure the requested content.",
     "contentTypeUnavailable": "The requested content type is unavailable.",
     "import": "Import",
+    "importAssetsError": "Could not import the selected assets.",
     "moveBundleError": "Could not move the bundle.",
     "moveFolderError": "Could not move the folder.",
     "openProjectError": "Could not open the project.",
@@ -50,6 +52,22 @@
     "renameName": "Name",
     "rename": "Rename",
     "saveRename": "Save project name"
+  },
+  "importAssets": {
+    "actions": "Actions",
+    "asset": "Asset",
+    "addFiles": "Add files",
+    "assets": "Assets",
+    "bundle": "Bundle",
+    "fileName": "File name",
+    "fileType": "File type",
+    "font": "Font",
+    "image": "Image",
+    "noAssets": "No assets selected.",
+    "preview": "Preview",
+    "remove": "Remove",
+    "search": "Search assets",
+    "title": "Import assets"
   },
   "project": {
     "title": "New project",

@@ -42,6 +42,11 @@ const BUNDLE_CONTENT_ACTIONS: ActionButtonConfig[] = [
   { action: 'import', tooltipLocale: 'common.import', Icon: ImportIcon }
 ];
 
+const BUNDLE_FOLDER_CONTENT_ACTIONS: ActionButtonConfig[] = [
+  { action: 'add-folder', tooltipLocale: 'bundleFolder.add', Icon: CreateNewFolderIcon },
+  { action: 'add-atlas', tooltipLocale: 'textureAtlas.add', Icon: AtlasAddIcon }
+];
+
 const FOLDER_AND_BUNDLE_DROP_TARGETS = {
   [PROJECT_FOLDER_DRAG_TYPE]: AssetType.ProjectFolder,
   [PROJECT_BUNDLE_DRAG_TYPE]: AssetType.Bundle
@@ -68,7 +73,7 @@ export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
     icon: BundleIcon
   },
   [AssetType.BundleFolder]: {
-    actions: BUNDLE_CONTENT_ACTIONS,
+    actions: BUNDLE_FOLDER_CONTENT_ACTIONS,
     expandedIcon: FolderOpenIcon,
     icon: FolderIcon
   },

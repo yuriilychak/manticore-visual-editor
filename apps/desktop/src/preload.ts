@@ -3,6 +3,9 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('manticore', {
   createWindow: (language: string) => ipcRenderer.invoke('window:create', language),
   openProject: () => ipcRenderer.invoke('project:open'),
+  selectImportFiles: () => ipcRenderer.invoke('project:select-import-files'),
+  importAssets: (projectPath: string, bundleId: number, filePaths: string[]) =>
+    ipcRenderer.invoke('project:import-assets', projectPath, bundleId, filePaths),
   renameProject: (projectPath: string, name: string) => ipcRenderer.invoke('project:rename', projectPath, name),
   renameProjectBundle: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-bundle', projectPath, id, name),
   createProjectBundle: (projectPath: string, parentPath: string, name: string) => ipcRenderer.invoke('project:create-bundle', projectPath, parentPath, name),

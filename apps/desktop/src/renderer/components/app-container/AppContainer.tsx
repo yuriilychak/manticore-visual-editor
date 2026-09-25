@@ -1,8 +1,11 @@
 import type { FC } from 'react';
 
+import { AssetType } from '../../../types';
+
 import { AppShell } from './app-shell';
 import { WINDOW_CONTROLS } from './constants';
 import { NewContentDialog } from './new-content-dialog';
+import { ImportAssetsDialog } from './import-assets-dialog';
 import NotificationSnackbar from './NotificationSnackbar';
 import { ProjectStructureContext } from './ProjectStructureContext';
 import { Renderer } from './renderer';
@@ -13,8 +16,12 @@ const AppContainer: FC = () => {
     disabledItemIds,
     handleAction,
     handleCloseNewContentDialog,
+    handleCloseImportAssetsDialog,
+    handleImportAssets,
     handleCloseNotification,
     isNewContentDialogOpen,
+    isImportAssetsDialogOpen,
+    importBundleId,
     newContentStrategy,
     notificationError,
     projectStructure,
@@ -37,6 +44,13 @@ const AppContainer: FC = () => {
         onClose={handleCloseNewContentDialog}
         open={isNewContentDialogOpen}
         strategy={newContentStrategy}
+      />
+      <ImportAssetsDialog
+        bundles={projectStructure.project?.content?.filter((content) => content.type === AssetType.Bundle) ?? []}
+        initialBundleId={importBundleId}
+        onClose={handleCloseImportAssetsDialog}
+        onSubmit={handleImportAssets}
+        open={isImportAssetsDialogOpen}
       />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />
     </>
