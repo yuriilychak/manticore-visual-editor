@@ -2,7 +2,7 @@ import { type FC, type SyntheticEvent, useState } from 'react';
 
 import { Accordion, AccordionDetails, AccordionSummary, Box } from '@mui/material';
 
-import type { ProjectContent } from '../../../../../../../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
 
 import ProjectItem, { type ProjectItemType } from './ProjectItem';
@@ -19,7 +19,7 @@ const isBundleTreeItem = (item: ProjectContent): item is ProjectContent & { type
 const ProjectBundleTree: FC<ProjectBundleTreeProps> = ({ content, item, onAction }) => {
   const [isExpanded, setExpanded] = useState(false);
   const children = content
-    .filter((child) => child.parentId === item.id && (child.type === AssetType.BundleFolder || child.type === AssetType.TextureAtlas))
+    .filter((child) => child.parentId === item.id && (child.type === AssetType.BundleFolder || child.type === AssetType.Font || child.type === AssetType.Image || child.type === AssetType.TextureAtlas))
     .map((child) => (
       <Box key={child.id} pl={1}>
         {isBundleTreeItem(child) ? (

@@ -1,0 +1,14 @@
+/home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/deps/serde-a74b80effedcf509.d: /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/build/serde-7d49cb4d44bf18b3/out/private.rs
+
+/home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/deps/libserde-a74b80effedcf509.rlib: /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/build/serde-7d49cb4d44bf18b3/out/private.rs
+
+/home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/deps/libserde-a74b80effedcf509.rmeta: /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs /home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs /home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/build/serde-7d49cb4d44bf18b3/out/private.rs
+
+/home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/lib.rs:
+/home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/integer128.rs:
+/home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/mod.rs:
+/home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/de.rs:
+/home/yurii/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde-1.0.228/src/private/ser.rs:
+/home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/build/serde-7d49cb4d44bf18b3/out/private.rs:
+
+# env-dep:OUT_DIR=/home/yurii/Projects/image-polygonizer/packages/image-polygonizer-algo/target/debug/build/serde-7d49cb4d44bf18b3/out

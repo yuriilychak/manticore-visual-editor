@@ -1,6 +1,6 @@
 import type { Dispatch, SetStateAction } from 'react';
 
-import type { ProjectContent } from '../../../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 import type { FolderConfig } from '../../../types';
 
 import type { ProjectInfo } from '../../types';

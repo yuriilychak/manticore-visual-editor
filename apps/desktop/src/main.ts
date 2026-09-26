@@ -2,7 +2,6 @@ import { app, BrowserWindow, dialog, ipcMain, type OpenDialogOptions } from 'ele
 import { readFile, stat, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
-import { isAssetName } from './project/content';
 import {
   createProject,
   createProjectBundle,
@@ -11,6 +10,7 @@ import {
   createProjectTextureAtlas,
   getProjectInfo,
   importProjectAssets,
+  isAssetName,
   moveProjectBundle,
   moveProjectFolder,
   renameProject,
@@ -18,8 +18,8 @@ import {
   renameProjectBundleFolder,
   renameProjectFolder,
   renameProjectTextureAtlas
-} from './project/project';
-import type { ProjectInfo } from './types';
+} from '@manticore/project';
+import type { ImportProjectAsset, ProjectInfo } from '@manticore/project';
 
 const IS_DEVELOPMENT = !app.isPackaged;
 const WINDOW_ICON_PATH = path.join(__dirname, '../build/icon.png');
@@ -160,8 +160,18 @@ ipcMain.handle('project:select-import-files', async (event) => {
   const result = parentWindow ? await dialog.showOpenDialog(parentWindow, options) : await dialog.showOpenDialog(options);
   return result.canceled ? [] : result.filePaths;
 });
-ipcMain.handle('project:import-assets', (_event, projectPath: string, bundleId: number, filePaths: string[]) =>
-  importProjectAssets(projectPath, bundleId, filePaths)
+ipcMain.handle('project:load-import-images', async (_event, filePaths: string[]) =>
+  Promise.all(filePaths.map(async (filePath) => {
+    const extension = path.extname(filePath).toLocaleLowerCase();
+    const type = { '.avif': 'image/avif', '.bmp': 'image/bmp', '.gif': 'image/gif', '.jpeg': 'image/jpeg', '.jpg': 'image/jpeg', '.png': 'image/png', '.svg': 'image/svg+xml', '.webp': 'image/webp' }[extension];
+    if (!type) throw new Error('Image type is not supported.');
+
+    const content = await readFile(filePath);
+    return { content: content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength), name: path.basename(filePath), path: filePath, type };
+  }))
+);
+ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) =>
+  importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result))
 );
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
 ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number, name: string) => renameProjectBundle(projectPath, id, name));

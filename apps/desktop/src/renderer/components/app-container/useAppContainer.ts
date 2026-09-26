@@ -2,11 +2,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AssetType, type ProjectActionHandler } from '../../../types';
-
 import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
-import { ContentAction, OpenImportAssets } from './common';
+import { ContentAction, type ImportAssetResult, OpenImportAssets } from './common';
 import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy } from './strategies';
@@ -18,6 +17,7 @@ export const useAppContainer = () => {
   const disabledItemIds: readonly MenubarItemId[] = [];
   const [isNewContentDialogOpen, setNewContentDialogOpen] = useState(false);
   const [isImportAssetsDialogOpen, setImportAssetsDialogOpen] = useState(false);
+  const [importErrors, setImportErrors] = useState<readonly ImportAssetResult[]>([]);
   const [importBundleId, setImportBundleId] = useState(0);
   const [newContentAssetType, setNewContentAssetType] = useState<AssetType>(AssetType.ProjectFolder);
   const [notificationError, setNotificationError] = useState(NotificationError.None);
@@ -102,6 +102,7 @@ export const useAppContainer = () => {
     }
 
     setImportBundleId(selectedBundle.id);
+    setImportErrors([]);
     setImportAssetsDialogOpen(true);
   }, [project]);
 
@@ -117,6 +118,12 @@ export const useAppContainer = () => {
         case 'open-import-assets':
           openImportAssets(result.data);
           break;
+        case 'import-assets-completed': {
+          const errors = result.data.filter(({ error }) => error);
+          if (errors.length) setImportErrors(errors);
+          else setImportAssetsDialogOpen(false);
+          break;
+        }
         case 'show-notification':
           setNotificationError(result.data.error);
           break;
@@ -137,22 +144,10 @@ export const useAppContainer = () => {
     setNewContentDialogOpen(false);
     newContentStrategy.setField('parentPath', '');
   }, [newContentStrategy]);
-  const handleCloseImportAssetsDialog = useCallback(() => setImportAssetsDialogOpen(false), []);
-  const handleImportAssets = useCallback(async (bundleId: number, filePaths: readonly string[]) => {
-    if (!project || !window.manticore?.importAssets) {
-      notifyUnavailableDesktopApi();
-      return false;
-    }
-
-    try {
-      await window.manticore.importAssets(project.path, bundleId, [...filePaths]);
-      return true;
-    } catch {
-      setNotificationError(NotificationError.ImportAssets);
-      return false;
-    }
-  }, [project]);
-
+  const handleCloseImportAssetsDialog = useCallback(() => {
+    setImportAssetsDialogOpen(false);
+    setImportErrors([]);
+  }, []);
   const handleCloseNotification = useCallback(() => setNotificationError(NotificationError.None), []);
 
   return {
@@ -160,11 +155,12 @@ export const useAppContainer = () => {
     handleAction,
     handleCloseNewContentDialog,
     handleCloseImportAssetsDialog,
-    handleImportAssets,
     handleCloseNotification,
     isNewContentDialogOpen,
     isImportAssetsDialogOpen,
     importBundleId,
+    importErrors,
+    handleWorkingScreenAction,
     notificationError,
     projectStructure,
     newContentStrategy,

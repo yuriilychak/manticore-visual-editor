@@ -2,7 +2,7 @@ import { type FC, type SyntheticEvent, useState } from 'react';
 
 import { Accordion, AccordionDetails, AccordionSummary, Box, Typography } from '@mui/material';
 
-import type { ProjectContent } from '../../../../../../../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
 
 import { type FolderTreeNode } from './helpers';

@@ -9,7 +9,14 @@
     "skipLibCheck": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["node", "vite/client"]
+    "types": ["node", "vite/client"],
+    "baseUrl": ".",
+    "paths": {
+      "@manticore/project": ["../../packages/project/src/index.ts"],
+      "@manticore/project/types": ["../../packages/project/src/types.ts"],
+      "@manticore/project/constants": ["../../packages/project/src/constants.ts"],
+      "image-polygonizer": ["../../packages/image-polygonizer/src/index.ts"]
+    }
   },
   "include": ["src", "vite.config.ts", "rollup.config.mjs"],
   "exclude": ["src/**/__tests__/**"]

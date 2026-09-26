@@ -1,4 +1,4 @@
-import type { ProjectContent } from '../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 
 import type {
   FolderConfig,
@@ -19,8 +19,10 @@ declare global {
       createProjectBundle: (projectPath: string, parentPath: string, name: string) => Promise<ProjectContent>;
       createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
+      loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
       selectImportFiles?: () => Promise<string[]>;
-      importAssets?: (projectPath: string, bundleId: number, filePaths: string[]) => Promise<void>;
+      importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
+      onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;
       moveProjectFolder?: (projectPath: string, id: number, targetPath: string) => Promise<FolderConfig[]>;
       moveProjectBundle?: (projectPath: string, id: number, targetPath: string) => Promise<ProjectContent>;
       renameProject?: (projectPath: string, name: string) => Promise<string>;

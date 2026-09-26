@@ -1,0 +1,23 @@
+{
+  "name": "image-polygonizer-algo",
+  "version": "0.0.1",
+  "private": true,
+  "description": "WebAssembly algorithms for image polygonization",
+  "main": "./dist/image-polygonizer.wasm",
+  "types": "",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "bash build.sh",
+    "dev": "bash build.sh dev",
+    "clean": "rm -rf dist target"
+  },
+  "keywords": [
+    "wasm",
+    "webassembly",
+    "polygonizer",
+    "image-processing"
+  ],
+  "license": "MIT"
+}

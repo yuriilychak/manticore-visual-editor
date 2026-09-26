@@ -17,11 +17,12 @@ const AppContainer: FC = () => {
     handleAction,
     handleCloseNewContentDialog,
     handleCloseImportAssetsDialog,
-    handleImportAssets,
+    handleWorkingScreenAction,
     handleCloseNotification,
     isNewContentDialogOpen,
     isImportAssetsDialogOpen,
     importBundleId,
+    importErrors,
     newContentStrategy,
     notificationError,
     projectStructure,
@@ -48,8 +49,9 @@ const AppContainer: FC = () => {
       <ImportAssetsDialog
         bundles={projectStructure.project?.content?.filter((content) => content.type === AssetType.Bundle) ?? []}
         initialBundleId={importBundleId}
+        importErrors={importErrors}
         onClose={handleCloseImportAssetsDialog}
-        onSubmit={handleImportAssets}
+        onAction={handleWorkingScreenAction}
         open={isImportAssetsDialogOpen}
       />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />

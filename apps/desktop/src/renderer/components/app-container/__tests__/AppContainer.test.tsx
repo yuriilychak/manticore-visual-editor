@@ -3,7 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import type { MouseEvent, ReactNode } from 'react';
 
-import type { ProjectContent } from '../../../../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 import { AssetType } from '../../../../types';
 import type { NewProjectOptions, ProjectCreationValidation, ProjectInfo, RestoredProject } from '../../../types';
 

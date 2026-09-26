@@ -2,7 +2,7 @@ import type { AssetType } from '../../../../types';
 
 import type { ProjectProxy } from '../ProjectProxy';
 import type { NewContentStrategy } from '../types';
-import { ContentAction, OpenImportAssets, OpenNewContent } from '../common';
+import { ContentAction, type ImportAssetResult, OpenImportAssets, OpenNewContent } from '../common';
 import type { NotificationError } from '../constants';
 
 
@@ -12,8 +12,9 @@ export type OpenNewContentData =
 
 export type OpenNewContentResult = ContentAction<'open-new-content', OpenNewContentData>;
 export type OpenImportAssetsResult = ContentAction<'open-import-assets', OpenImportAssets>;
+export type ImportAssetsCompletedResult = ContentAction<'import-assets-completed', readonly ImportAssetResult[]>;
 
-export type ContentStrategyResult = OpenImportAssetsResult | OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
+export type ContentStrategyResult = ImportAssetsCompletedResult | OpenImportAssetsResult | OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
 
 export interface WorkingScreenActionStrategy {
   handle: (contentAction: ContentAction) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;

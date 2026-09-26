@@ -1,6 +1,6 @@
 import { AssetType } from '../../../../types';
 
-import { ContentAction, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
+import { ContentAction, ImportAssets, type ImportAssetResult, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError } from '../constants';
 import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
@@ -32,6 +32,8 @@ export class BundleStrategy extends ContentStrategyBase {
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.TextureAtlas, { parentId: id }));
       case 'import':
         return new ContentAction(id, 'open-import-assets', new OpenImportAssets(id));
+      case 'import-asset':
+        return new ContentAction(id, 'import-assets-completed', await this.importAssets(id, data));
       default:
         break;
     }
@@ -66,6 +68,41 @@ export class BundleStrategy extends ContentStrategyBase {
       }
       default:
         return;
+    }
+  }
+
+  private async importAssets(bundleId: number, data: unknown): Promise<ImportAssetResult[]> {
+    if (!(data instanceof ImportAssets)) return [];
+
+    const project = this.projectProxy.project;
+    if (!project || !window.manticore?.importAssets) {
+      notifyUnavailableDesktopApi();
+      return data.assets.map(({ filePath }) => ({ asset: null, error: 'Desktop API is unavailable.', filePath }));
+    }
+
+    const jobId = crypto.randomUUID();
+    let current = 0;
+    const total = data.assets.length;
+    const removeProgressListener = window.manticore.onImportAssetsProgress?.((progressJobId, result) => {
+      if (progressJobId !== jobId) return;
+
+      void result;
+      data.onProgress(Math.min(++current, total), total);
+    });
+    try {
+      const results = await window.manticore.importAssets(project.path, bundleId, [...data.assets], jobId);
+      results.forEach(({ asset }) => {
+        if (asset) this.projectProxy.addContent(asset);
+      });
+      return results;
+    } catch (error) {
+      return data.assets.map(({ filePath }) => ({
+        asset: null,
+        error: error instanceof Error ? error.message : 'Import failed.',
+        filePath
+      }));
+    } finally {
+      removeProgressListener?.();
     }
   }
 

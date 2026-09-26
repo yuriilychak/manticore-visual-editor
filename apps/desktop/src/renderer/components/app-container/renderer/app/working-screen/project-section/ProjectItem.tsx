@@ -1,10 +1,12 @@
 import { type DragEvent, type FC } from 'react';
 
+import type { SvgIconComponent } from '@mui/icons-material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import FolderIcon from '@mui/icons-material/Folder';
 import FolderOpenIcon from '@mui/icons-material/FolderOpen';
+import FontDownloadIcon from '@mui/icons-material/FontDownload';
+import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
-import type { SvgIconComponent } from '@mui/icons-material';
 import { Box } from '@mui/material';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
@@ -15,7 +17,7 @@ import type { ActionButtonConfig } from '../renameable-item/types';
 
 import { PROJECT_BUNDLE_DRAG_TYPE, PROJECT_FOLDER_DRAG_TYPE } from './helpers';
 
-export type ProjectItemType = AssetType.Project | AssetType.ProjectFolder | AssetType.Bundle | AssetType.BundleFolder | AssetType.TextureAtlas;
+export type ProjectItemType = AssetType.Project | AssetType.ProjectFolder | AssetType.Bundle | AssetType.BundleFolder | AssetType.Font | AssetType.Image | AssetType.TextureAtlas;
 
 type ProjectItemConfig = {
   actions?: ActionButtonConfig[];
@@ -76,6 +78,12 @@ export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
     actions: BUNDLE_FOLDER_CONTENT_ACTIONS,
     expandedIcon: FolderOpenIcon,
     icon: FolderIcon
+  },
+  [AssetType.Font]: {
+    icon: FontDownloadIcon
+  },
+  [AssetType.Image]: {
+    icon: ImageIcon
   },
   [AssetType.TextureAtlas]: {
     expandedIcon: AtlasOpenIcon,

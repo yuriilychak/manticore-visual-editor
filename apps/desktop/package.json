@@ -16,6 +16,7 @@
     "clean": "rimraf dist release"
   },
   "dependencies": {
+    "@manticore/project": "file:../../packages/project",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@mui/icons-material": "^7.3.2",
@@ -23,6 +24,7 @@
     "@vitejs/plugin-react": "^4.7.0",
     "i18next": "^25.5.2",
     "i18next-http-backend": "^3.0.2",
+    "image-polygonizer": "file:../../packages/image-polygonizer",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-i18next": "^16.0.0",

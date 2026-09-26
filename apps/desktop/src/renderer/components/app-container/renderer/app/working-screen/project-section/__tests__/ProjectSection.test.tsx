@@ -2,7 +2,7 @@ import { describe, expect, jest, test } from '@jest/globals';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { ProjectContent } from '../../../../../../../../project/types';
+import type { ProjectContent } from '@manticore/project/types';
 import { AssetType, type FolderConfig, type ProjectActionHandler } from '../../../../../../../../types';
 import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
 
