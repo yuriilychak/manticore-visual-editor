@@ -92,14 +92,16 @@ export class ProjectConfigProxy {
     return id;
   }
 
-  async addAsset(name: string, parentId: number, type: AssetType.Image | AssetType.Font): Promise<ProjectContent> {
+  async addAsset(name: string, parentId: number, type: AssetType.Image | AssetType.Font, id = this.getNextContentId()): Promise<ProjectContent> {
     if (!isAssetName(name) || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.Bundle)) {
       throw new Error('Asset is invalid.');
     }
     if (this.config.content.some((item) => item.parentId === parentId && item.name === name)) {
       throw new Error('A sibling with this name already exists.');
     }
-    const id = this.getNextContentId();
+    if (!Number.isInteger(id) || id < 0 || id > MAX_U16 || this.config.content.some((item) => item.id === id)) {
+      throw new Error('Asset ID is invalid.');
+    }
 
     const asset = createProjectContent(id, name, parentId, type);
     this.config.content.push(asset);

@@ -1,10 +1,11 @@
-import { copyFile, mkdir, rm, writeFile } from 'node:fs/promises';
+import { mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AssetType } from './asset-type';
 
-import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJECT_VERSION } from './constants';
+import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJECT_VERSION, MAX_U16 } from './constants';
 import { createProjectContent, isAssetName } from './content';
+import { materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
 import type { FolderConfig, ProjectConfig, ProjectContent, ProjectInfo } from './types';
 
@@ -84,6 +85,14 @@ const FONT_EXTENSIONS = new Set(['.eot', '.otf', '.ttf', '.woff', '.woff2']);
 export type ImportProjectAsset = { data?: readonly number[] | Uint8Array; filePath: string; preview?: readonly number[] | Uint8Array };
 export type ImportProjectAssetResult = { asset: ProjectContent | null; error: string | null; filePath: string };
 
+type PlannedProjectAsset = {
+  assetType: AssetType.Image | AssetType.Font;
+  id: number;
+  imageData: readonly number[] | Uint8Array | undefined;
+  imagePreview: readonly number[] | Uint8Array | undefined;
+  name: string;
+};
+
 const getUniqueAssetName = (name: string, existingNames: ReadonlySet<string>): string => {
   for (let index = 0; ; ++index) {
     const suffix = index ? ` (${index})` : '';
@@ -97,8 +106,13 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
   if (!config.content.some((item) => item.id === bundleId && item.type === AssetType.Bundle)) throw new Error('Bundle not found.');
 
   const existingNames = new Set(config.content.filter((item) => item.parentId === bundleId).map((item) => item.name));
-  const results: ImportProjectAssetResult[] = [];
-  for (const { data, filePath, preview } of assets) {
+  const plans = new Map<number, PlannedProjectAsset>();
+  const planErrors = new Map<number, string>();
+  let nextContentId = Math.max(0, ...config.content.map((item) => item.id)) + 1;
+
+  // Reserve all names and IDs before creating files, so the file phase is only
+  // responsible for materializing an already-determined import plan.
+  assets.forEach(({ data, filePath, preview }, index) => {
     try {
       const extension = path.extname(filePath).toLocaleLowerCase();
       const isImage = IMAGE_EXTENSIONS.has(extension);
@@ -111,25 +125,45 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
       if (isImage && (!imageData || !imageData.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff))) throw new Error('Image data is missing or invalid.');
       const imagePreview = isImage ? preview : undefined;
       if (imagePreview && !imagePreview.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff)) throw new Error('Image preview is invalid.');
+      if (nextContentId > MAX_U16) throw new Error('The maximum number of assets has been reached.');
 
       const name = getUniqueAssetName(assetName, existingNames);
-      const assetPath = path.join(projectPath, 'src', 'assets', String(config.getNextContentId()).padStart(5, '0'));
-      try {
-        await mkdir(path.dirname(assetPath), { recursive: true });
-        await mkdir(assetPath, { recursive: false });
-        await copyFile(filePath, path.join(assetPath, 'source'));
-        if (imageData) await writeFile(path.join(assetPath, 'asset'), Buffer.from(imageData));
-        if (imagePreview) await writeFile(path.join(assetPath, 'preview'), Buffer.from(imagePreview));
-      } catch (error) {
-        await rm(assetPath, { force: true, recursive: true });
-        throw error;
-      }
-      const asset = await config.addAsset(name, bundleId, assetType);
       existingNames.add(name);
+      plans.set(index, { assetType, id: nextContentId++, imageData, imagePreview, name });
+    } catch (error) {
+      planErrors.set(index, error instanceof Error ? error.message : 'Import failed.');
+    }
+  });
+
+  const fileErrors = await materializeImportAssetFiles(
+    Array.from(plans, ([index, plan]) => ({
+      assetPath: path.join(projectPath, 'src', 'assets', String(plan.id).padStart(5, '0')),
+      filePath: assets[index].filePath,
+      imageData: plan.imageData,
+      imagePreview: plan.imagePreview,
+      index
+    }))
+  );
+
+  const results: ImportProjectAssetResult[] = [];
+  for (const [index, { filePath }] of assets.entries()) {
+    const plan = plans.get(index);
+    if (!plan) {
+      const result = { asset: null, error: planErrors.get(index) ?? 'Import failed.', filePath };
+      results.push(result);
+      onResult(result);
+      continue;
+    }
+
+    try {
+      const fileError = fileErrors.get(index);
+      if (fileError) throw new Error(fileError);
+      const asset = await config.addAsset(plan.name, bundleId, plan.assetType, plan.id);
       const result = { asset, error: null, filePath };
       results.push(result);
       onResult(result);
     } catch (error) {
+      await rm(path.join(projectPath, 'src', 'assets', String(plan.id).padStart(5, '0')), { force: true, recursive: true });
       const result = { asset: null, error: error instanceof Error ? error.message : 'Import failed.', filePath };
       results.push(result);
       onResult(result);

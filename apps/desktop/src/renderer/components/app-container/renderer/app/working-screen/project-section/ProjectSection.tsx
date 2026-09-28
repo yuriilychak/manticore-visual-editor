@@ -19,7 +19,7 @@ const ProjectSection: FC = () => {
   const rootFolder = folders.find((folder) => !folder.name);
 
   return (
-    <Box component="header" p={1}>
+    <Box component="header" height="100%" minHeight={0} p={1} sx={{ overflowX: 'hidden', overflowY: 'auto' }}>
       <ProjectItem contentType={AssetType.Project} id={0} name={name} onAction={onAction} />
       {folderTree.map((node) => (
         <ProjectFolderTree content={content} key={node.name} node={node} onAction={onAction} />

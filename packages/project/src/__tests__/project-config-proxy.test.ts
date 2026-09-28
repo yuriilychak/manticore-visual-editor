@@ -57,6 +57,26 @@ describe('ProjectConfigProxy', () => {
     expect(config.content.find(({ id }) => id === 3)).not.toHaveProperty('data');
   });
 
+  test('plans unique names and IDs before creating asset files', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    const destination = path.join(projectPath, 'Example');
+    const imagePath = path.join(projectPath, 'hero.png');
+    const duplicateImagePath = path.join(projectPath, 'hero.jpg');
+    await writeFile(imagePath, new Uint8Array([1]));
+    await writeFile(duplicateImagePath, new Uint8Array([2]));
+    await createProject(destination, 'Example');
+
+    await expect(importProjectAssets(destination, 2, [
+      { data: [3], filePath: imagePath },
+      { data: [4], filePath: duplicateImagePath }
+    ])).resolves.toEqual([
+      { asset: { id: 3, name: 'hero', parentId: 2, type: 4, version: 0 }, error: null, filePath: imagePath },
+      { asset: { id: 4, name: 'hero (1)', parentId: 2, type: 4, version: 0 }, error: null, filePath: duplicateImagePath }
+    ]);
+    await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'source'))).resolves.toEqual(Buffer.from([1]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([2]));
+  });
+
   test('stores folders by IDs and updates only the moved folder parent', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     await mkdir(path.join(projectPath, 'src'));

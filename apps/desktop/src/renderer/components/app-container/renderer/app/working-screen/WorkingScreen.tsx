@@ -20,7 +20,7 @@ const WorkingScreen: FC = () => {
       overflow="hidden"
       ref={containerRef}
     >
-      <Box aria-label="Left panel" component="section" minWidth={MIN_PANE_SIZE}>
+      <Box aria-label="Left panel" component="section" minHeight={0} minWidth={MIN_PANE_SIZE} overflow="hidden">
         <ProjectSection />
       </Box>
       <Separator
