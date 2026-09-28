@@ -1,0 +1,76 @@
+import { type FC, type MouseEvent, type MouseEventHandler, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
+import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
+import { Divider, IconButton, Menu, Tooltip } from '@mui/material';
+
+import { MENU_SLOT_PROPS, MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { RENAMEABLE_ITEM_STYLES } from '../constants';
+import type { ActionButtonConfig } from '../types';
+import RenameableItemActionsMenuItem from './RenameableItemActionsMenuItem';
+
+type RenameableItemActionsMenuProps = {
+  disabledByAction: Record<string, boolean>;
+  menuActions: ActionButtonConfig[];
+  onActionClick: MouseEventHandler<HTMLElement>;
+  viewActions: ActionButtonConfig[];
+};
+
+const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
+  disabledByAction,
+  menuActions,
+  onActionClick,
+  viewActions
+}) => {
+  const { t } = useTranslation();
+  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
+  const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
+    event.stopPropagation();
+    setMenuAnchor(event.currentTarget);
+  };
+  const handleClose = (event?: { stopPropagation?: () => void }) => {
+    event?.stopPropagation?.();
+    setMenuAnchor(null);
+  };
+  const handleMenuActionClick = (event: MouseEvent<HTMLElement>) => {
+    handleClose();
+    onActionClick(event);
+  };
+
+  return (
+    <>
+      <Tooltip title={t('common.actions')}>
+        <IconButton aria-label={t('common.actions')} onClick={handleOpen} size="small" type="button">
+          <MoreVertRounded fontSize="small" />
+        </IconButton>
+      </Tooltip>
+      <Menu
+        anchorEl={menuAnchor}
+        onClose={handleClose}
+        open={Boolean(menuAnchor)}
+        slotProps={MENU_SLOT_PROPS}
+        sx={MENUBAR_STYLES.menu}
+      >
+        {viewActions.map((action) => (
+          <RenameableItemActionsMenuItem
+            action={action}
+            disabled={disabledByAction[action.action]}
+            key={action.action}
+            onClick={handleMenuActionClick}
+          />
+        ))}
+        {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
+        {menuActions.map((action) => (
+          <RenameableItemActionsMenuItem
+            action={action}
+            disabled={disabledByAction[action.action]}
+            key={action.action}
+            onClick={handleMenuActionClick}
+          />
+        ))}
+      </Menu>
+    </>
+  );
+};
+
+export default RenameableItemActionsMenu;

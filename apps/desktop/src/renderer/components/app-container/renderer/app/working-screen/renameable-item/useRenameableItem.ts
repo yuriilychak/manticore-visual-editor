@@ -1,6 +1,6 @@
 import { type ChangeEvent, type FormEvent, type MouseEvent, useMemo, useState } from 'react';
 
-import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
+import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
 
 import { RENAMEABLE_ITEM_ACTIONS } from './constants';
 import type { ActionButtonConfig } from './types';
@@ -17,8 +17,20 @@ export const useRenameableItem = (
   const [editedName, setEditedName] = useState(name);
   const [isSaving, setSaving] = useState(false);
   const itemActions = useMemo(
-    () => (isEditing ? RENAMEABLE_ITEM_ACTIONS.editing : actions.concat(RENAMEABLE_ITEM_ACTIONS.viewProject)),
+    () => isEditing ? RENAMEABLE_ITEM_ACTIONS.editing : RENAMEABLE_ITEM_ACTIONS.empty,
+    [isEditing]
+  );
+  const menuActions = useMemo(
+    () => isEditing ? RENAMEABLE_ITEM_ACTIONS.empty : actions,
     [actions, isEditing]
+  );
+  const viewActions = useMemo(
+    () => isEditing
+      ? RENAMEABLE_ITEM_ACTIONS.empty
+      : contentType === AssetType.Project
+        ? RENAMEABLE_ITEM_ACTIONS.viewProject
+        : RENAMEABLE_ITEM_ACTIONS.viewProject.concat(RENAMEABLE_ITEM_ACTIONS.delete),
+    [contentType, isEditing]
   );
   const trimmedName = editedName.trim();
   const disabledByAction: Record<string, boolean> = {
@@ -65,10 +77,10 @@ export const useRenameableItem = (
     }
   };
 
-  const handleActionButtonClick = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleActionButtonClick = (event: MouseEvent<HTMLElement>) => {
+    event.stopPropagation();
     handleButtonClick(event.currentTarget.dataset.action ?? '');
   };
-
   return {
     boxComponent: isEditing ? ('form' as const) : ('div' as const),
     disabledByAction,
@@ -78,6 +90,8 @@ export const useRenameableItem = (
     handleSubmit,
     isEditing,
     itemActions,
+    menuActions,
+    viewActions,
     trimmedName
   };
 };

@@ -34,10 +34,15 @@
     }
   },
   "common": {
+    "actions": "Actions",
     "cancel": "Cancel",
     "cancelRename": "Cancel renaming",
     "contentConfigurationError": "Could not configure the requested content.",
     "contentTypeUnavailable": "The requested content type is unavailable.",
+    "delete": "Delete",
+    "deleteContentError": "Could not delete the selected content.",
+    "deleteContentMessage": "Delete \"{{name}}\" and all of its contents? This cannot be undone.",
+    "deleteContentTitle": "Delete content?",
     "import": "Import",
     "importAssetsError": "Could not import the selected assets.",
     "moveBundleError": "Could not move the bundle.",

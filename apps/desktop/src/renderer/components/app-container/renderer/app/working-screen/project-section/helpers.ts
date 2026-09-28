@@ -1,42 +1,78 @@
-import type { FolderConfig } from '../../../../../../../types';
+import type { FolderConfig, ProjectContent } from '@manticore/project/types';
+
+import { AssetType } from '../../../../../../../types';
 
 export const PROJECT_FOLDER_DRAG_TYPE = 'application/x-manticore-project-folder';
 export const PROJECT_BUNDLE_DRAG_TYPE = 'application/x-manticore-project-bundle';
 
-export type FolderTreeNode = {
-  children: FolderTreeNode[];
-  folder?: FolderConfig;
-  name: string;
+export type ProjectTreeNode = {
+  children: ProjectTreeNode[];
+  item: ProjectContent;
 };
 
-type MutableFolderTreeNode = Omit<FolderTreeNode, 'children'> & { children: Map<string, MutableFolderTreeNode> };
+const isFolder = (item: ProjectContent) => item.type === AssetType.ProjectFolder || item.type === AssetType.BundleFolder;
+const compareTreeNodes = (left: ProjectTreeNode, right: ProjectTreeNode) => {
+  const folderOrder = Number(isFolder(right.item)) - Number(isFolder(left.item));
+  if (folderOrder) return folderOrder;
 
-const toFolderTreeNode = (node: MutableFolderTreeNode): FolderTreeNode => ({
-  children: Array.from(node.children.values(), toFolderTreeNode),
-  folder: node.folder,
-  name: node.name
-});
+  return left.item.name.localeCompare(right.item.name, undefined, { numeric: true, sensitivity: 'base' }) || left.item.id - right.item.id;
+};
 
-export const getFolderTree = (folders: FolderConfig[]): FolderTreeNode[] => {
-  const rootNodes = new Map<string, MutableFolderTreeNode>();
+/**
+ * Links project content by ID once, preserving the manifest order for each
+ * sibling group. Tree components receive these nodes directly and never need
+ * to scan the complete content list while expanding.
+ */
+export const getProjectTree = (content: ProjectContent[]): ProjectTreeNode[] => {
+  const nodes = new Map<number, ProjectTreeNode>(content.map((item) => [item.id, { children: [], item }]));
+  const roots: ProjectTreeNode[] = [];
 
-  for (const folder of folders) {
-    if (!folder.name) continue;
+  for (const node of nodes.values()) {
+    const parent = nodes.get(node.item.parentId);
+    if (!parent || parent === node) roots.push(node);
+    else parent.children.push(node);
+  }
 
-    let nodes = rootNodes;
-    const pathSegments = folder.name.split('/').filter(Boolean);
+  roots.sort(compareTreeNodes);
+  for (const node of nodes.values()) node.children.sort(compareTreeNodes);
 
-    for (const [index, name] of pathSegments.entries()) {
-      let node = nodes.get(name);
+  return roots;
+};
 
-      if (!node) {
-        node = { children: new Map(), name };
-        nodes.set(name, node);
+/** Converts pre-content project data to the manifest-shaped tree input. */
+export const withLegacyFolders = (content: ProjectContent[], folders: FolderConfig[]): ProjectContent[] => {
+  if (content.some((item) => item.type === AssetType.ProjectFolder)) return content;
+
+  const folderByPath = new Map<string, ProjectContent>();
+  let virtualFolderId = -1;
+
+  for (const folder of [...folders].sort((left, right) => left.name.split('/').length - right.name.split('/').length)) {
+    let parentId = 0;
+    let path = '';
+    const segments = folder.name.split('/').filter(Boolean);
+
+    if (!segments.length) {
+      folderByPath.set('', { data: null, id: folder.id, name: '', parentId: 0, type: AssetType.ProjectFolder, version: 0 });
+      continue;
+    }
+
+    for (const [index, name] of segments.entries()) {
+      path = path ? `${path}/${name}` : name;
+      let item = folderByPath.get(path);
+      if (!item) {
+        item = {
+          data: null,
+          id: index === segments.length - 1 ? folder.id : virtualFolderId--,
+          name,
+          parentId,
+          type: AssetType.ProjectFolder,
+          version: 0
+        };
+        folderByPath.set(path, item);
       }
-      if (index === pathSegments.length - 1) node.folder = folder;
-      nodes = node.children;
+      parentId = item.id;
     }
   }
 
-  return Array.from(rootNodes.values(), toFolderTreeNode);
+  return Array.from(folderByPath.values()).concat(content);
 };

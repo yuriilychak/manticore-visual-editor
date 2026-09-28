@@ -34,10 +34,15 @@
     }
   },
   "common": {
+    "actions": "Acciones",
     "cancel": "Cancelar",
     "cancelRename": "Cancelar cambio de nombre",
     "contentConfigurationError": "No se pudo configurar el contenido solicitado.",
     "contentTypeUnavailable": "El tipo de contenido solicitado no está disponible.",
+    "delete": "Eliminar",
+    "deleteContentError": "No se pudo eliminar el contenido seleccionado.",
+    "deleteContentMessage": "¿Eliminar \"{{name}}\" y todo su contenido? Esta acción no se puede deshacer.",
+    "deleteContentTitle": "¿Eliminar contenido?",
     "import": "Importar",
     "importAssetsError": "No se pudieron importar los recursos seleccionados.",
     "moveBundleError": "No se pudo mover el paquete.",

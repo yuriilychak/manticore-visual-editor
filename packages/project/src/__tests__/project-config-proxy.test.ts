@@ -3,7 +3,7 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createProject, importProjectAssets } from '../project';
+import { createProject, deleteProjectContent, importProjectAssets } from '../project';
 import { ProjectConfigProxy } from '../project-config-proxy';
 
 describe('ProjectConfigProxy', () => {
@@ -75,6 +75,35 @@ describe('ProjectConfigProxy', () => {
     ]);
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'source'))).resolves.toEqual(Buffer.from([1]));
     await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([2]));
+  });
+
+  test('deletes a content subtree and its asset directories', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    const destination = path.join(projectPath, 'Example');
+    await createProject(destination, 'Example');
+    await writeFile(
+      path.join(destination, 'src', 'config.json'),
+      JSON.stringify({
+        content: [
+          { id: 1, name: '', parentId: 0, type: 1, version: 0 },
+          { id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 },
+          { id: 3, name: 'Sprites', parentId: 2, type: 3, version: 0 },
+          { id: 4, name: 'hero', parentId: 3, type: 4, version: 0 },
+          { id: 5, name: 'font', parentId: 2, type: 6, version: 0 }
+        ],
+        name: 'Example',
+        version: 0
+      })
+    );
+    await mkdir(path.join(destination, 'src', 'assets', '00004'), { recursive: true });
+    await mkdir(path.join(destination, 'src', 'assets', '00005'), { recursive: true });
+    await writeFile(path.join(destination, 'src', 'assets', '00004', 'source'), 'image');
+    await writeFile(path.join(destination, 'src', 'assets', '00005', 'source'), 'font');
+
+    await expect(deleteProjectContent(destination, 2)).resolves.toMatchObject({ content: [{ id: 1 }] });
+    await expect(access(path.join(destination, 'src', 'assets', '00004'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(access(path.join(destination, 'src', 'assets', '00005'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(readFile(path.join(destination, 'src', 'config.json'), 'utf8')).resolves.toContain('"id": 1');
   });
 
   test('stores folders by IDs and updates only the moved folder parent', async () => {

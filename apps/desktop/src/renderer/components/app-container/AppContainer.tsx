@@ -4,6 +4,7 @@ import { AssetType } from '../../../types';
 
 import { AppShell } from './app-shell';
 import { WINDOW_CONTROLS } from './constants';
+import { DeleteContentDialog } from './delete-content-dialog';
 import { NewContentDialog } from './new-content-dialog';
 import { ImportAssetsDialog } from './import-assets-dialog';
 import NotificationSnackbar from './NotificationSnackbar';
@@ -17,12 +18,16 @@ const AppContainer: FC = () => {
     handleAction,
     handleCloseNewContentDialog,
     handleCloseImportAssetsDialog,
+    handleCloseDeleteContentDialog,
     handleWorkingScreenAction,
     handleCloseNotification,
     isNewContentDialogOpen,
     isImportAssetsDialogOpen,
     importBundleId,
     importErrors,
+    deleteContent,
+    handleConfirmDeleteContent,
+    isDeletingContent,
     newContentStrategy,
     notificationError,
     projectStructure,
@@ -53,6 +58,13 @@ const AppContainer: FC = () => {
         onClose={handleCloseImportAssetsDialog}
         onAction={handleWorkingScreenAction}
         open={isImportAssetsDialogOpen}
+      />
+      <DeleteContentDialog
+        isDeleting={isDeletingContent}
+        name={deleteContent?.name ?? ''}
+        onClose={handleCloseDeleteContentDialog}
+        onConfirm={() => void handleConfirmDeleteContent()}
+        open={Boolean(deleteContent)}
       />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />
     </>

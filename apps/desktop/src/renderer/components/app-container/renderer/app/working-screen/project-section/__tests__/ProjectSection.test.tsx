@@ -1,8 +1,8 @@
 import { describe, expect, jest, test } from '@jest/globals';
+import type { ProjectContent } from '@manticore/project/types';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import type { ProjectContent } from '@manticore/project/types';
 import { AssetType, type FolderConfig, type ProjectActionHandler } from '../../../../../../../../types';
 import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
 
@@ -32,7 +32,8 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.rename' }));
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
     await user.type(input, '  Renamed project  ');
@@ -50,13 +51,22 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.rename' }));
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
     await user.type(input, '   ');
 
     expect(screen.getByRole('button', { name: 'common.saveRename' })).toBeDisabled();
     expect(onAction).not.toHaveBeenCalled();
+  });
+
+  test('does not show a delete action for the project root', async () => {
+    const user = userEvent.setup();
+    renderProjectSection(jest.fn<ProjectActionHandler>());
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+
+    expect(screen.queryByRole('menuitem', { name: 'common.delete' })).not.toBeInTheDocument();
   });
 
   test('renders nested folders in an expandable tree without the unnamed root folder', async () => {
@@ -70,7 +80,7 @@ describe('ProjectSection', () => {
       { id: 1, items: [], name: 'Assets/Images' }
     ]);
 
-    const assetsAccordion = screen.getByRole('button', { name: 'Assets folder' });
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
 
     expect(within(assetsAccordion).getByTestId('FolderIcon')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Images' })).not.toBeInTheDocument();
@@ -91,7 +101,7 @@ describe('ProjectSection', () => {
       { id: 1, items: [], name: 'Assets' },
       { id: 2, items: [], name: 'Assets/Images' }
     ]);
-    const assetsAccordion = screen.getByRole('button', { name: 'Assets folder' });
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
 
     await user.click(assetsAccordion);
     expect(within(assetsAccordion).getByTestId('FolderOpenIcon')).toBeInTheDocument();
@@ -116,7 +126,8 @@ describe('ProjectSection', () => {
     expect(screen.queryByTestId('FolderOpenIcon')).not.toBeInTheDocument();
   });
 
-  test('renders root folder bundles with their configured names', () => {
+  test('renders root folder bundles with their configured names', async () => {
+    const user = userEvent.setup();
     const onAction = jest
       .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
@@ -132,8 +143,10 @@ describe('ProjectSection', () => {
 
     expect(screen.getByRole('heading', { name: 'Main bundle' })).toBeInTheDocument();
     expect(screen.getByTestId('BundleIcon')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'bundleFolder.add' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'textureAtlas.add' })).toBeInTheDocument();
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    expect(screen.getByRole('menuitem', { name: 'bundleFolder.add' })).toBeInTheDocument();
+    expect(screen.getByRole('menuitem', { name: 'textureAtlas.add' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
     expect(screen.queryByRole('heading', { name: 'missing' })).not.toBeInTheDocument();
     expect(screen.getAllByRole('heading').map((heading) => heading.textContent)).toEqual([
       'Initial project',
@@ -154,13 +167,29 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }]
     );
 
-    await user.click(screen.getAllByRole('button', { name: 'common.rename' })[1]);
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
     await user.type(input, 'Main bundle');
     await user.click(screen.getByRole('button', { name: 'common.saveRename' }));
 
     expect(onAction).toHaveBeenCalledWith('rename', AssetType.Bundle, 2, 'Main bundle');
+  });
+
+  test('dispatches delete for a non-project item', async () => {
+    const user = userEvent.setup();
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: ['2'], name: '' }],
+      [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }]
+    );
+
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    await user.click(screen.getByRole('menuitem', { name: 'common.delete' }));
+
+    expect(onAction).toHaveBeenCalledWith('delete', AssetType.Bundle, 2);
   });
 
   test('renders bundle folders and texture atlases beneath an expandable bundle', async () => {
@@ -179,7 +208,7 @@ describe('ProjectSection', () => {
       ]
     );
 
-    await user.click(screen.getByRole('button', { name: 'default_bundle bundle' }));
+    await user.click(screen.getByRole('button', { name: 'default_bundle' }));
 
     expect(screen.getByRole('heading', { name: 'Sprites' })).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Characters' })).toBeInTheDocument();
@@ -194,7 +223,8 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'folder.add' }));
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'folder.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.Project, 0);
   });
@@ -207,7 +237,8 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'bundle.add' }));
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'bundle.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.Project, 0);
   });
@@ -220,7 +251,8 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.import' }));
+    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    await user.click(screen.getByRole('menuitem', { name: 'common.import' }));
 
     expect(onAction).toHaveBeenCalledWith('import', AssetType.Project, 0);
   });
@@ -237,37 +269,40 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }]
     );
 
-    await user.click(screen.getAllByRole('button', { name: 'common.import' })[1]);
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    await user.click(screen.getByRole('menuitem', { name: 'common.import' }));
 
     expect(onAction).toHaveBeenCalledWith('import', AssetType.Bundle, 2);
   });
 
-  test('dispatches the full parent path when adding a nested folder', async () => {
+  test('dispatches the parent folder ID when adding a nested folder', async () => {
     const user = userEvent.setup();
     const onAction = jest
       .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
-    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets/Images' }]);
+    renderProjectSection(onAction, [{ id: 2, items: [], name: 'Assets' }, { id: 1, items: [], name: 'Assets/Images' }]);
 
-    await user.click(screen.getByRole('button', { name: 'Assets folder' }));
-    await user.click(screen.getAllByRole('button', { name: 'folder.add' })[1]);
+    await user.click(screen.getByRole('button', { name: 'Assets' }));
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    await user.click(screen.getByRole('menuitem', { name: 'folder.add' }));
 
-    expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.ProjectFolder, 1, 'Assets/Images');
+    expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.ProjectFolder, 1);
   });
 
-  test('dispatches the full parent path when adding a bundle to a folder', async () => {
+  test('dispatches the parent folder ID when adding a bundle to a folder', async () => {
     const user = userEvent.setup();
     const onAction = jest
       .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
       .mockResolvedValue();
 
-    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets/Images' }]);
+    renderProjectSection(onAction, [{ id: 2, items: [], name: 'Assets' }, { id: 1, items: [], name: 'Assets/Images' }]);
 
-    await user.click(screen.getByRole('button', { name: 'Assets folder' }));
-    await user.click(screen.getAllByRole('button', { name: 'bundle.add' })[1]);
+    await user.click(screen.getByRole('button', { name: 'Assets' }));
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    await user.click(screen.getByRole('menuitem', { name: 'bundle.add' }));
 
-    expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.ProjectFolder, 1, 'Assets/Images');
+    expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.ProjectFolder, 1);
   });
 
   test('moves a folder only when it is dropped on another project folder', () => {
@@ -298,7 +333,7 @@ describe('ProjectSection', () => {
     fireEvent.dragOver(target as HTMLElement, { dataTransfer });
     fireEvent.drop(target as HTMLElement, { dataTransfer });
 
-    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, 'Resources');
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, 2);
   });
 
   test('moves a folder to the root when it is dropped on the project item', () => {
@@ -326,7 +361,7 @@ describe('ProjectSection', () => {
     fireEvent.dragOver(projectItem as HTMLElement, { dataTransfer });
     fireEvent.drop(projectItem as HTMLElement, { dataTransfer });
 
-    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, '');
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.ProjectFolder, 1, 0);
   });
 
   test('moves a bundle into a project folder and back to the root', () => {
@@ -362,8 +397,8 @@ describe('ProjectSection', () => {
     fireEvent.dragOver(projectItem as HTMLElement, { dataTransfer });
     fireEvent.drop(projectItem as HTMLElement, { dataTransfer });
 
-    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, 'Assets');
-    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, '');
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, 3);
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, 1);
   });
 
   test('indents bundles and makes a folder containing them expandable', async () => {
@@ -378,7 +413,7 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 3, type: 2, version: 0 }]
     );
 
-    const assetsAccordion = screen.getByRole('button', { name: 'Assets folder' });
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
     expect(screen.queryByRole('heading', { name: 'default_bundle' })).not.toBeInTheDocument();
 
     await user.click(assetsAccordion);
@@ -394,7 +429,8 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }]);
 
-    await user.click(screen.getAllByRole('button', { name: 'common.rename' })[1]);
+    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
     await user.type(input, 'Resources');

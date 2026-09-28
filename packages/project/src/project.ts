@@ -5,7 +5,7 @@ import { AssetType } from './asset-type';
 
 import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJECT_VERSION, MAX_U16 } from './constants';
 import { createProjectContent, isAssetName } from './content';
-import { materializeImportAssetFiles } from './import-asset-file-pool';
+import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
 import type { FolderConfig, ProjectConfig, ProjectContent, ProjectInfo } from './types';
 
@@ -59,16 +59,12 @@ export async function renameProjectBundle(projectPath: string, id: number, name:
   return (await ProjectConfigProxy.load(projectPath)).renameBundle(id, name);
 }
 
-export async function createProjectBundle(projectPath: string, parentPath: string, name: string): Promise<ProjectContent> {
-  const parent = await getFolderByPath(projectPath, parentPath);
-  if (!parent) throw new Error('Parent folder not found.');
-  return (await ProjectConfigProxy.load(projectPath)).addBundle(name, parent.id);
+export async function createProjectBundle(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).addBundle(name, parentId);
 }
 
-export async function moveProjectBundle(projectPath: string, id: number, targetPath: string): Promise<ProjectContent> {
-  const target = await getFolderByPath(projectPath, targetPath);
-  if (!target) throw new Error('Target folder not found.');
-  return (await ProjectConfigProxy.load(projectPath)).moveBundle(id, target.id);
+export async function moveProjectBundle(projectPath: string, id: number, parentId: number): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).moveBundle(id, parentId);
 }
 
 export async function createProjectBundleFolder(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {
@@ -173,6 +169,31 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
   return results;
 }
 
+export async function deleteProjectContent(projectPath: string, id: number): Promise<ProjectInfo> {
+  const config = await ProjectConfigProxy.load(projectPath);
+  const target = config.content.find((item) => item.id === id);
+  if (!target || target.type === AssetType.Project || (target.type === AssetType.ProjectFolder && target.parentId === 0)) {
+    throw new Error('Content not found.');
+  }
+
+  const deletedIds = new Set<number>([id]);
+  // Keep collecting so child ordering in the manifest does not affect the
+  // recursively deleted subtree.
+  for (let previousSize = 0; previousSize !== deletedIds.size; previousSize = deletedIds.size) {
+    config.content.forEach((item) => {
+      if (deletedIds.has(item.parentId)) deletedIds.add(item.id);
+    });
+  }
+
+  const assetPaths = config.content
+    .filter((item) => deletedIds.has(item.id) && (item.type === AssetType.Image || item.type === AssetType.Font))
+    .map((item) => path.join(projectPath, 'src', 'assets', String(item.id).padStart(5, '0')));
+  await deleteImportAssetFiles(assetPaths);
+  await config.deleteContent(deletedIds);
+
+  return getProjectInfo(projectPath);
+}
+
 export async function renameProjectBundleFolder(projectPath: string, id: number, name: string): Promise<ProjectContent> {
   return (await ProjectConfigProxy.load(projectPath)).renameBundleFolder(id, name);
 }
@@ -181,18 +202,9 @@ export async function renameProjectTextureAtlas(projectPath: string, id: number,
   return (await ProjectConfigProxy.load(projectPath)).renameTextureAtlas(id, name);
 }
 
-async function getFolderByPath(projectPath: string, folderPath: string): Promise<FolderConfig | undefined> {
-  return (await getProjectInfo(projectPath)).folders.find((folder) => folder.name === folderPath);
-}
-
-export async function createProjectFolder(projectPath: string, pathName: string): Promise<FolderConfig> {
-  const separator = pathName.lastIndexOf('/');
-  const parentPath = separator === -1 ? '' : pathName.slice(0, separator);
-  const name = pathName.slice(separator + 1);
-  const parent = await getFolderByPath(projectPath, parentPath);
-  if (!parent) throw new Error('Parent folder not found.');
-  await (await ProjectConfigProxy.load(projectPath)).addFolder(name, parent.id);
-  const folder = await getFolderByPath(projectPath, pathName);
+export async function createProjectFolder(projectPath: string, parentId: number, name: string): Promise<FolderConfig> {
+  const created = await (await ProjectConfigProxy.load(projectPath)).addFolder(name, parentId);
+  const folder = (await getProjectInfo(projectPath)).folders.find((item) => item.id === created.id);
   if (!folder) throw new Error('Folder was not created.');
   return folder;
 }
@@ -204,9 +216,7 @@ export async function renameProjectFolder(projectPath: string, id: number, name:
   return folder;
 }
 
-export async function moveProjectFolder(projectPath: string, id: number, targetPath: string): Promise<FolderConfig[]> {
-  const target = await getFolderByPath(projectPath, targetPath);
-  if (!target) throw new Error('Target folder not found.');
-  await (await ProjectConfigProxy.load(projectPath)).moveFolder(id, target.id);
+export async function moveProjectFolder(projectPath: string, id: number, parentId: number): Promise<FolderConfig[]> {
+  await (await ProjectConfigProxy.load(projectPath)).moveFolder(id, parentId);
   return (await getProjectInfo(projectPath)).folders;
 }

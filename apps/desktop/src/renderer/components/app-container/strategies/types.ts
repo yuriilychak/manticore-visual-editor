@@ -1,14 +1,13 @@
 import type { AssetType } from '../../../../types';
 
-import type { ProjectProxy } from '../ProjectProxy';
-import type { NewContentStrategy } from '../types';
 import { ContentAction, type ImportAssetResult, OpenImportAssets, OpenNewContent } from '../common';
 import type { NotificationError } from '../constants';
+import type { ProjectProxy } from '../ProjectProxy';
+import type { NewContentStrategy } from '../types';
 
 
 export type OpenNewContentData =
-  | OpenNewContent<AssetType.Bundle | AssetType.ProjectFolder, { parentPath: string }>
-  | OpenNewContent<AssetType.BundleFolder | AssetType.TextureAtlas, { parentId: number }>;
+  | OpenNewContent<AssetType.Bundle | AssetType.BundleFolder | AssetType.ProjectFolder | AssetType.TextureAtlas, { parentId: number }>;
 
 export type OpenNewContentResult = ContentAction<'open-new-content', OpenNewContentData>;
 export type OpenImportAssetsResult = ContentAction<'open-import-assets', OpenImportAssets>;

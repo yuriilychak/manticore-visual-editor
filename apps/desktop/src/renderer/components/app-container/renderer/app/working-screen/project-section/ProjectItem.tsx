@@ -1,4 +1,4 @@
-import { type DragEvent, type FC } from 'react';
+import { type DragEvent, type FC, type ReactNode } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
@@ -17,15 +17,12 @@ import type { ActionButtonConfig } from '../renameable-item/types';
 
 import { PROJECT_BUNDLE_DRAG_TYPE, PROJECT_FOLDER_DRAG_TYPE } from './helpers';
 
-export type ProjectItemType = AssetType.Project | AssetType.ProjectFolder | AssetType.Bundle | AssetType.BundleFolder | AssetType.Font | AssetType.Image | AssetType.TextureAtlas;
-
 type ProjectItemConfig = {
   actions?: ActionButtonConfig[];
   dragType?: string;
   dropTargets?: Record<string, AssetType>;
   expandedIcon?: SvgIconComponent;
   icon: SvgIconComponent;
-  passesParentPathToCreateActions?: boolean;
 };
 
 const ADD_CONTENT_ACTIONS: ActionButtonConfig[] = [
@@ -54,7 +51,7 @@ const FOLDER_AND_BUNDLE_DROP_TARGETS = {
   [PROJECT_BUNDLE_DRAG_TYPE]: AssetType.Bundle
 };
 
-export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
+export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
   [AssetType.Project]: {
     actions: ROOT_CONTENT_ACTIONS,
     dropTargets: FOLDER_AND_BUNDLE_DROP_TARGETS,
@@ -65,8 +62,7 @@ export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
     dragType: PROJECT_FOLDER_DRAG_TYPE,
     dropTargets: FOLDER_AND_BUNDLE_DROP_TARGETS,
     expandedIcon: FolderOpenIcon,
-    icon: FolderIcon,
-    passesParentPathToCreateActions: true
+    icon: FolderIcon
   },
   [AssetType.Bundle]: {
     actions: BUNDLE_CONTENT_ACTIONS,
@@ -91,31 +87,26 @@ export const PROJECT_ITEM_CONFIG: Record<ProjectItemType, ProjectItemConfig> = {
   }
 };
 
-export const getProjectItemIcon = (contentType: ProjectItemType, expanded = false) => {
+export const getProjectItemIcon = (contentType: AssetType, expanded = false) => {
   const { expandedIcon, icon } = PROJECT_ITEM_CONFIG[contentType];
 
   return expanded && expandedIcon ? expandedIcon : icon;
 };
 
-type ProjectItemProps = {
-  contentType: ProjectItemType;
+export type ProjectItemProps = {
+  children?: ReactNode;
+  contentType: AssetType;
   expanded?: boolean;
   id: number;
   name: string;
   onAction: ProjectActionHandler;
-  parentPath?: string;
+  dropTargetId?: number;
 };
 
-const ProjectItem: FC<ProjectItemProps> = ({ contentType, expanded = false, id, name, onAction, parentPath }) => {
+const ProjectItem: FC<ProjectItemProps> = ({ contentType, dropTargetId, expanded = false, id, name, onAction }) => {
   const config = PROJECT_ITEM_CONFIG[contentType];
+  const resolvedDropTargetId = dropTargetId ?? id;
   const Icon = getProjectItemIcon(contentType, expanded);
-  const handleAction: ProjectActionHandler = (action, actionContentType, actionId, data) => {
-    if (config.passesParentPathToCreateActions && (action === 'add-folder' || action === 'add-bundle')) {
-      return onAction(action, actionContentType, actionId, parentPath);
-    }
-
-    return data === undefined ? onAction(action, actionContentType, actionId) : onAction(action, actionContentType, actionId, data);
-  };
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (!config.dragType || (event.target instanceof Element && event.target.closest('button, input'))) {
       event.preventDefault();
@@ -148,7 +139,7 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, expanded = false, id, 
     if (!draggedItem) return;
 
     event.preventDefault();
-    void Promise.resolve(onAction('move', draggedItem.draggedContentType, draggedItem.draggedId, parentPath ?? '')).catch(() => undefined);
+    void Promise.resolve(onAction('move', draggedItem.draggedContentType, draggedItem.draggedId, resolvedDropTargetId)).catch(() => undefined);
   };
 
   return (
@@ -165,7 +156,7 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, expanded = false, id, 
         Icon={Icon}
         id={id}
         name={name}
-        onAction={handleAction}
+        onAction={onAction}
       />
     </Box>
   );

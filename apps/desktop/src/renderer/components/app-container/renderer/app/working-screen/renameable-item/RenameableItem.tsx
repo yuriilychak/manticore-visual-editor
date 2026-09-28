@@ -1,13 +1,14 @@
-import type { FC, ReactNode } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type FC, type ReactNode } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
-import { Box, FilledInput, IconButton, Tooltip, Typography } from '@mui/material';
+import { Box, FilledInput, Tooltip, Typography } from '@mui/material';
 
 import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
+import { RenameableItemActionsMenu } from './actions-menu';
 import { ITEM_GAP, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
+import RenameableItemActionButtons from './RenameableItemActionButtons';
 import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
@@ -33,7 +34,6 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   disabledActions,
   actions
 }) => {
-  const { t } = useTranslation();
   const {
     boxComponent,
     disabledByAction,
@@ -43,53 +43,55 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
     handleSubmit,
     isEditing,
     itemActions,
-    trimmedName
+    menuActions,
+    trimmedName,
+    viewActions
   } = useRenameableItem(contentType, id, name, onAction, disabledActions, actions);
-
   return (
     <Box
       alignItems="center"
       component={boxComponent}
       display="flex"
       gap={ITEM_GAP}
+      minWidth={0}
       onSubmit={handleSubmit}
-      sx={RENAMEABLE_ITEM_STYLES.viewActions}
+      width="100%"
     >
       {Icon ? <Icon color="action" fontSize="small" /> : icon}
       {isEditing ? (
-        <FilledInput
-          autoFocus
-          disableUnderline
-          error={!trimmedName}
-          fullWidth
-          inputProps={{ 'aria-label': renameNameLabel }}
-          onChange={handleNameChange}
-          size="small"
-          sx={RENAMEABLE_ITEM_STYLES.editingNameInput}
-          value={editedName}
-        />
+        <>
+          <FilledInput
+            autoFocus
+            disableUnderline
+            error={!trimmedName}
+            fullWidth
+            inputProps={{ 'aria-label': renameNameLabel }}
+            onChange={handleNameChange}
+            size="small"
+            sx={RENAMEABLE_ITEM_STYLES.editingNameInput}
+            value={editedName}
+          />
+          <RenameableItemActionButtons
+            actions={itemActions}
+            disabledByAction={disabledByAction}
+            onActionClick={handleActionButtonClick}
+          />
+        </>
       ) : (
-        <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">
-          {name}
-        </Typography>
+        <>
+          <Tooltip title={name}>
+            <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">
+              {name}
+            </Typography>
+          </Tooltip>
+          <RenameableItemActionsMenu
+            disabledByAction={disabledByAction}
+            menuActions={menuActions}
+            onActionClick={handleActionButtonClick}
+            viewActions={viewActions}
+          />
+        </>
       )}
-      {itemActions.map(({ action, tooltipLocale, Icon: ActionIcon, icon: actionIcon }) => (
-        <Tooltip key={action} title={t(tooltipLocale)}>
-          <span>
-            <IconButton
-              aria-label={t(tooltipLocale)}
-              className="renameable-item-view-action"
-              data-action={action}
-              disabled={disabledByAction[action]}
-              onClick={handleActionButtonClick}
-              size="small"
-              type="button"
-            >
-              {ActionIcon ? <ActionIcon fontSize="small" /> : actionIcon}
-            </IconButton>
-          </span>
-        </Tooltip>
-      ))}
     </Box>
   );
 };

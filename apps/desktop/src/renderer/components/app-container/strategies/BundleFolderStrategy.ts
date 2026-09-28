@@ -2,8 +2,8 @@ import { AssetType } from '../../../../types';
 
 import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
 import { NotificationError } from '../constants';
-import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
+import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
 import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';

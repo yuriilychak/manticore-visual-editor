@@ -1,9 +1,9 @@
 import { AssetType } from '../../../../types';
 
-import { ContentAction, ImportAssets, type ImportAssetResult, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
+import { ContentAction, type ImportAssetResult, ImportAssets, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError } from '../constants';
-import type { NewContentField, NewContentValues } from '../types';
 import { ProjectProxy } from '../ProjectProxy';
+import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
 import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
@@ -20,7 +20,7 @@ export class BundleStrategy extends ContentStrategyBase {
     if (!project || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
 
     this.projectProxy.addBundle(
-      await window.manticore.createProjectBundle(project.path, this.getField('parentPath', ''), name.trim())
+      await window.manticore.createProjectBundle(project.path, this.getField('parentId', 0), name.trim())
     );
   }
 
@@ -38,8 +38,6 @@ export class BundleStrategy extends ContentStrategyBase {
         break;
     }
 
-    if (typeof data !== 'string') return;
-
     const project = this.projectProxy.project;
     if (!project) {
       return notifyUnavailableDesktopApi();
@@ -47,6 +45,7 @@ export class BundleStrategy extends ContentStrategyBase {
 
     switch (action) {
       case 'rename': {
+        if (typeof data !== 'string') return;
         if (!window.manticore?.renameProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
@@ -57,6 +56,7 @@ export class BundleStrategy extends ContentStrategyBase {
         return;
       }
       case 'move': {
+        if (typeof data !== 'number') return;
         if (!window.manticore?.moveProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
@@ -108,7 +108,7 @@ export class BundleStrategy extends ContentStrategyBase {
 
   async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {
     const trimmedName = name.trim();
-    const hasDuplicateName = this.getNamesAtProjectPath(this.getField('parentPath', '')).includes(trimmedName);
+    const hasDuplicateName = this.getNamesAtParentId(this.getField('parentId', 0)).includes(trimmedName);
 
     return new NewContentValidation(
       hasDuplicateName ? 'name' : '',

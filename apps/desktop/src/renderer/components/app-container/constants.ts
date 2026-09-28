@@ -3,6 +3,7 @@ import type { ApplicationAction, WindowControls } from '../../types';
 export enum NotificationError {
   None = 0,
   ContentConfiguration,
+  DeleteContent,
   ContentTypeUnavailable,
   ImportAssets,
   MoveBundle,
@@ -24,6 +25,7 @@ export const SELECTED_ACTION_IDS_BY_LANGUAGE: Readonly<Record<string, readonly A
 export const NOTIFICATION_LOCALE_KEYS: Readonly<Record<NotificationError, string>> = {
   [NotificationError.None]: '',
   [NotificationError.ContentConfiguration]: 'common.contentConfigurationError',
+  [NotificationError.DeleteContent]: 'common.deleteContentError',
   [NotificationError.ContentTypeUnavailable]: 'common.contentTypeUnavailable',
   [NotificationError.ImportAssets]: 'common.importAssetsError',
   [NotificationError.MoveBundle]: 'common.moveBundleError',

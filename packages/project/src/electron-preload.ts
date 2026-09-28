@@ -5,14 +5,15 @@ import type { ProjectContent } from './types';
 export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
   createProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:create', options),
-  createProjectBundle: (projectPath: string, parentPath: string, name: string) => ipcRenderer.invoke('project:create-bundle', projectPath, parentPath, name),
+  createProjectBundle: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-bundle', projectPath, parentId, name),
   createProjectBundleFolder: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-bundle-folder', projectPath, parentId, name),
-  createProjectFolder: (projectPath: string, name: string) => ipcRenderer.invoke('project:create-folder', projectPath, name),
+  createProjectFolder: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-folder', projectPath, parentId, name),
   createProjectTextureAtlas: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-texture-atlas', projectPath, parentId, name),
+  deleteProjectContent: (projectPath: string, id: number) => ipcRenderer.invoke('project:delete-content', projectPath, id),
   importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
-  moveProjectBundle: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-bundle', projectPath, id, targetPath),
-  moveProjectFolder: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-folder', projectPath, id, targetPath),
+  moveProjectBundle: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-bundle', projectPath, id, parentId),
+  moveProjectFolder: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-folder', projectPath, id, parentId),
   onImportAssetsProgress: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => {
     const handleProgress = (_event: Electron.IpcRendererEvent, jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => listener(jobId, result);
     ipcRenderer.on('project:import-assets-progress', handleProgress);

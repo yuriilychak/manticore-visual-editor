@@ -1,9 +1,9 @@
 import { AssetType } from '../../../../types';
 
-import type { NewContentField, NewContentValidation, NewContentValues } from '../types';
-import { ProjectProxy } from '../ProjectProxy';
-
 import { ContentAction } from '../common';
+import { ProjectProxy } from '../ProjectProxy';
+import type { NewContentField, NewContentValidation, NewContentValues } from '../types';
+
 import type { ContentStrategy, ContentStrategyResult } from './types';
 
 export abstract class ContentStrategyBase implements ContentStrategy {
@@ -28,20 +28,6 @@ export abstract class ContentStrategyBase implements ContentStrategy {
 
   protected get projectProxy() {
     return this.#proxy;
-  }
-
-  protected getNamesAtProjectPath(parentPath: string) {
-    const project = this.#proxy.project;
-    if (!project) return [];
-
-    const content = project.content;
-    if (!content) return [];
-
-    const folder = project.folders.find((item) => item.name === parentPath);
-    const projectFolder = content.find((item) => item.type === AssetType.ProjectFolder && item.name === parentPath);
-    const parentId = folder ? folder.id : projectFolder ? projectFolder.id : undefined;
-
-    return content.filter((item) => item.parentId === parentId).map((item) => item.name);
   }
 
   protected getNamesAtParentId(parentId: number) {

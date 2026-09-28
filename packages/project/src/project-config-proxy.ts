@@ -109,6 +109,13 @@ export class ProjectConfigProxy {
     return asset;
   }
 
+  async deleteContent(ids: ReadonlySet<number>): Promise<void> {
+    if (!ids.size) return;
+
+    this.config.content = this.config.content.filter((item) => !ids.has(item.id));
+    await this.save();
+  }
+
   async renameFolder(id: number, name: string): Promise<ProjectContent> {
     if (!isAssetName(name)) throw new Error('Folder name must be 1 to 32 printable ASCII characters.');
     const folder = this.config.content.find((item) => item.id === id && item.type === AssetType.ProjectFolder);

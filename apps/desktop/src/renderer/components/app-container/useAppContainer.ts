@@ -18,6 +18,8 @@ export const useAppContainer = () => {
   const [isNewContentDialogOpen, setNewContentDialogOpen] = useState(false);
   const [isImportAssetsDialogOpen, setImportAssetsDialogOpen] = useState(false);
   const [importErrors, setImportErrors] = useState<readonly ImportAssetResult[]>([]);
+  const [deleteContent, setDeleteContent] = useState<{ id: number; name: string } | null>(null);
+  const [isDeletingContent, setDeletingContent] = useState(false);
   const [importBundleId, setImportBundleId] = useState(0);
   const [newContentAssetType, setNewContentAssetType] = useState<AssetType>(AssetType.ProjectFolder);
   const [notificationError, setNotificationError] = useState(NotificationError.None);
@@ -108,6 +110,11 @@ export const useAppContainer = () => {
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
+      if (action === 'delete') {
+        const content = project?.content?.find((item) => item.id === id && item.type === assetType);
+        if (content && assetType !== AssetType.Project) setDeleteContent({ id, name: content.name });
+        return;
+      }
       const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
       if (!result) return;
 
@@ -131,8 +138,28 @@ export const useAppContainer = () => {
           break;
       }
     },
-    [contentStrategies, openImportAssets, openNewContent]
+    [contentStrategies, openImportAssets, openNewContent, project]
   );
+
+  const handleCloseDeleteContentDialog = useCallback(() => {
+    if (!isDeletingContent) setDeleteContent(null);
+  }, [isDeletingContent]);
+  const handleConfirmDeleteContent = useCallback(async () => {
+    if (!deleteContent || !project || !window.manticore?.deleteProjectContent) {
+      notifyUnavailableDesktopApi();
+      return;
+    }
+
+    setDeletingContent(true);
+    try {
+      projectProxy.replaceProject(await window.manticore.deleteProjectContent(project.path, deleteContent.id));
+      setDeleteContent(null);
+    } catch {
+      setNotificationError(NotificationError.DeleteContent);
+    } finally {
+      setDeletingContent(false);
+    }
+  }, [deleteContent, project, projectProxy]);
 
   const projectStructure = useMemo(
     () => ({ onAction: handleWorkingScreenAction,  project }),
@@ -155,7 +182,11 @@ export const useAppContainer = () => {
     handleAction,
     handleCloseNewContentDialog,
     handleCloseImportAssetsDialog,
+    handleCloseDeleteContentDialog,
     handleCloseNotification,
+    handleConfirmDeleteContent,
+    deleteContent,
+    isDeletingContent,
     isNewContentDialogOpen,
     isImportAssetsDialogOpen,
     importBundleId,
