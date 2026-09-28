@@ -34,20 +34,6 @@ const IMAGE_EXTENSIONS = new Set(['avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 's
 const isImage = (filePath: string) => IMAGE_EXTENSIONS.has(getFileExtension(filePath));
 const toFileUrl = (filePath: string) => encodeURI(`file://${filePath.replaceAll('\\', '/')}`).replaceAll('#', '%23').replaceAll('?', '%3F');
 
-const imageBitmapToPreviewUrl = (bitmap: ImageBitmap): Promise<string> => {
-  const canvas = document.createElement('canvas');
-  canvas.height = bitmap.height;
-  canvas.width = bitmap.width;
-  const context = canvas.getContext('2d');
-  if (!context) return Promise.reject(new Error('Unable to create image preview.'));
-
-  context.drawImage(bitmap, 0, 0);
-  return new Promise((resolve, reject) => canvas.toBlob(
-    (blob) => blob ? resolve(URL.createObjectURL(blob)) : reject(new Error('Unable to create image preview.')),
-    'image/png'
-  ));
-};
-
 const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors, initialBundleId, onAction, onClose, open }) => {
   const { t } = useTranslation();
   const [bundleId, setBundleId] = useState(initialBundleId);
@@ -110,17 +96,17 @@ const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors
       const loadedImages = await window.manticore.loadImportImages(imagePaths);
       const files = loadedImages.map(({ content, name, type }) => new File([content], name, { type }));
       const imageConfigsByPath = await imagePolygonizer.importImages(files as unknown as FileList);
-      const previews = await Promise.all(imageConfigsByPath.map(async (image, index) => ({
+      const previews = imageConfigsByPath.map((image, index) => ({
         image,
         path: loadedImages[index].path,
-        url: await imageBitmapToPreviewUrl(image.src)
-      })));
+        url: image.preview ? URL.createObjectURL(new Blob([new Uint8Array(image.preview)], { type: 'image/png' })) : undefined
+      }));
 
       previews.forEach(({ image, path, url }) => {
         imageConfigs.current.set(path, image);
-        previewUrls.current.set(path, url);
+        if (url) previewUrls.current.set(path, url);
       });
-      setImagePreviewUrls((current) => ({ ...current, ...Object.fromEntries(previews.map(({ path, url }) => [path, url])) }));
+      setImagePreviewUrls((current) => ({ ...current, ...Object.fromEntries(previews.flatMap(({ path, url }) => url ? [[path, url]] : [])) }));
     } catch {
       // The original file URL remains available as a fallback preview.
     } finally {
@@ -153,8 +139,8 @@ const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors
         images.map(({ image }) => image),
         () => undefined
       );
-      const dataByPath = new Map(images.map(({ filePath }, index) => [filePath, serializedImages[index]]));
-      const assets = filePaths.map((filePath) => ({ data: dataByPath.get(filePath), filePath }));
+      const dataByPath = new Map(images.map(({ filePath, image }, index) => [filePath, { data: serializedImages[index], preview: image.preview }]));
+      const assets = filePaths.map((filePath) => ({ ...dataByPath.get(filePath), filePath }));
       await onAction('import-asset', AssetType.Bundle, bundleId, new ImportAssets(assets, handleImportProgress));
     } finally {
       setSubmitting(false);

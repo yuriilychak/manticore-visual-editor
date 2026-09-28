@@ -14,6 +14,8 @@ export interface ImageMetadata {
     label: string;
     type: string;
     src: ImageBitmap;
+    /** A 256×256 PNG thumbnail generated when the source image is imported. */
+    preview?: Uint8Array;
 }
 
 export interface ImageConfig extends ImageMetadata {

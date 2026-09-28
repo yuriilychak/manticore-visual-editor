@@ -3,17 +3,43 @@ import PolygonData from './polygon-data';
 
 import type { ImageConfig, ImageExportConfig, CropOption } from './types';
 
-export const fileToImageConfig = async (file: File): Promise<ImageConfig> => ({
-    label: file.name.replace(/\.[^/.]+$/, ''),
-    type: file.type.replace('image/', ''),
-    src: await createImageBitmap(file, { premultiplyAlpha: 'none' }),
-    selected: false,
-    outdated: false,
-    hasPolygons: false,
-    id: crypto.randomUUID(),
-    config: { ...DEFAULT_CONFIG },
-    polygonInfo: new Uint16Array(0),
-});
+export const IMAGE_PREVIEW_SIZE = 256;
+
+/**
+ * Creates a transparent, square PNG preview using contain-style scaling. The
+ * source is therefore never cropped or stretched, and is centered in frame.
+ */
+export async function imageBitmapToPreviewPng(bitmap: ImageBitmap): Promise<Uint8Array> {
+    const canvas = new OffscreenCanvas(IMAGE_PREVIEW_SIZE, IMAGE_PREVIEW_SIZE);
+    const context = canvas.getContext('2d')!;
+    const scale = Math.min(IMAGE_PREVIEW_SIZE / bitmap.width, IMAGE_PREVIEW_SIZE / bitmap.height);
+    const width = bitmap.width * scale;
+    const height = bitmap.height * scale;
+
+    context.imageSmoothingEnabled = true;
+    context.imageSmoothingQuality = 'high';
+    context.drawImage(bitmap, (IMAGE_PREVIEW_SIZE - width) / 2, (IMAGE_PREVIEW_SIZE - height) / 2, width, height);
+
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    return new Uint8Array(await blob.arrayBuffer());
+}
+
+export const fileToImageConfig = async (file: File): Promise<ImageConfig> => {
+    const src = await createImageBitmap(file, { premultiplyAlpha: 'none' });
+
+    return {
+        label: file.name.replace(/\.[^/.]+$/, ''),
+        type: file.type.replace('image/', ''),
+        src,
+        preview: await imageBitmapToPreviewPng(src),
+        selected: false,
+        outdated: false,
+        hasPolygons: false,
+        id: crypto.randomUUID(),
+        config: { ...DEFAULT_CONFIG },
+        polygonInfo: new Uint16Array(0),
+    };
+};
 
 
 export async function imageBitmapToRgbaPixels(bitmap: ImageBitmap): Promise<Uint8Array> {
@@ -177,4 +203,3 @@ export function buildExportConfig(
 
     return config;
 }
-

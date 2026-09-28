@@ -1,6 +1,6 @@
 import type { ProjectContent } from '@manticore/project/types';
 
-export type ImportAsset = { data?: Uint8Array; filePath: string };
+export type ImportAsset = { data?: Uint8Array; filePath: string; preview?: Uint8Array };
 export type ImportAssetResult = { asset: ProjectContent | null; error: string | null; filePath: string };
 
 export class ImportAssets {

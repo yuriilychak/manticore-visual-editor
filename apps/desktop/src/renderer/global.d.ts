@@ -21,7 +21,7 @@ declare global {
       openProject: () => Promise<ProjectInfo>;
       loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
       selectImportFiles?: () => Promise<string[]>;
-      importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
+      importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;
       moveProjectFolder?: (projectPath: string, id: number, targetPath: string) => Promise<FolderConfig[]>;
       moveProjectBundle?: (projectPath: string, id: number, targetPath: string) => Promise<ProjectContent>;

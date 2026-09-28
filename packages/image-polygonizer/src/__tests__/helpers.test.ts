@@ -1,4 +1,4 @@
-import { fileToImageConfig, imageBitmapToRgbaPixels, exportImage, buildExportConfig } from '../helpers';
+import { fileToImageConfig, imageBitmapToPreviewPng, imageBitmapToRgbaPixels, exportImage, buildExportConfig, IMAGE_PREVIEW_SIZE } from '../helpers';
 import PolygonData from '../polygon-data';
 
 const CONFIG = { maxPointCount: 32, alphaThreshold: 1, minimalDistance: 8 };
@@ -54,6 +54,11 @@ describe('fileToImageConfig', () => {
         expect(result.src.height).toBe(10);
     });
 
+    it('creates a 256px PNG preview alongside the source bitmap', async () => {
+        const result = await fileToImageConfig(new File([''], 'img.png', { type: 'image/png' }));
+        expect(result.preview).toEqual(new Uint8Array([137, 80, 78, 71]));
+    });
+
     it('handles multiple dots in filename', async () => {
         const file = new File([''], 'my.image.png', { type: 'image/png' });
         const result = await fileToImageConfig(file);
@@ -70,6 +75,14 @@ describe('fileToImageConfig', () => {
         const file = new File([''], 'anim.gif', { type: 'image/gif' });
         const result = await fileToImageConfig(file);
         expect(result.type).toBe('gif');
+    });
+});
+
+describe('imageBitmapToPreviewPng', () => {
+    it('renders into a 256×256 canvas', async () => {
+        const preview = await imageBitmapToPreviewPng(makeBitmap(400, 100));
+        expect(preview).toEqual(new Uint8Array([137, 80, 78, 71]));
+        expect(IMAGE_PREVIEW_SIZE).toBe(256);
     });
 });
 

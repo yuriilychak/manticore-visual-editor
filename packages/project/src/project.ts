@@ -81,7 +81,7 @@ export async function createProjectTextureAtlas(projectPath: string, parentId: n
 const IMAGE_EXTENSIONS = new Set(['.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
 const FONT_EXTENSIONS = new Set(['.eot', '.otf', '.ttf', '.woff', '.woff2']);
 
-export type ImportProjectAsset = { data?: readonly number[] | Uint8Array; filePath: string };
+export type ImportProjectAsset = { data?: readonly number[] | Uint8Array; filePath: string; preview?: readonly number[] | Uint8Array };
 export type ImportProjectAssetResult = { asset: ProjectContent | null; error: string | null; filePath: string };
 
 const getUniqueAssetName = (name: string, existingNames: ReadonlySet<string>): string => {
@@ -98,7 +98,7 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
 
   const existingNames = new Set(config.content.filter((item) => item.parentId === bundleId).map((item) => item.name));
   const results: ImportProjectAssetResult[] = [];
-  for (const { data, filePath } of assets) {
+  for (const { data, filePath, preview } of assets) {
     try {
       const extension = path.extname(filePath).toLocaleLowerCase();
       const isImage = IMAGE_EXTENSIONS.has(extension);
@@ -109,6 +109,8 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
       if (!assetType || !fileName || fileName !== path.basename(fileName) || !isAssetName(assetName)) throw new Error('Asset type is not supported.');
       const imageData = isImage ? data : undefined;
       if (isImage && (!imageData || !imageData.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff))) throw new Error('Image data is missing or invalid.');
+      const imagePreview = isImage ? preview : undefined;
+      if (imagePreview && !imagePreview.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff)) throw new Error('Image preview is invalid.');
 
       const name = getUniqueAssetName(assetName, existingNames);
       const assetPath = path.join(projectPath, 'src', 'assets', String(config.getNextContentId()).padStart(5, '0'));
@@ -117,6 +119,7 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
         await mkdir(assetPath, { recursive: false });
         await copyFile(filePath, path.join(assetPath, 'source'));
         if (imageData) await writeFile(path.join(assetPath, 'asset'), Buffer.from(imageData));
+        if (imagePreview) await writeFile(path.join(assetPath, 'preview'), Buffer.from(imagePreview));
       } catch (error) {
         await rm(assetPath, { force: true, recursive: true });
         throw error;

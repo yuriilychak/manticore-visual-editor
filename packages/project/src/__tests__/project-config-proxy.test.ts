@@ -43,7 +43,7 @@ describe('ProjectConfigProxy', () => {
     await createProject(destination, 'Example');
 
     await expect(importProjectAssets(destination, 2, [
-      { data: [7, 8, 9], filePath: imagePath },
+      { data: [7, 8, 9], filePath: imagePath, preview: [10, 11, 12] },
       { filePath: fontPath }
     ])).resolves.toEqual([
       { asset: { id: 3, name: 'hero', parentId: 2, type: 4, version: 0 }, error: null, filePath: imagePath },
@@ -51,6 +51,7 @@ describe('ProjectConfigProxy', () => {
     ]);
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'asset'))).resolves.toEqual(Buffer.from([7, 8, 9]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'preview'))).resolves.toEqual(Buffer.from([10, 11, 12]));
     await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([4, 5, 6]));
     const config = JSON.parse(await readFile(path.join(destination, 'src', 'config.json'), 'utf8')) as { content: Array<{ data: unknown; id: number }> };
     expect(config.content.find(({ id }) => id === 3)).not.toHaveProperty('data');

@@ -9,7 +9,7 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   createProjectBundleFolder: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-bundle-folder', projectPath, parentId, name),
   createProjectFolder: (projectPath: string, name: string) => ipcRenderer.invoke('project:create-folder', projectPath, name),
   createProjectTextureAtlas: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-texture-atlas', projectPath, parentId, name),
-  importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
+  importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
   moveProjectBundle: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-bundle', projectPath, id, targetPath),
   moveProjectFolder: (projectPath: string, id: number, targetPath: string) => ipcRenderer.invoke('project:move-folder', projectPath, id, targetPath),

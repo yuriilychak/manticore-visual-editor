@@ -21,6 +21,7 @@ self.onmessage = async ({ data }: MessageEvent<ThreadInput>) => {
         case 'addImages':
             message = await fileToImageConfig(data.data as File);
             transferrable.push(message.src);
+            if (message.preview) transferrable.push(message.preview.buffer as ArrayBuffer);
             break;
         case 'projectImport': {
             const config = await ImageConfigSerialization.deserialize(data.data as Uint8Array);

@@ -48,6 +48,10 @@ class MockOffscreenCanvas {
     transferToImageBitmap() {
         return new MockImageBitmap(this.width, this.height);
     }
+
+    async convertToBlob() {
+        return new Blob([new Uint8Array([137, 80, 78, 71])], { type: 'image/png' });
+    }
 }
 (global as any).OffscreenCanvas = MockOffscreenCanvas;
 
