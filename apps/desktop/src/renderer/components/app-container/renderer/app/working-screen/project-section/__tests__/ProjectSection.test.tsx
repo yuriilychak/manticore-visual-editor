@@ -401,6 +401,56 @@ describe('ProjectSection', () => {
     expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 2, 1);
   });
 
+  test('moves bundle content to compatible bundle, bundle-folder, and atlas targets', async () => {
+    const user = userEvent.setup();
+    const onAction = jest
+      .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
+      .mockResolvedValue();
+    const createDataTransfer = (type: string) => {
+      const dragData = new Map<string, string>();
+
+      return {
+        dropEffect: '',
+        effectAllowed: '',
+        getData: (dragType: string) => dragData.get(dragType) ?? '',
+        setData: (dragType: string, value: string) => dragData.set(dragType, value),
+        types: [type]
+      };
+    };
+
+    renderProjectSection(onAction, [], [
+      { data: null, id: 1, name: '', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
+      { data: null, id: 2, name: 'Main', parentId: 1, type: AssetType.Bundle, version: 0 },
+      { data: null, id: 3, name: 'Nested', parentId: 2, type: AssetType.Bundle, version: 0 },
+      { data: null, id: 4, name: 'Source', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+      { data: null, id: 5, name: 'Target', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+      { data: null, id: 6, name: 'Characters', parentId: 2, type: AssetType.TextureAtlas, version: 0 },
+      { data: null, id: 7, name: 'Hero', parentId: 2, type: AssetType.Image, version: 0 }
+    ]);
+    await user.click(screen.getByRole('button', { name: 'Main' }));
+
+    const getItem = (name: string) => screen.getByRole('heading', { name }).closest('[draggable="true"]') as HTMLElement;
+    const move = (sourceName: string, targetName: string, dragType: string) => {
+      const dataTransfer = createDataTransfer(dragType);
+      const source = getItem(sourceName);
+      const target = getItem(targetName);
+
+      fireEvent.dragStart(source, { dataTransfer });
+      fireEvent.dragOver(target, { dataTransfer });
+      fireEvent.drop(target, { dataTransfer });
+    };
+
+    move('Source', 'Target', 'application/x-manticore-bundle-folder');
+    move('Nested', 'Main', 'application/x-manticore-project-bundle');
+    move('Characters', 'Target', 'application/x-manticore-texture-atlas');
+    move('Hero', 'Characters', 'application/x-manticore-image');
+
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.BundleFolder, 4, 5);
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Bundle, 3, 2);
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.TextureAtlas, 6, 5);
+    expect(onAction).toHaveBeenCalledWith('move', AssetType.Image, 7, 6);
+  });
+
   test('indents bundles and makes a folder containing them expandable', async () => {
     const user = userEvent.setup();
     const onAction = jest

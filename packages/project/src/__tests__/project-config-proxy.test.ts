@@ -235,6 +235,34 @@ describe('ProjectConfigProxy', () => {
     });
   });
 
+  test('moves bundle content to compatible bundle, bundle-folder, and atlas targets', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    await mkdir(path.join(projectPath, 'src'));
+    await writeFile(
+      path.join(projectPath, 'src', 'config.json'),
+      JSON.stringify({
+        content: [
+          { data: null, id: 1, name: '', parentId: 0, type: 1, version: 0 },
+          { data: null, id: 2, name: 'Main', parentId: 1, type: 2, version: 0 },
+          { data: null, id: 3, name: 'Nested', parentId: 1, type: 2, version: 0 },
+          { data: null, id: 4, name: 'Source', parentId: 2, type: 3, version: 0 },
+          { data: null, id: 5, name: 'Target', parentId: 2, type: 3, version: 0 },
+          { data: null, id: 6, name: 'Characters', parentId: 2, type: 5, version: 0 },
+          { data: null, id: 7, name: 'Hero', parentId: 2, type: 4, version: 0 }
+        ],
+        name: 'Project',
+        version: 0
+      })
+    );
+    const projectConfig = await ProjectConfigProxy.load(projectPath);
+
+    await expect(projectConfig.moveContent(4, 5)).resolves.toMatchObject({ id: 4, parentId: 5 });
+    await expect(projectConfig.moveContent(3, 4)).resolves.toMatchObject({ id: 3, parentId: 4 });
+    await expect(projectConfig.moveContent(6, 5)).resolves.toMatchObject({ id: 6, parentId: 5 });
+    await expect(projectConfig.moveContent(7, 6)).resolves.toMatchObject({ id: 7, parentId: 6 });
+    await expect(projectConfig.moveContent(5, 4)).rejects.toThrow('Content cannot be moved into itself.');
+  });
+
   test('renames bundle folders and texture atlases while enforcing sibling names', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     await mkdir(path.join(projectPath, 'src'));

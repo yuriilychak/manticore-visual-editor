@@ -67,6 +67,10 @@ export async function moveProjectBundle(projectPath: string, id: number, parentI
   return (await ProjectConfigProxy.load(projectPath)).moveBundle(id, parentId);
 }
 
+export async function moveProjectContent(projectPath: string, id: number, parentId: number): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).moveContent(id, parentId);
+}
+
 export async function createProjectBundleFolder(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {
   return (await ProjectConfigProxy.load(projectPath)).addBundleFolder(name, parentId);
 }

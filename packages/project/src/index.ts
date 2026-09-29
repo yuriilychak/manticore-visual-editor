@@ -12,6 +12,7 @@ export {
   getProjectInfo,
   importProjectAssets,
   moveProjectBundle,
+  moveProjectContent,
   moveProjectFolder,
   renameProject,
   renameProjectBundle,

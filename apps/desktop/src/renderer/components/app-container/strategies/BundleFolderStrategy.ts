@@ -32,15 +32,32 @@ export class BundleFolderStrategy extends ContentStrategyBase {
         break;
     }
 
-    if (action !== 'rename' || typeof data !== 'string') return;
-
     const project = this.projectProxy.project;
-    if (!project || !window.manticore?.renameProjectBundleFolder) return notifyUnavailableDesktopApi();
+    if (!project) return notifyUnavailableDesktopApi();
 
-    try {
-      this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundleFolder(project.path, id, data));
-    } catch {
-      return createErrorResult(id, NotificationError.RenameBundleFolder);
+    switch (action) {
+      case 'move':
+        if (typeof data !== 'number') return;
+        if (!window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
+
+        try {
+          this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(project.path, id, data));
+        } catch {
+          return createErrorResult(id, NotificationError.MoveBundle);
+        }
+        return;
+      case 'rename':
+        if (typeof data !== 'string') return;
+        if (!window.manticore?.renameProjectBundleFolder) return notifyUnavailableDesktopApi();
+
+        try {
+          this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundleFolder(project.path, id, data));
+        } catch {
+          return createErrorResult(id, NotificationError.RenameBundleFolder);
+        }
+        return;
+      default:
+        return;
     }
   }
 

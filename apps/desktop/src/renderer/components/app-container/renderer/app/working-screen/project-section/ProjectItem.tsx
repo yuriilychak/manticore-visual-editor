@@ -15,7 +15,13 @@ import { AtlasAddIcon, AtlasIcon, AtlasOpenIcon, BundleAddIcon, BundleIcon, Bund
 import { RenameableItem } from '../renameable-item';
 import type { ActionButtonConfig } from '../renameable-item/types';
 
-import { PROJECT_BUNDLE_DRAG_TYPE, PROJECT_FOLDER_DRAG_TYPE } from './helpers';
+import {
+  BUNDLE_FOLDER_DRAG_TYPE,
+  IMAGE_DRAG_TYPE,
+  PROJECT_BUNDLE_DRAG_TYPE,
+  PROJECT_FOLDER_DRAG_TYPE,
+  TEXTURE_ATLAS_DRAG_TYPE
+} from './helpers';
 
 type ProjectItemConfig = {
   actions?: ActionButtonConfig[];
@@ -51,6 +57,17 @@ const FOLDER_AND_BUNDLE_DROP_TARGETS = {
   [PROJECT_BUNDLE_DRAG_TYPE]: AssetType.Bundle
 };
 
+const BUNDLE_CONTENT_DROP_TARGETS = {
+  [BUNDLE_FOLDER_DRAG_TYPE]: AssetType.BundleFolder,
+  [IMAGE_DRAG_TYPE]: AssetType.Image,
+  [PROJECT_BUNDLE_DRAG_TYPE]: AssetType.Bundle,
+  [TEXTURE_ATLAS_DRAG_TYPE]: AssetType.TextureAtlas
+};
+
+const ATLAS_DROP_TARGETS = {
+  [IMAGE_DRAG_TYPE]: AssetType.Image
+};
+
 export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
   [AssetType.Project]: {
     actions: ROOT_CONTENT_ACTIONS,
@@ -67,11 +84,14 @@ export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
   [AssetType.Bundle]: {
     actions: BUNDLE_CONTENT_ACTIONS,
     dragType: PROJECT_BUNDLE_DRAG_TYPE,
+    dropTargets: BUNDLE_CONTENT_DROP_TARGETS,
     expandedIcon: BundleOpenIcon,
     icon: BundleIcon
   },
   [AssetType.BundleFolder]: {
     actions: BUNDLE_FOLDER_CONTENT_ACTIONS,
+    dragType: BUNDLE_FOLDER_DRAG_TYPE,
+    dropTargets: BUNDLE_CONTENT_DROP_TARGETS,
     expandedIcon: FolderOpenIcon,
     icon: FolderIcon
   },
@@ -79,9 +99,12 @@ export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
     icon: FontDownloadIcon
   },
   [AssetType.Image]: {
+    dragType: IMAGE_DRAG_TYPE,
     icon: ImageIcon
   },
   [AssetType.TextureAtlas]: {
+    dragType: TEXTURE_ATLAS_DRAG_TYPE,
+    dropTargets: ATLAS_DROP_TARGETS,
     expandedIcon: AtlasOpenIcon,
     icon: AtlasIcon
   }

@@ -25,5 +25,5 @@ export interface ContentStrategy extends NewContentStrategy, WorkingScreenAction
 }
 
 export type ContentStrategyConstructor = new (projectProxy: ProjectProxy) => ContentStrategy;
-export type ContentStrategyAssetType = AssetType.Bundle | AssetType.BundleFolder | AssetType.Project | AssetType.ProjectFolder | AssetType.TextureAtlas;
+export type ContentStrategyAssetType = AssetType.Bundle | AssetType.BundleFolder | AssetType.Image | AssetType.Project | AssetType.ProjectFolder | AssetType.TextureAtlas;
 export type ContentStrategyConfig = readonly (readonly [ContentStrategyAssetType, ContentStrategyConstructor])[];

@@ -10,6 +10,7 @@ import {
   importProjectAssets,
   isAssetName,
   moveProjectBundle,
+  moveProjectContent,
   moveProjectFolder,
   renameProject,
   renameProjectBundle,
@@ -182,6 +183,7 @@ ipcMain.handle('project:create-texture-atlas', (_event, projectPath: string, par
 ipcMain.handle('project:rename-bundle-folder', (_event, projectPath: string, id: number, name: string) => renameProjectBundleFolder(projectPath, id, name));
 ipcMain.handle('project:rename-texture-atlas', (_event, projectPath: string, id: number, name: string) => renameProjectTextureAtlas(projectPath, id, name));
 ipcMain.handle('project:move-bundle', (_event, projectPath: string, id: number, parentId: number) => moveProjectBundle(projectPath, id, parentId));
+ipcMain.handle('project:move-content', (_event, projectPath: string, id: number, parentId: number) => moveProjectContent(projectPath, id, parentId));
 ipcMain.handle('project:create-folder', (_event, projectPath: string, parentId: number, name: string) => createProjectFolder(projectPath, parentId, name));
 ipcMain.handle('project:rename-folder', (_event, projectPath: string, id: number, name: string) => renameProjectFolder(projectPath, id, name));
 ipcMain.handle('project:move-folder', (_event, projectPath: string, id: number, parentId: number) => moveProjectFolder(projectPath, id, parentId));

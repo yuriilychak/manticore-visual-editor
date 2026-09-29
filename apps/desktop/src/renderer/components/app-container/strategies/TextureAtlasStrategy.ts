@@ -23,15 +23,32 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
-    if (action !== 'rename' || typeof data !== 'string') return;
-
     const project = this.projectProxy.project;
-    if (!project || !window.manticore?.renameProjectTextureAtlas) return notifyUnavailableDesktopApi();
+    if (!project) return notifyUnavailableDesktopApi();
 
-    try {
-      this.projectProxy.renameBundle(id, await window.manticore.renameProjectTextureAtlas(project.path, id, data));
-    } catch {
-      return createErrorResult(id, NotificationError.RenameTextureAtlas);
+    switch (action) {
+      case 'move':
+        if (typeof data !== 'number') return;
+        if (!window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
+
+        try {
+          this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(project.path, id, data));
+        } catch {
+          return createErrorResult(id, NotificationError.MoveBundle);
+        }
+        return;
+      case 'rename':
+        if (typeof data !== 'string') return;
+        if (!window.manticore?.renameProjectTextureAtlas) return notifyUnavailableDesktopApi();
+
+        try {
+          this.projectProxy.renameBundle(id, await window.manticore.renameProjectTextureAtlas(project.path, id, data));
+        } catch {
+          return createErrorResult(id, NotificationError.RenameTextureAtlas);
+        }
+        return;
+      default:
+        return;
     }
   }
 

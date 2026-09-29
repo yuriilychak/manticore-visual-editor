@@ -4,6 +4,9 @@ import { AssetType } from '../../../../../../../types';
 
 export const PROJECT_FOLDER_DRAG_TYPE = 'application/x-manticore-project-folder';
 export const PROJECT_BUNDLE_DRAG_TYPE = 'application/x-manticore-project-bundle';
+export const BUNDLE_FOLDER_DRAG_TYPE = 'application/x-manticore-bundle-folder';
+export const TEXTURE_ATLAS_DRAG_TYPE = 'application/x-manticore-texture-atlas';
+export const IMAGE_DRAG_TYPE = 'application/x-manticore-image';
 
 export type ProjectTreeNode = {
   children: ProjectTreeNode[];

@@ -184,6 +184,32 @@ export class ProjectConfigProxy {
     return moved;
   }
 
+  async moveContent(id: number, parentId: number): Promise<ProjectContent> {
+    const content = this.config.content.find((item) => item.id === id);
+    const parent = this.config.content.find((item) => item.id === parentId);
+    const allowedParentTypes: Partial<Record<AssetType, readonly AssetType[]>> = {
+      [AssetType.Bundle]: [AssetType.Bundle, AssetType.BundleFolder],
+      [AssetType.BundleFolder]: [AssetType.Bundle, AssetType.BundleFolder],
+      [AssetType.Image]: [AssetType.Bundle, AssetType.BundleFolder, AssetType.TextureAtlas],
+      [AssetType.TextureAtlas]: [AssetType.Bundle, AssetType.BundleFolder]
+    };
+    if (!content || !parent || !allowedParentTypes[content.type]?.includes(parent.type)) {
+      throw new Error('Content or target is invalid.');
+    }
+    for (let ancestorId = parentId; ancestorId !== 0;) {
+      if (ancestorId === id) throw new Error('Content cannot be moved into itself.');
+      ancestorId = this.config.content.find((item) => item.id === ancestorId)?.parentId ?? 0;
+    }
+    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === content.name)) {
+      throw new Error('A sibling with this name already exists.');
+    }
+
+    const moved = { ...content, parentId };
+    this.config.content[this.config.content.indexOf(content)] = moved;
+    await this.save();
+    return moved;
+  }
+
   async renameProject(name: string): Promise<string> {
     const projectName = name.trim();
     if (!isAssetName(projectName)) throw new Error('Project name must be 1 to 32 printable ASCII characters.');

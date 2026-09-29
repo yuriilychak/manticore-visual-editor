@@ -33,6 +33,10 @@ export class ProjectProxy {
     this.renameBundle(id, bundle);
   }
 
+  moveContent(id: number, content: ProjectContent) {
+    this.renameBundle(id, content);
+  }
+
   moveFolders(folders: FolderConfig[]) {
     const movedFoldersById = new Map(folders.map((folder) => [folder.id, folder]));
 

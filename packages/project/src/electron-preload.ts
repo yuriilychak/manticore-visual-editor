@@ -13,6 +13,7 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
   moveProjectBundle: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-bundle', projectPath, id, parentId),
+  moveProjectContent: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-content', projectPath, id, parentId),
   moveProjectFolder: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-folder', projectPath, id, parentId),
   onImportAssetsProgress: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => {
     const handleProgress = (_event: Electron.IpcRendererEvent, jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => listener(jobId, result);

@@ -25,6 +25,7 @@ declare global {
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;
       moveProjectFolder?: (projectPath: string, id: number, parentId: number) => Promise<FolderConfig[]>;
       moveProjectBundle?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
+      moveProjectContent?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
       renameProject?: (projectPath: string, name: string) => Promise<string>;
       renameProjectBundle?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       renameProjectBundleFolder?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
