@@ -10,15 +10,18 @@ import type { ActionButtonConfig } from '../types';
 type RenameableItemActionsMenuItemProps = {
   action: ActionButtonConfig;
   disabled: boolean;
-  onClick: MouseEventHandler<HTMLElement>;
+  onAction: (action: string) => void;
 };
 
-const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({ action, disabled, onClick }) => {
+const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({ action, disabled, onAction }) => {
   const { t } = useTranslation();
   const { action: actionId, tooltipLocale, Icon, icon } = action;
-
+  const handleActionClick: MouseEventHandler<HTMLLIElement> = event => {
+    event.stopPropagation();
+    onAction(actionId);
+  };
   return (
-    <MenuItem data-action={actionId} disabled={disabled} onClick={onClick} sx={MENUBAR_STYLES.menuItem}>
+    <MenuItem disabled={disabled} onClick={handleActionClick} sx={MENUBAR_STYLES.menuItem}>
       {Icon ? <ListItemIcon><Icon fontSize="small" /></ListItemIcon> : icon}
       <ListItemText>{t(tooltipLocale)}</ListItemText>
     </MenuItem>

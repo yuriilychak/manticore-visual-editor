@@ -1,14 +1,12 @@
 import { type FC, type ReactNode } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
-import { Box, FilledInput, Tooltip, Typography } from '@mui/material';
-
 import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
-import { RenameableItemActionsMenu } from './actions-menu';
-import { ITEM_GAP, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
-import RenameableItemActionButtons from './RenameableItemActionButtons';
+import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
+import RenameableItemEditingRenderer from './RenameableItemEditingRenderer';
+import RenameableItemViewRenderer from './RenameableItemViewRenderer';
 import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
@@ -31,68 +29,35 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   name,
   onAction,
   renameNameLabel,
-  disabledActions,
-  actions
+  disabledActions = {},
+  actions = RENAMEABLE_ITEM_ACTIONS.empty
 }) => {
   const {
-    boxComponent,
-    disabledByAction,
-    editedName,
-    handleActionButtonClick,
-    handleNameChange,
-    handleSubmit,
+    handleButtonClick,
     isEditing,
-    itemActions,
-    menuActions,
-    trimmedName,
-    viewActions
-  } = useRenameableItem(contentType, id, name, onAction, disabledActions, actions);
-  return (
-    <Box
-      alignItems="center"
-      component={boxComponent}
-      display="flex"
-      gap={ITEM_GAP}
-      minWidth={0}
-      onSubmit={handleSubmit}
-      width="100%"
+    isSaving
+  } = useRenameableItem(contentType, id, onAction);
+  const itemIcon = Icon ? <Icon color="action" fontSize="small" /> : icon;
+
+  return isEditing ? (
+    <RenameableItemEditingRenderer
+      isSaving={isSaving}
+      name={name}
+      onAction={handleButtonClick}
+      renameNameLabel={renameNameLabel}
     >
-      {Icon ? <Icon color="action" fontSize="small" /> : icon}
-      {isEditing ? (
-        <>
-          <FilledInput
-            autoFocus
-            disableUnderline
-            error={!trimmedName}
-            fullWidth
-            inputProps={{ 'aria-label': renameNameLabel }}
-            onChange={handleNameChange}
-            size="small"
-            sx={RENAMEABLE_ITEM_STYLES.editingNameInput}
-            value={editedName}
-          />
-          <RenameableItemActionButtons
-            actions={itemActions}
-            disabledByAction={disabledByAction}
-            onActionClick={handleActionButtonClick}
-          />
-        </>
-      ) : (
-        <>
-          <Tooltip title={name}>
-            <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">
-              {name}
-            </Typography>
-          </Tooltip>
-          <RenameableItemActionsMenu
-            disabledByAction={disabledByAction}
-            menuActions={menuActions}
-            onActionClick={handleActionButtonClick}
-            viewActions={viewActions}
-          />
-        </>
-      )}
-    </Box>
+      {itemIcon}
+    </RenameableItemEditingRenderer>
+  ) : (
+    <RenameableItemViewRenderer
+      contentType={contentType}
+      disabledByAction={disabledActions}
+      menuActions={actions}
+      name={name}
+      onAction={handleButtonClick}
+    >
+      {itemIcon}
+    </RenameableItemViewRenderer>
   );
 };
 

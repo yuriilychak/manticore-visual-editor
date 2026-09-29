@@ -1,4 +1,4 @@
-import { type FC, type MouseEvent, type MouseEventHandler, useState } from 'react';
+import { memo, type FC, type MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
@@ -12,30 +12,30 @@ import RenameableItemActionsMenuItem from './RenameableItemActionsMenuItem';
 type RenameableItemActionsMenuProps = {
   disabledByAction: Record<string, boolean>;
   menuActions: ActionButtonConfig[];
-  onActionClick: MouseEventHandler<HTMLElement>;
+  onAction: (action: string) => void;
   viewActions: ActionButtonConfig[];
 };
 
 const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
   disabledByAction,
   menuActions,
-  onActionClick,
+  onAction,
   viewActions
 }) => {
   const { t } = useTranslation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const handleOpen = (event: MouseEvent<HTMLButtonElement>) => {
+  const handleOpen = useCallback((event: MouseEvent<HTMLButtonElement>) => {
     event.stopPropagation();
     setMenuAnchor(event.currentTarget);
-  };
-  const handleClose = (event?: { stopPropagation?: () => void }) => {
+  }, []);
+  const handleClose = useCallback((event?: { stopPropagation?: () => void }) => {
     event?.stopPropagation?.();
     setMenuAnchor(null);
-  };
-  const handleMenuActionClick = (event: MouseEvent<HTMLElement>) => {
+  }, []);
+  const handleMenuAction = useCallback((action: string) => {
     handleClose();
-    onActionClick(event);
-  };
+    onAction(action);
+  }, [handleClose, onAction]);
 
   return (
     <>
@@ -56,7 +56,7 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
             action={action}
             disabled={disabledByAction[action.action]}
             key={action.action}
-            onClick={handleMenuActionClick}
+            onAction={handleMenuAction}
           />
         ))}
         {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
@@ -65,7 +65,7 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
             action={action}
             disabled={disabledByAction[action.action]}
             key={action.action}
-            onClick={handleMenuActionClick}
+            onAction={handleMenuAction}
           />
         ))}
       </Menu>
@@ -73,4 +73,4 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
   );
 };
 
-export default RenameableItemActionsMenu;
+export default memo(RenameableItemActionsMenu);
