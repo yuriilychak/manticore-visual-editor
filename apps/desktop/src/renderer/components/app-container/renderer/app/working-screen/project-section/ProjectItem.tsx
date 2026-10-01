@@ -15,6 +15,7 @@ import { AtlasAddIcon, AtlasIcon, AtlasOpenIcon, BundleAddIcon, BundleIcon, Bund
 import { RenameableItem } from '../renameable-item';
 import type { ActionButtonConfig } from '../renameable-item/types';
 
+import { PROJECT_ITEM_STYLES } from './constants';
 import {
   BUNDLE_FOLDER_DRAG_TYPE,
   IMAGE_DRAG_TYPE,
@@ -171,6 +172,7 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, dropTargetId, expanded
       onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
+      sx={PROJECT_ITEM_STYLES.root}
       width="100%"
     >
       <RenameableItem
