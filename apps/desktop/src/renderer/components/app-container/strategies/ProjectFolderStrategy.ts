@@ -23,6 +23,8 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
+    if (action === 'delete') return this.deleteContent(id);
+
     switch (action) {
       case 'add-folder':
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentId: id }));

@@ -1,9 +1,11 @@
 import { AssetType } from '../../../../types';
 
 import { ContentAction } from '../common';
+import { NotificationError } from '../constants';
 import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValidation, NewContentValues } from '../types';
 
+import { notifyUnavailableDesktopApi } from './helpers';
 import type { ContentStrategy, ContentStrategyResult } from './types';
 
 export abstract class ContentStrategyBase implements ContentStrategy {
@@ -32,6 +34,21 @@ export abstract class ContentStrategyBase implements ContentStrategy {
 
   protected getNamesAtParentId(parentId: number) {
     return this.#proxy.project?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
+  }
+
+  protected async deleteContent(id: number) {
+    const project = this.#proxy.project;
+    if (!project || !window.manticore?.deleteProjectContent) {
+      notifyUnavailableDesktopApi();
+      return new ContentAction(id, 'delete-completed', { error: NotificationError.DeleteContent });
+    }
+
+    try {
+      this.#proxy.replaceProject(await window.manticore.deleteProjectContent(project.path, id));
+      return new ContentAction(id, 'delete-completed', {});
+    } catch {
+      return new ContentAction(id, 'delete-completed', { error: NotificationError.DeleteContent });
+    }
   }
 
   setField(key: string, value: unknown) {

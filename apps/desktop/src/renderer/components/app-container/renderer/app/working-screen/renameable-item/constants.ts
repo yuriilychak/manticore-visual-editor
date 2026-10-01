@@ -11,7 +11,7 @@ export const RENAMEABLE_ITEM_LOCALE_KEYS = {
 } as const;
 
 export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
-  delete: [{ action: 'delete', tooltipLocale: 'common.delete', Icon: DeleteRounded }],
+  delete: [{ action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }],
   editing: [
     { action: 'save', tooltipLocale: 'common.saveRename', Icon: CheckRounded },
     { action: 'cancel', tooltipLocale: 'common.cancelRename', Icon: CloseRounded }

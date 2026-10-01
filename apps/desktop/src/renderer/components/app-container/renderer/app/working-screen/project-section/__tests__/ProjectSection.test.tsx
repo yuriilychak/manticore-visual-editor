@@ -4,7 +4,7 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
 import { AssetType, type FolderConfig, type ProjectActionHandler } from '../../../../../../../../types';
-import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
+import { type ProjectItemSelection,ProjectStructureContext } from '../../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
 
@@ -14,15 +14,35 @@ describe('ProjectSection', () => {
   const renderProjectSection = (
     onAction: ProjectActionHandler,
     folders: FolderConfig[] = [],
-    content: ProjectContent[] = []
+    content: ProjectContent[] = [],
+    selectedItems: readonly ProjectItemSelection[] = []
   ) =>
     render(
       <ProjectStructureContext.Provider
-        value={{ onAction, project: { content, folders, name: 'Initial project', path: '/tmp/project' } }}
+        value={{ onAction, project: { content, folders, name: 'Initial project', path: '/tmp/project' }, selectedItems }}
       >
         <ProjectSection />
       </ProjectStructureContext.Provider>
     );
+
+  test('selects an item and extends the selection with Ctrl or Cmd click', () => {
+    const onSelectItem = jest.fn();
+    renderProjectSection(
+      jest.fn<ProjectActionHandler>(),
+      [{ id: 1, items: [], name: 'Assets' }],
+      [],
+      [],
+      onSelectItem
+    );
+
+    fireEvent.click(screen.getByRole('heading', { name: 'Initial project' }));
+    fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { ctrlKey: true });
+    fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { metaKey: true });
+
+    expect(onSelectItem).toHaveBeenNthCalledWith(1, AssetType.Project, 0, false);
+    expect(onSelectItem).toHaveBeenNthCalledWith(2, AssetType.ProjectFolder, 1, true);
+    expect(onSelectItem).toHaveBeenNthCalledWith(3, AssetType.ProjectFolder, 1, true);
+  });
 
   test('renames the project with a trimmed name', async () => {
     const user = userEvent.setup();
@@ -92,6 +112,28 @@ describe('ProjectSection', () => {
     expect(screen.getAllByRole('heading')).toHaveLength(3);
   });
 
+  test('expands an accordion with a single-selection click but not with Ctrl or Cmd selection', () => {
+    const onSelectItem = jest.fn();
+    renderProjectSection(
+      jest.fn<ProjectActionHandler>(),
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }],
+      [],
+      [],
+      onSelectItem
+    );
+    const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
+
+    fireEvent.click(assetsAccordion, { ctrlKey: true });
+
+    expect(screen.queryByRole('heading', { name: 'Images' })).not.toBeInTheDocument();
+    expect(onSelectItem).toHaveBeenCalledWith(AssetType.ProjectFolder, 1, true);
+
+    fireEvent.click(assetsAccordion);
+
+    expect(screen.getByRole('heading', { name: 'Images' })).toBeInTheDocument();
+    expect(onSelectItem).toHaveBeenLastCalledWith(AssetType.ProjectFolder, 1, false);
+  });
+
   test('resets a folder icon when it no longer has children', async () => {
     const user = userEvent.setup();
     const onAction = jest
@@ -115,7 +157,8 @@ describe('ProjectSection', () => {
             folders: [{ id: 1, items: [], name: 'Assets' }],
             name: 'Initial project',
             path: '/tmp/project'
-          }
+          },
+          selectedItems: []
         }}
       >
         <ProjectSection />

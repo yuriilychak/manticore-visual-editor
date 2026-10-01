@@ -17,6 +17,7 @@ type RenameableItemProps = {
   icon?: ReactNode;
   name: string;
   onAction: ProjectActionHandler;
+  disableNameTooltip?: boolean;
   disabledActions?: Record<string, boolean>;
   actions?: ActionButtonConfig[];
 };
@@ -28,6 +29,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   icon,
   name,
   onAction,
+  disableNameTooltip = false,
   renameNameLabel,
   disabledActions = {},
   actions = RENAMEABLE_ITEM_ACTIONS.empty
@@ -51,6 +53,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   ) : (
     <RenameableItemViewRenderer
       contentType={contentType}
+      disableNameTooltip={disableNameTooltip}
       disabledByAction={disabledActions}
       menuActions={actions}
       name={name}

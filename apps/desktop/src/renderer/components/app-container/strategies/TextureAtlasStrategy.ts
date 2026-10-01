@@ -23,6 +23,8 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
+    if (action === 'delete') return this.deleteContent(id);
+
     const project = this.projectProxy.project;
     if (!project) return notifyUnavailableDesktopApi();
 

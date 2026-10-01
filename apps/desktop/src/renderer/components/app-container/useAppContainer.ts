@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AssetType, type ProjectActionHandler } from '../../../types';
+
 import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
@@ -18,12 +19,12 @@ export const useAppContainer = () => {
   const [isNewContentDialogOpen, setNewContentDialogOpen] = useState(false);
   const [isImportAssetsDialogOpen, setImportAssetsDialogOpen] = useState(false);
   const [importErrors, setImportErrors] = useState<readonly ImportAssetResult[]>([]);
-  const [deleteContent, setDeleteContent] = useState<{ id: number; name: string } | null>(null);
-  const [isDeletingContent, setDeletingContent] = useState(false);
+  const [deleteContent, setDeleteContent] = useState<{ assetType: AssetType; id: number; name: string } | null>(null);
   const [importBundleId, setImportBundleId] = useState(0);
   const [newContentAssetType, setNewContentAssetType] = useState<AssetType>(AssetType.ProjectFolder);
   const [notificationError, setNotificationError] = useState(NotificationError.None);
   const [project, setProject] = useState<ProjectInfo | null>(null);
+  const [selection, setSelection] = useState<{ items: readonly number[]; projectPath?: string }>({ items: [] });
   const projectProxy = useMemo(() => new ProjectProxy(setProject), []);
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
 
@@ -110,61 +111,74 @@ export const useAppContainer = () => {
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
-      if (action === 'delete') {
-        const content = project?.content?.find((item) => item.id === id && item.type === assetType);
-        if (content && assetType !== AssetType.Project) setDeleteContent({ id, name: content.name });
-        return;
-      }
-      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
-      if (!result) return;
+      switch (action) {
+        case 'select': {
+          const isExtendedSelection = Boolean(data);
+          setSelection((currentSelection) => {
+            const currentSelectedItems = currentSelection.projectPath === project?.path ? currentSelection.items : [];
+            if (!isExtendedSelection) return { items: [id], projectPath: project?.path };
 
-      switch (result.action) {
-        case 'open-new-content':
-          openNewContent(result.data);
-          break;
-        case 'open-import-assets':
-          openImportAssets(result.data);
-          break;
-        case 'import-assets-completed': {
-          const errors = result.data.filter(({ error }) => error);
-          if (errors.length) setImportErrors(errors);
-          else setImportAssetsDialogOpen(false);
-          break;
+            const isSelected = currentSelectedItems.includes(id);
+
+            return {
+              items: isSelected
+                ? currentSelectedItems.filter((item) => item !== id)
+                : currentSelectedItems.concat(id),
+              projectPath: project?.path
+            };
+          });
+          return;
         }
-        case 'show-notification':
-          setNotificationError(result.data.error);
-          break;
+        case 'open-delete-modal': {
+          const content = project?.content?.find((item) => item.id === id && item.type === assetType);
+          if (content && assetType !== AssetType.Project) setDeleteContent({ assetType, id, name: content.name });
+          return;
+        }
         default:
           break;
+      }
+
+      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
+
+      if (!result) {
+        return;
+      }
+
+      switch (result.action) {
+          case 'delete-completed':
+            setDeleteContent(null);
+            if (result.data.error) setNotificationError(result.data.error);
+            break;
+          case 'open-new-content':
+            openNewContent(result.data);
+            break;
+          case 'open-import-assets':
+            openImportAssets(result.data);
+            break;
+          case 'import-assets-completed': {
+            const errors = result.data.filter(({ error }) => error);
+            if (errors.length) setImportErrors(errors);
+            else setImportAssetsDialogOpen(false);
+            break;
+          }
+          case 'show-notification':
+            setNotificationError(result.data.error);
+            break;
+          default:
+            break;
       }
     },
     [contentStrategies, openImportAssets, openNewContent, project]
   );
 
   const handleCloseDeleteContentDialog = useCallback(() => {
-    if (!isDeletingContent) setDeleteContent(null);
-  }, [isDeletingContent]);
-  const handleConfirmDeleteContent = useCallback(async () => {
-    if (!deleteContent || !project || !window.manticore?.deleteProjectContent) {
-      notifyUnavailableDesktopApi();
-      return;
-    }
-
-    setDeletingContent(true);
-    try {
-      projectProxy.replaceProject(await window.manticore.deleteProjectContent(project.path, deleteContent.id));
-      setDeleteContent(null);
-    } catch {
-      setNotificationError(NotificationError.DeleteContent);
-    } finally {
-      setDeletingContent(false);
-    }
-  }, [deleteContent, project, projectProxy]);
-
-  const projectStructure = useMemo(
-    () => ({ onAction: handleWorkingScreenAction,  project }),
-    [handleWorkingScreenAction, project]
-  );
+    setDeleteContent(null);
+  }, []);
+  const projectStructure = useMemo(() => ({
+    onAction: handleWorkingScreenAction,
+    project,
+    selectedItems: selection.projectPath === project?.path ? selection.items : []
+  }), [handleWorkingScreenAction, project, selection]);
 
   const newContentStrategy = contentStrategies.get(newContentAssetType)!;
   const handleCloseNewContentDialog = useCallback(() => {
@@ -184,9 +198,7 @@ export const useAppContainer = () => {
     handleCloseImportAssetsDialog,
     handleCloseDeleteContentDialog,
     handleCloseNotification,
-    handleConfirmDeleteContent,
     deleteContent,
-    isDeletingContent,
     isNewContentDialogOpen,
     isImportAssetsDialogOpen,
     importBundleId,

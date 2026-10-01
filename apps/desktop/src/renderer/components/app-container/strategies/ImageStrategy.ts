@@ -20,6 +20,7 @@ export class ImageStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
+    if (action === 'delete') return this.deleteContent(id);
     if (action !== 'move' || typeof data !== 'number') return;
 
     const project = this.projectProxy.project;

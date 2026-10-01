@@ -1,4 +1,4 @@
-import { type DragEvent, type FC, type ReactNode } from 'react';
+import { type DragEvent, type FC, type MouseEvent, type ReactNode } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
@@ -125,9 +125,20 @@ export type ProjectItemProps = {
   name: string;
   onAction: ProjectActionHandler;
   dropTargetId?: number;
+  isMultiSelectionActive?: boolean;
+  isSelected?: boolean;
 };
 
-const ProjectItem: FC<ProjectItemProps> = ({ contentType, dropTargetId, expanded = false, id, name, onAction }) => {
+const ProjectItem: FC<ProjectItemProps> = ({
+  contentType,
+  dropTargetId,
+  expanded = false,
+  id,
+  isMultiSelectionActive = false,
+  isSelected = false,
+  name,
+  onAction
+}) => {
   const config = PROJECT_ITEM_CONFIG[contentType];
   const resolvedDropTargetId = dropTargetId ?? id;
   const Icon = getProjectItemIcon(contentType, expanded);
@@ -165,10 +176,18 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, dropTargetId, expanded
     event.preventDefault();
     void Promise.resolve(onAction('move', draggedItem.draggedContentType, draggedItem.draggedId, resolvedDropTargetId)).catch(() => undefined);
   };
+  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target instanceof Element && event.target.closest('button, input')) return;
+
+    void onAction('select', contentType, id, event.ctrlKey || event.metaKey);
+  };
 
   return (
     <Box
+      aria-selected={isSelected}
+      data-project-item
       draggable={Boolean(config.dragType)}
+      onClick={handleClick}
       onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
@@ -178,6 +197,7 @@ const ProjectItem: FC<ProjectItemProps> = ({ contentType, dropTargetId, expanded
       <RenameableItem
         actions={config.actions}
         contentType={contentType}
+        disableNameTooltip={isMultiSelectionActive}
         Icon={Icon}
         id={id}
         name={name}

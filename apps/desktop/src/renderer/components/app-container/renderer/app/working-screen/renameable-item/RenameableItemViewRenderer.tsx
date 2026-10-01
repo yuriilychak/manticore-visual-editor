@@ -1,6 +1,6 @@
 import type { FC, ReactNode } from 'react';
 
-import { Box, Tooltip, Typography } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 import { AssetType } from '../../../../../../../types';
 
@@ -11,6 +11,7 @@ import type { ActionButtonConfig } from './types';
 type RenameableItemViewRendererProps = {
   children: ReactNode;
   contentType: AssetType;
+  disableNameTooltip: boolean;
   disabledByAction: Record<string, boolean>;
   menuActions: ActionButtonConfig[];
   name: string;
@@ -20,6 +21,7 @@ type RenameableItemViewRendererProps = {
 const RenameableItemViewRenderer: FC<RenameableItemViewRendererProps> = ({
   children,
   contentType,
+  disableNameTooltip,
   disabledByAction,
   menuActions,
   name,
@@ -32,11 +34,9 @@ const RenameableItemViewRenderer: FC<RenameableItemViewRendererProps> = ({
   return (
     <Box alignItems="center" display="flex" gap={ITEM_GAP} minWidth={0} width="100%">
       {children}
-      <Tooltip title={name}>
-        <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} variant="subtitle1">
-          {name}
-        </Typography>
-      </Tooltip>
+      <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} title={disableNameTooltip ? undefined : name} variant="subtitle1">
+        {name}
+      </Typography>
       <RenameableItemActionsMenu
         disabledByAction={disabledByAction}
         menuActions={menuActions}

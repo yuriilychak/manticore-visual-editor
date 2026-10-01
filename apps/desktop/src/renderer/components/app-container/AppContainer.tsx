@@ -26,8 +26,6 @@ const AppContainer: FC = () => {
     importBundleId,
     importErrors,
     deleteContent,
-    handleConfirmDeleteContent,
-    isDeletingContent,
     newContentStrategy,
     notificationError,
     projectStructure,
@@ -60,10 +58,11 @@ const AppContainer: FC = () => {
         open={isImportAssetsDialogOpen}
       />
       <DeleteContentDialog
-        isDeleting={isDeletingContent}
+        contentType={deleteContent?.assetType ?? null}
+        contentId={deleteContent?.id ?? null}
         name={deleteContent?.name ?? ''}
         onClose={handleCloseDeleteContentDialog}
-        onConfirm={() => void handleConfirmDeleteContent()}
+        onAction={handleWorkingScreenAction}
         open={Boolean(deleteContent)}
       />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />

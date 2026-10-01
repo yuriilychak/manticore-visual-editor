@@ -16,11 +16,12 @@
     "clean": "rimraf dist release"
   },
   "dependencies": {
-    "@manticore/project": "file:../../packages/project",
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
+    "@manticore/project": "file:../../packages/project",
     "@mui/icons-material": "^7.3.2",
     "@mui/material": "^7.3.2",
+    "@tanstack/react-virtual": "^3.14.13",
     "@vitejs/plugin-react": "^4.7.0",
     "i18next": "^25.5.2",
     "i18next-http-backend": "^3.0.2",

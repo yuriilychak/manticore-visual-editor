@@ -13,6 +13,25 @@ export type ProjectTreeNode = {
   item: ProjectContent;
 };
 
+export type VisibleProjectTreeItem = {
+  descendantCount: number;
+  depth: number;
+  node: ProjectTreeNode;
+};
+
+export const getFlatProjectTreeItems = (nodes: readonly ProjectTreeNode[], depth = 0): VisibleProjectTreeItem[] => {
+  const items: VisibleProjectTreeItem[] = [];
+
+  for (const node of nodes) {
+    const itemIndex = items.length;
+    items.push({ descendantCount: 0, depth, node });
+    items.push(...getFlatProjectTreeItems(node.children, depth + 1));
+    items[itemIndex].descendantCount = items.length - itemIndex - 1;
+  }
+
+  return items;
+};
+
 const isFolder = (item: ProjectContent) => item.type === AssetType.ProjectFolder || item.type === AssetType.BundleFolder;
 const compareTreeNodes = (left: ProjectTreeNode, right: ProjectTreeNode) => {
   const folderOrder = Number(isFolder(right.item)) - Number(isFolder(left.item));
