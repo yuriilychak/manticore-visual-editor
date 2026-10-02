@@ -19,7 +19,7 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
     const project = this.projectProxy.project;
     if (!project || !window.manticore?.createProjectFolder) return notifyUnavailableDesktopApi();
 
-    this.projectProxy.addFolder(await window.manticore.createProjectFolder(project.path, this.getField('parentId', 0), name.trim()));
+    this.projectProxy.addContent(await window.manticore.createProjectFolder(project.path, this.getField('parentId', 0), name.trim()));
   }
 
   async handle({ action, data, id }: ContentAction) {
@@ -36,7 +36,7 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
         if (!project || !window.manticore?.moveProjectFolder) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.moveFolders(await window.manticore.moveProjectFolder(project.path, id, data));
+          this.projectProxy.moveContent(id, await window.manticore.moveProjectFolder(project.path, id, data));
         } catch {
           return createErrorResult(id, NotificationError.MoveFolder);
         }
@@ -48,7 +48,7 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
         if (!project || !window.manticore?.renameProjectFolder) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.renameFolder(id, await window.manticore.renameProjectFolder(project.path, id, data));
+          this.projectProxy.renameBundle(id, await window.manticore.renameProjectFolder(project.path, id, data));
         } catch {
           return createErrorResult(id, NotificationError.RenameFolder);
         }

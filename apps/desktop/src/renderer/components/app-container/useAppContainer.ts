@@ -1,31 +1,23 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { AssetType, type ProjectActionHandler } from '../../../types';
+import type { ProjectActionHandler } from '../../../types';
 
-import type { ApplicationAction, ProjectInfo } from '../../types';
+import type { ApplicationAction } from '../../types';
 
-import type { MenubarItemId } from './app-shell/title-bar/menubar';
-import { ContentAction, type ImportAssetResult, OpenImportAssets } from './common';
+import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
+import { ContentAction } from './common';
 import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
-import { ProjectProxy } from './ProjectProxy';
-import type { ContentStrategy } from './strategies';
-import { CONTENT_STRATEGY_CONSTRUCTORS, type OpenNewContentData } from './strategies';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
 
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
-  const disabledItemIds: readonly MenubarItemId[] = [];
-  const [isNewContentDialogOpen, setNewContentDialogOpen] = useState(false);
-  const [isImportAssetsDialogOpen, setImportAssetsDialogOpen] = useState(false);
-  const [importErrors, setImportErrors] = useState<readonly ImportAssetResult[]>([]);
-  const [deleteContent, setDeleteContent] = useState<{ assetType: AssetType; id: number; name: string } | null>(null);
-  const [importBundleId, setImportBundleId] = useState(0);
-  const [newContentAssetType, setNewContentAssetType] = useState<AssetType>(AssetType.ProjectFolder);
-  const [notificationError, setNotificationError] = useState(NotificationError.None);
-  const [project, setProject] = useState<ProjectInfo | null>(null);
-  const [selection, setSelection] = useState<{ items: readonly number[]; projectPath?: string }>({ items: [] });
-  const projectProxy = useMemo(() => new ProjectProxy(setProject), []);
+  const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
+  useEffect(() => {
+    state.projectProxy.setOnProjectChange((project) => dispatch({ type: 'project-changed', payload: project }));
+
+    return () => state.projectProxy.setOnProjectChange();
+  }, [state.projectProxy]);
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
 
   useEffect(() => {
@@ -33,19 +25,15 @@ export const useAppContainer = () => {
 
     void window.manticore
       .restoreLastOpenedProject()
-      .then(({ error, project }) => {
-        if (project) projectProxy.replaceProject(project);
-        else if (error) setNotificationError(NotificationError.RestoreProject);
-      })
-      .catch(() => setNotificationError(NotificationError.RestoreProject));
-  }, [projectProxy]);
+      .then((payload) => dispatch({ type: 'restore-project-completed', payload }))
+      .catch(() => dispatch({ type: 'notification-error-set', payload: NotificationError.RestoreProject }));
+  }, []);
 
   const handleAction = useCallback(
     (action: ApplicationAction) => {
       switch (action) {
         case 'create-project':
-          setNewContentAssetType(AssetType.Project);
-          setNewContentDialogOpen(true);
+          dispatch({ type: 'create-project' });
           break;
         case 'create-window':
           if (window.manticore) void window.manticore.createWindow(i18n.language);
@@ -58,8 +46,8 @@ export const useAppContainer = () => {
           }
           void window.manticore
             .openProject()
-            .then(projectProxy.replaceProject.bind(projectProxy))
-            .catch(() => setNotificationError(NotificationError.OpenProject));
+            .then(state.projectProxy.replaceProject.bind(state.projectProxy))
+            .catch(() => dispatch({ type: 'notification-error-set', payload: NotificationError.OpenProject }));
           break;
         case 'set-language-en':
           void i18n.changeLanguage('en');
@@ -71,74 +59,33 @@ export const useAppContainer = () => {
           void action;
       }
     },
-    [i18n, projectProxy]
+    [i18n, state.projectProxy]
   );
-  const contentStrategies = useMemo<ReadonlyMap<AssetType, ContentStrategy>>(
-    () => CONTENT_STRATEGY_CONSTRUCTORS.reduce<Map<AssetType, ContentStrategy>>(
-      (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
-      new Map()
-    ),
-    [projectProxy]
-  );
-
-  const openNewContent = useCallback(({ assetType, fields }: OpenNewContentData) => {
-    const strategy = contentStrategies.get(assetType);
-    if (!strategy) {
-      setNotificationError(NotificationError.ContentTypeUnavailable);
-      return;
-    }
-
-    try {
-      strategy.setFields(fields);
-      setNewContentAssetType(assetType);
-      setNewContentDialogOpen(true);
-    } catch {
-      setNotificationError(NotificationError.ContentConfiguration);
-    }
-  }, [contentStrategies]);
-  const openImportAssets = useCallback(({ bundleId }: OpenImportAssets) => {
-    const bundles = project?.content?.filter((content) => content.type === AssetType.Bundle) ?? [];
-    const selectedBundle = bundles.find((bundle) => bundle.id === bundleId) ?? bundles[0];
-    if (!selectedBundle) {
-      setNotificationError(NotificationError.ContentTypeUnavailable);
-      return;
-    }
-
-    setImportBundleId(selectedBundle.id);
-    setImportErrors([]);
-    setImportAssetsDialogOpen(true);
-  }, [project]);
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
       switch (action) {
         case 'select': {
-          const isExtendedSelection = Boolean(data);
-          setSelection((currentSelection) => {
-            const currentSelectedItems = currentSelection.projectPath === project?.path ? currentSelection.items : [];
-            if (!isExtendedSelection) return { items: [id], projectPath: project?.path };
-
-            const isSelected = currentSelectedItems.includes(id);
-
-            return {
-              items: isSelected
-                ? currentSelectedItems.filter((item) => item !== id)
-                : currentSelectedItems.concat(id),
-              projectPath: project?.path
-            };
-          });
+          dispatch({ type: 'selection-changed', payload: { id, isExtended: Boolean(data) } });
           return;
         }
-        case 'open-delete-modal': {
-          const content = project?.content?.find((item) => item.id === id && item.type === assetType);
-          if (content && assetType !== AssetType.Project) setDeleteContent({ assetType, id, name: content.name });
+        case 'open-delete-modal':
+          dispatch({ type: 'delete-content-opened', payload: { assetType, id } });
           return;
-        }
+        case 'close-delete-modal':
+          dispatch({ type: 'delete-content-closed' });
+          return;
+        case 'close-new-content-dialog':
+          dispatch({ type: 'new-content-dialog-closed' });
+          return;
+        case 'close-import-assets-dialog':
+          dispatch({ type: 'import-assets-dialog-closed' });
+          return;
         default:
           break;
       }
 
-      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
+      const result = await state.contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
 
       if (!result) {
         return;
@@ -146,67 +93,56 @@ export const useAppContainer = () => {
 
       switch (result.action) {
           case 'delete-completed':
-            setDeleteContent(null);
-            if (result.data.error) setNotificationError(result.data.error);
+            dispatch({ type: 'delete-content-completed', payload: result.data.error });
             break;
           case 'open-new-content':
-            openNewContent(result.data);
+            dispatch({ type: 'new-content-dialog-opened', payload: result.data });
             break;
           case 'open-import-assets':
-            openImportAssets(result.data);
+            dispatch({ type: 'import-assets-dialog-opened', payload: result.data.bundleId });
             break;
           case 'import-assets-completed': {
             const errors = result.data.filter(({ error }) => error);
-            if (errors.length) setImportErrors(errors);
-            else setImportAssetsDialogOpen(false);
+            dispatch({ type: 'import-assets-completed', payload: errors });
             break;
           }
           case 'show-notification':
-            setNotificationError(result.data.error);
+            dispatch({ type: 'notification-error-set', payload: result.data.error });
             break;
           default:
             break;
       }
     },
-    [contentStrategies, openImportAssets, openNewContent, project]
+    [state.contentStrategies]
   );
 
-  const handleCloseDeleteContentDialog = useCallback(() => {
-    setDeleteContent(null);
-  }, []);
   const projectStructure = useMemo(() => ({
     onAction: handleWorkingScreenAction,
-    project,
-    selectedItems: selection.projectPath === project?.path ? selection.items : []
-  }), [handleWorkingScreenAction, project, selection]);
+    project: state.project,
+    selectedItems: state.selection
+  }), [handleWorkingScreenAction, state.project, state.selection]);
 
-  const newContentStrategy = contentStrategies.get(newContentAssetType)!;
-  const handleCloseNewContentDialog = useCallback(() => {
-    setNewContentDialogOpen(false);
-    newContentStrategy.setField('parentPath', '');
-  }, [newContentStrategy]);
-  const handleCloseImportAssetsDialog = useCallback(() => {
-    setImportAssetsDialogOpen(false);
-    setImportErrors([]);
-  }, []);
-  const handleCloseNotification = useCallback(() => setNotificationError(NotificationError.None), []);
+  const handleCloseNotification = useCallback(
+    () => dispatch({ type: 'notification-error-set', payload: NotificationError.None }),
+    []
+  );
+  const modalData = useMemo(
+    () => ({
+      'delete-content': state.deleteContent,
+      'import-asset': state.importAssetsDialog,
+      'new-content': state.newContentDialog
+    }),
+    [state.deleteContent, state.importAssetsDialog, state.newContentDialog]
+  );
 
   return {
-    disabledItemIds,
+    disabledItemIds: state.disabledItemIds,
     handleAction,
-    handleCloseNewContentDialog,
-    handleCloseImportAssetsDialog,
-    handleCloseDeleteContentDialog,
     handleCloseNotification,
-    deleteContent,
-    isNewContentDialogOpen,
-    isImportAssetsDialogOpen,
-    importBundleId,
-    importErrors,
     handleWorkingScreenAction,
-    notificationError,
+    modalData,
+    notificationError: state.notificationError,
     projectStructure,
-    newContentStrategy,
     selectedActionIds
   };
 };

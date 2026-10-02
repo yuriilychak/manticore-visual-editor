@@ -1,7 +1,6 @@
 import type { ProjectContent } from '@manticore/project/types';
 
 import type {
-  FolderConfig,
   NewProjectOptions,
   ProjectCreationValidation,
   ProjectInfo,
@@ -15,7 +14,7 @@ declare global {
   interface Window {
     manticore?: {
       createWindow: (language: string) => Promise<void>;
-      createProjectFolder: (projectPath: string, parentId: number, name: string) => Promise<FolderConfig>;
+      createProjectFolder: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       createProjectBundle: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
@@ -23,13 +22,13 @@ declare global {
       selectImportFiles?: () => Promise<string[]>;
       importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;
-      moveProjectFolder?: (projectPath: string, id: number, parentId: number) => Promise<FolderConfig[]>;
+      moveProjectFolder?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
       moveProjectBundle?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
       moveProjectContent?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
       renameProject?: (projectPath: string, name: string) => Promise<string>;
       renameProjectBundle?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       renameProjectBundleFolder?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
-      renameProjectFolder?: (projectPath: string, id: number, name: string) => Promise<FolderConfig>;
+      renameProjectFolder?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       renameProjectTextureAtlas?: (projectPath: string, id: number, name: string) => Promise<ProjectContent>;
       restoreLastOpenedProject: () => Promise<RestoredProject>;
       createProjectTextureAtlas?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;

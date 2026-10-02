@@ -1,16 +1,13 @@
-import type { Dispatch, SetStateAction } from 'react';
-
 import type { ProjectContent } from '@manticore/project/types';
-import type { FolderConfig } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
 export class ProjectProxy {
   #currentProject: ProjectInfo | null = null;
-  readonly #setProject: Dispatch<SetStateAction<ProjectInfo | null>>;
+  #onProjectChange?: (project: ProjectInfo) => void;
 
-  constructor(setProject: Dispatch<SetStateAction<ProjectInfo | null>>) {
-    this.#setProject = setProject;
+  setOnProjectChange(onProjectChange?: (project: ProjectInfo) => void) {
+    this.#onProjectChange = onProjectChange;
   }
 
   get project() {
@@ -25,25 +22,12 @@ export class ProjectProxy {
     this.#update((project) => ({ ...project, content: project.content?.concat(content) }));
   }
 
-  addFolder(folder: FolderConfig) {
-    this.#update((project) => ({ ...project, folders: project.folders.concat(folder) }));
-  }
-
   moveBundle(id: number, bundle: ProjectContent) {
     this.renameBundle(id, bundle);
   }
 
   moveContent(id: number, content: ProjectContent) {
     this.renameBundle(id, content);
-  }
-
-  moveFolders(folders: FolderConfig[]) {
-    const movedFoldersById = new Map(folders.map((folder) => [folder.id, folder]));
-
-    this.#update((project) => ({
-      ...project,
-      folders: project.folders.map((folder) => movedFoldersById.get(folder.id) ?? folder)
-    }));
   }
 
   renameBundle(id: number, bundle: ProjectContent) {
@@ -53,27 +37,23 @@ export class ProjectProxy {
     }));
   }
 
-  renameFolder(id: number, folder: FolderConfig) {
-    this.#update((project) => ({
-      ...project,
-      folders: project.folders.map((currentFolder) => (currentFolder.id === id ? folder : currentFolder)
-      )
-    }));
-  }
-
   renameProject(name: string) {
     this.#update((project) => ({ ...project, name }));
   }
 
   replaceProject(project: ProjectInfo) {
+    this.setProject(project);
+    this.#onProjectChange?.(project);
+  }
+
+  setProject(project: ProjectInfo) {
     this.#currentProject = project;
-    this.#setProject(project);
   }
 
   #update(updater: (project: ProjectInfo) => ProjectInfo) {
     if (!this.#currentProject) return;
 
     this.#currentProject = updater(this.#currentProject);
-    this.#setProject(this.#currentProject);
+    this.#onProjectChange?.(this.#currentProject);
   }
 }

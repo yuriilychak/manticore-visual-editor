@@ -1,29 +1,29 @@
-import { memo, type FC } from 'react';
+import { memo } from 'react';
 
 import FolderOpenRounded from '@mui/icons-material/FolderOpenRounded';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, TextField, Tooltip } from '@mui/material';
 
 import { ASSET_TYPE_LOCALE_KEY } from '../../../../types';
 
-import type { NewContentStrategy } from '../types';
+import type { ModalComponent, ModalPropsMap } from '../modal-types';
+
 import { useNewContentDialog } from './useNewContentDialog';
 
-type NewContentDialogProps = {
-  onClose: () => void;
-  open: boolean;
-  strategy: NewContentStrategy;
-};
+export type NewContentDialogData = ModalPropsMap['new-content'];
 
-const NewContentDialog: FC<NewContentDialogProps> = ({ onClose, open, strategy }) => {
-  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, onClose);
+const NewContentDialog: ModalComponent<'new-content'> = ({ isOpen, onAction, strategy }) => {
+  const handleClose = () => {
+    void onAction('close-new-content-dialog', strategy.contentType, 0);
+  };
+  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, handleClose);
   const contentTypeLocaleKey = ASSET_TYPE_LOCALE_KEY[strategy.contentType];
 
   return (
     <Dialog
       fullWidth
       maxWidth="sm"
-      onClose={onClose}
-      open={open}
+      onClose={handleClose}
+      open={isOpen}
       slotProps={{ paper: { elevation: 0, sx: { bgcolor: 'background.paper' } } }}
     >
       <DialogTitle>{t(`${contentTypeLocaleKey}.title`)}</DialogTitle>
@@ -69,7 +69,7 @@ const NewContentDialog: FC<NewContentDialogProps> = ({ onClose, open, strategy }
         {validation.reason && !validation.fieldKey && <Alert severity="warning" sx={{ mt: 1 }}>{t(`${contentTypeLocaleKey}.${validation.reason}`)}</Alert>}
       </DialogContent>
       <DialogActions sx={{ pb: 3, px: 3 }}>
-        <Button onClick={onClose}>{t(`${contentTypeLocaleKey}.cancel`)}</Button>
+        <Button onClick={handleClose}>{t(`${contentTypeLocaleKey}.cancel`)}</Button>
         <Button disabled={!validation.isValid} onClick={handleCreate} variant="contained">
           {t(`${contentTypeLocaleKey}.create`)}
         </Button>

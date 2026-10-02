@@ -1,5 +1,5 @@
 import { type ImageConfig, ImagePolygonizer } from 'image-polygonizer';
-import { type FC, memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded';
@@ -7,20 +7,12 @@ import ImageRounded from '@mui/icons-material/ImageRounded';
 import SearchRounded from '@mui/icons-material/SearchRounded';
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, MenuItem, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Toolbar, Tooltip } from '@mui/material';
 
-import { AssetType, type ProjectActionHandler } from '../../../../types';
+import { AssetType } from '../../../../types';
 
-import type { ProjectContent } from '@manticore/project/types';
+import { ImportAssets } from '../common';
+import type { ModalComponent, ModalPropsMap } from '../modal-types';
 
-import { ImportAssets, type ImportAssetResult } from '../common';
-
-type ImportAssetsDialogProps = {
-  bundles: readonly ProjectContent[];
-  initialBundleId: number;
-  importErrors: readonly ImportAssetResult[];
-  onClose: () => void;
-  onAction: ProjectActionHandler;
-  open: boolean;
-};
+export type ImportAssetsDialogData = ModalPropsMap['import-asset'];
 
 const getFileName = (filePath: string) => filePath.split(/[\\/]/).pop() ?? filePath;
 const getFileExtension = (filePath: string) => getFileName(filePath).split('.').pop()?.toLocaleLowerCase() ?? '';
@@ -34,9 +26,9 @@ const IMAGE_EXTENSIONS = new Set(['avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 's
 const isImage = (filePath: string) => IMAGE_EXTENSIONS.has(getFileExtension(filePath));
 const toFileUrl = (filePath: string) => encodeURI(`file://${filePath.replaceAll('\\', '/')}`).replaceAll('#', '%23').replaceAll('?', '%3F');
 
-const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors, initialBundleId, onAction, onClose, open }) => {
+const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles, errors, isOpen, onAction }) => {
   const { t } = useTranslation();
-  const [bundleId, setBundleId] = useState(initialBundleId);
+  const [selectedBundleId, setSelectedBundleId] = useState(bundleId);
   const [filePaths, setFilePaths] = useState<string[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<Record<string, string>>({});
   const [isSelectingFiles, setSelectingFiles] = useState(false);
@@ -57,17 +49,17 @@ const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors
 
   useEffect(() => {
     clearImportedImages();
-    if (!open) return;
+    if (!isOpen) return;
 
     // eslint-disable-next-line react-hooks/set-state-in-effect -- Opening the dialog creates a fresh import session.
-    setBundleId(initialBundleId);
+    setSelectedBundleId(bundleId);
     setFilePaths([]);
     setImagePreviewUrls({});
     setSelectingFiles(false);
     setProcessingImagePaths([]);
     setImportProgress({ completed: 0, total: 0 });
     setQuery('');
-  }, [clearImportedImages, initialBundleId, open]);
+  }, [bundleId, clearImportedImages, isOpen]);
 
   useEffect(() => clearImportedImages, [clearImportedImages]);
 
@@ -141,27 +133,30 @@ const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors
       );
       const dataByPath = new Map(images.map(({ filePath, image }, index) => [filePath, { data: serializedImages[index], preview: image.preview }]));
       const assets = filePaths.map((filePath) => ({ ...dataByPath.get(filePath), filePath }));
-      await onAction('import-asset', AssetType.Bundle, bundleId, new ImportAssets(assets, handleImportProgress));
+      await onAction('import-asset', AssetType.Bundle, selectedBundleId, new ImportAssets(assets, handleImportProgress));
     } finally {
       setSubmitting(false);
     }
   };
+  const handleClose = () => {
+    void onAction('close-import-assets-dialog', AssetType.Bundle, selectedBundleId);
+  };
 
   return (
-    <Dialog disableEscapeKeyDown={isSubmitting} fullWidth maxWidth="md" onClose={isSubmitting ? undefined : onClose} open={open}>
+    <Dialog disableEscapeKeyDown={isSubmitting} fullWidth maxWidth="md" onClose={isSubmitting ? undefined : handleClose} open={isOpen}>
       <DialogTitle>{t('importAssets.title')}</DialogTitle>
       <DialogContent>
         <Stack gap={2} pt={1}>
           {isSubmitting && <Alert icon={<CircularProgress size={18} />} severity="info">{importProgress.completed} / {importProgress.total}</Alert>}
-          {!!importErrors.length && <Alert severity="error">{importErrors.map(({ error, filePath }) => `${getFileName(filePath)}: ${error}`).join('\n')}</Alert>}
+          {!!errors.length && <Alert severity="error">{errors.map(({ error, filePath }) => `${getFileName(filePath)}: ${error}`).join('\n')}</Alert>}
           <Toolbar disableGutters sx={{ gap: 1, minHeight: 'auto !important' }}>
             <Select
               aria-label={t('importAssets.bundle')}
               disabled={isSubmitting}
-              onChange={(event) => setBundleId(Number(event.target.value))}
+              onChange={(event) => setSelectedBundleId(Number(event.target.value))}
               size="small"
               sx={{ width: 180 }}
-              value={bundleId}
+              value={selectedBundleId}
             >
               {bundles.map((bundle) => <MenuItem key={bundle.id} value={bundle.id}>{bundle.name}</MenuItem>)}
             </Select>
@@ -211,7 +206,7 @@ const ImportAssetsDialog: FC<ImportAssetsDialogProps> = ({ bundles, importErrors
         </Stack>
       </DialogContent>
       <DialogActions>
-        <Button disabled={isSubmitting} onClick={onClose}>{t('common.cancel')}</Button>
+        <Button disabled={isSubmitting} onClick={handleClose}>{t('common.cancel')}</Button>
         <Button disabled={!filePaths.length || isSubmitting || processingImagePaths.length > 0} onClick={() => void handleSubmit()} startIcon={isSubmitting ? <CircularProgress color="inherit" size={16} /> : undefined} variant="contained">{t('common.import')}</Button>
       </DialogActions>
     </Dialog>

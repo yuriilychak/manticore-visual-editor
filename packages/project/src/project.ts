@@ -206,21 +206,14 @@ export async function renameProjectTextureAtlas(projectPath: string, id: number,
   return (await ProjectConfigProxy.load(projectPath)).renameTextureAtlas(id, name);
 }
 
-export async function createProjectFolder(projectPath: string, parentId: number, name: string): Promise<FolderConfig> {
-  const created = await (await ProjectConfigProxy.load(projectPath)).addFolder(name, parentId);
-  const folder = (await getProjectInfo(projectPath)).folders.find((item) => item.id === created.id);
-  if (!folder) throw new Error('Folder was not created.');
-  return folder;
+export async function createProjectFolder(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).addFolder(name, parentId);
 }
 
-export async function renameProjectFolder(projectPath: string, id: number, name: string): Promise<FolderConfig> {
-  await (await ProjectConfigProxy.load(projectPath)).renameFolder(id, name);
-  const folder = (await getProjectInfo(projectPath)).folders.find((item) => item.id === id);
-  if (!folder) throw new Error('Folder was not found.');
-  return folder;
+export async function renameProjectFolder(projectPath: string, id: number, name: string): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).renameFolder(id, name);
 }
 
-export async function moveProjectFolder(projectPath: string, id: number, parentId: number): Promise<FolderConfig[]> {
-  await (await ProjectConfigProxy.load(projectPath)).moveFolder(id, parentId);
-  return (await getProjectInfo(projectPath)).folders;
+export async function moveProjectFolder(projectPath: string, id: number, parentId: number): Promise<ProjectContent> {
+  return (await ProjectConfigProxy.load(projectPath)).moveFolder(id, parentId);
 }
