@@ -15,14 +15,14 @@ type RenameableItemActionsMenuItemProps = {
 
 const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({ action, disabled, onAction }) => {
   const { t } = useTranslation();
-  const { action: actionId, tooltipLocale, Icon, icon } = action;
+  const { action: actionId, tooltipLocale, Icon } = action;
   const handleActionClick: MouseEventHandler<HTMLLIElement> = event => {
     event.stopPropagation();
     onAction(actionId);
   };
   return (
     <MenuItem disabled={disabled} onClick={handleActionClick} sx={MENUBAR_STYLES.menuItem}>
-      {Icon ? <ListItemIcon><Icon fontSize="small" /></ListItemIcon> : icon}
+      <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
       <ListItemText>{t(tooltipLocale)}</ListItemText>
     </MenuItem>
   );

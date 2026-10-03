@@ -21,4 +21,4 @@ export {
   renameProjectTextureAtlas
 } from './project';
 export type { ImportProjectAsset, ImportProjectAssetResult } from './project';
-export type { FolderConfig, ProjectConfig, ProjectContent, ProjectInfo } from './types';
+export type { ProjectConfig, ProjectContent, ProjectInfo } from './types';

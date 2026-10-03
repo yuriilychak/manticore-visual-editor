@@ -36,7 +36,6 @@ jest.mock('../renderer', () => ({
             <>
               <div
                 data-bundle-count={projectStructure?.project?.content?.length}
-                data-folder-count={projectStructure?.project?.folders?.length}
                 data-project-path={projectStructure?.project?.path}
                 data-testid="renderer"
               />
@@ -102,11 +101,11 @@ describe('AppContainer', () => {
       createProjectBundle: jest.fn<(projectPath: string, parentId: number, name: string) => Promise<ProjectContent>>(),
       createProject: jest
         .fn<(options: { name: string; parentPath: string }) => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: 'Project', path: '/tmp/project' }),
+        .mockResolvedValue({ content: [], name: 'Project', path: '/tmp/project' }),
       createWindow,
       openProject: jest
         .fn<() => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: '', path: '' }),
+        .mockResolvedValue({ content: [], name: '', path: '' }),
       platform: 'linux',
       restoreLastOpenedProject: jest.fn<() => Promise<RestoredProject>>().mockResolvedValue({ project: null }),
       selectProjectLocation: jest.fn<() => Promise<string>>().mockResolvedValue(''),
@@ -131,16 +130,18 @@ describe('AppContainer', () => {
       createProjectBundle: jest.fn<(projectPath: string, parentId: number, name: string) => Promise<ProjectContent>>(),
       createProject: jest
         .fn<(options: NewProjectOptions) => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: 'Project', path: '/tmp/project' }),
+        .mockResolvedValue({ content: [], name: 'Project', path: '/tmp/project' }),
       createWindow: jest.fn<(language: string) => Promise<void>>().mockResolvedValue(undefined),
       openProject: jest
         .fn<() => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: '', path: '' }),
+        .mockResolvedValue({ content: [], name: '', path: '' }),
       platform: 'linux',
       restoreLastOpenedProject: jest.fn<() => Promise<RestoredProject>>().mockResolvedValue({
         project: {
-          content: [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }],
-          folders: [{ id: 1, items: ['bundle'], name: 'Bundles' }],
+          content: [
+            { data: null, id: 1, name: 'Bundles', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
+            { data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }
+          ],
           name: 'Restored project',
           path: '/tmp/restored-project'
         }
@@ -155,7 +156,6 @@ describe('AppContainer', () => {
       expect(screen.getByTestId('renderer')).toHaveAttribute('data-project-path', '/tmp/restored-project')
     );
     expect(screen.getByTestId('renderer')).toHaveAttribute('data-bundle-count', '1');
-    expect(screen.getByTestId('renderer')).toHaveAttribute('data-folder-count', '1');
   });
 
   test('creates a project folder and updates the project structure', async () => {
@@ -176,11 +176,11 @@ describe('AppContainer', () => {
       createProjectBundle,
       createProject: jest
         .fn<(options: NewProjectOptions) => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: 'Project', path: '/tmp/project' }),
+        .mockResolvedValue({ content: [], name: 'Project', path: '/tmp/project' }),
       createWindow: jest.fn<(language: string) => Promise<void>>().mockResolvedValue(undefined),
       openProject: jest
         .fn<() => Promise<ProjectInfo>>()
-        .mockResolvedValue({ content: [], folders: [], name: 'Project', path: '/tmp/project' }),
+        .mockResolvedValue({ content: [], name: 'Project', path: '/tmp/project' }),
       platform: 'linux',
       renameProject: jest.fn<(projectPath: string, name: string) => Promise<string>>(),
       restoreLastOpenedProject: jest
@@ -188,7 +188,6 @@ describe('AppContainer', () => {
         .mockResolvedValue({
           project: {
             content: [{ data: null, id: 0, name: '', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
-            folders: [{ id: 0, items: [], name: '' }],
             name: 'Project',
             path: '/tmp/project'
           }

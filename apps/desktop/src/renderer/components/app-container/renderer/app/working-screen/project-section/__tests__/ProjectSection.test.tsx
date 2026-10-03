@@ -3,45 +3,79 @@ import type { ProjectContent } from '@manticore/project/types';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
-import { AssetType, type FolderConfig, type ProjectActionHandler } from '../../../../../../../../types';
-import { type ProjectItemSelection,ProjectStructureContext } from '../../../../../ProjectStructureContext';
+import { AssetType, type ProjectActionHandler } from '../../../../../../../../types';
+import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 
 describe('ProjectSection', () => {
+  type FolderFixture = { id: number; items: string[]; name: string };
+
+  const getProjectContent = (folders: FolderFixture[], content: ProjectContent[]) => {
+    const folderByPath = new Map<string, ProjectContent>();
+    let virtualFolderId = -1;
+
+    for (const folder of [...folders].sort((left, right) => left.name.split('/').length - right.name.split('/').length)) {
+      let parentId = 0;
+      let path = '';
+      const segments = folder.name.split('/').filter(Boolean);
+
+      if (!segments.length) {
+        folderByPath.set('', { data: null, id: folder.id, name: '', parentId: 0, type: AssetType.ProjectFolder, version: 0 });
+        continue;
+      }
+
+      for (const [index, name] of segments.entries()) {
+        path = path ? `${path}/${name}` : name;
+        let item = folderByPath.get(path);
+        if (!item) {
+          item = {
+            data: null,
+            id: index === segments.length - 1 ? folder.id : virtualFolderId--,
+            name,
+            parentId,
+            type: AssetType.ProjectFolder,
+            version: 0
+          };
+          folderByPath.set(path, item);
+        }
+        parentId = item.id;
+      }
+    }
+
+    return Array.from(folderByPath.values()).concat(content);
+  };
+
   const renderProjectSection = (
     onAction: ProjectActionHandler,
-    folders: FolderConfig[] = [],
+    folders: FolderFixture[] = [],
     content: ProjectContent[] = [],
-    selectedItems: readonly ProjectItemSelection[] = []
+    selectedItems: readonly number[] = []
   ) =>
     render(
       <ProjectStructureContext.Provider
-        value={{ onAction, project: { content, folders, name: 'Initial project', path: '/tmp/project' }, selectedItems }}
+        value={{ onAction, project: { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' }, selectedItems }}
       >
         <ProjectSection />
       </ProjectStructureContext.Provider>
     );
 
   test('selects an item and extends the selection with Ctrl or Cmd click', () => {
-    const onSelectItem = jest.fn();
+    const onAction = jest.fn<ProjectActionHandler>();
     renderProjectSection(
-      jest.fn<ProjectActionHandler>(),
-      [{ id: 1, items: [], name: 'Assets' }],
-      [],
-      [],
-      onSelectItem
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }]
     );
 
     fireEvent.click(screen.getByRole('heading', { name: 'Initial project' }));
     fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { ctrlKey: true });
     fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { metaKey: true });
 
-    expect(onSelectItem).toHaveBeenNthCalledWith(1, AssetType.Project, 0, false);
-    expect(onSelectItem).toHaveBeenNthCalledWith(2, AssetType.ProjectFolder, 1, true);
-    expect(onSelectItem).toHaveBeenNthCalledWith(3, AssetType.ProjectFolder, 1, true);
+    expect(onAction).toHaveBeenNthCalledWith(1, 'select', AssetType.Project, 0, false);
+    expect(onAction).toHaveBeenNthCalledWith(2, 'select', AssetType.ProjectFolder, 1, true);
+    expect(onAction).toHaveBeenNthCalledWith(3, 'select', AssetType.ProjectFolder, 1, true);
   });
 
   test('renames the project with a trimmed name', async () => {
@@ -103,38 +137,37 @@ describe('ProjectSection', () => {
     const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
 
     expect(within(assetsAccordion).getByTestId('FolderIcon')).toBeInTheDocument();
+    expect(within(assetsAccordion).getByTestId('ChevronRightIcon')).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: 'Images' })).not.toBeInTheDocument();
 
     await user.click(assetsAccordion);
 
-    expect(within(assetsAccordion).getByTestId('FolderOpenIcon')).toBeInTheDocument();
+    expect(within(assetsAccordion).getByTestId('ExpandMoreIcon')).toBeInTheDocument();
+    expect(within(assetsAccordion).getByTestId('FolderIcon')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: 'Images' })).toBeInTheDocument();
     expect(screen.getAllByRole('heading')).toHaveLength(3);
   });
 
   test('expands an accordion with a single-selection click but not with Ctrl or Cmd selection', () => {
-    const onSelectItem = jest.fn();
+    const onAction = jest.fn<ProjectActionHandler>();
     renderProjectSection(
-      jest.fn<ProjectActionHandler>(),
-      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }],
-      [],
-      [],
-      onSelectItem
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }]
     );
     const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
 
     fireEvent.click(assetsAccordion, { ctrlKey: true });
 
     expect(screen.queryByRole('heading', { name: 'Images' })).not.toBeInTheDocument();
-    expect(onSelectItem).toHaveBeenCalledWith(AssetType.ProjectFolder, 1, true);
+    expect(onAction).toHaveBeenCalledWith('select', AssetType.ProjectFolder, 1, true);
 
     fireEvent.click(assetsAccordion);
 
     expect(screen.getByRole('heading', { name: 'Images' })).toBeInTheDocument();
-    expect(onSelectItem).toHaveBeenLastCalledWith(AssetType.ProjectFolder, 1, false);
+    expect(onAction).toHaveBeenLastCalledWith('select', AssetType.ProjectFolder, 1, false);
   });
 
-  test('resets a folder icon when it no longer has children', async () => {
+  test('hides the expand icon when a folder no longer has children', async () => {
     const user = userEvent.setup();
     const onAction = jest
       .fn<(action: string, assetType: AssetType, id: number, data?: unknown) => Promise<void>>()
@@ -146,15 +179,14 @@ describe('ProjectSection', () => {
     const assetsAccordion = screen.getByRole('button', { name: 'Assets' });
 
     await user.click(assetsAccordion);
-    expect(within(assetsAccordion).getByTestId('FolderOpenIcon')).toBeInTheDocument();
+    expect(within(assetsAccordion).getByTestId('ExpandMoreIcon')).toBeInTheDocument();
 
     rerender(
       <ProjectStructureContext.Provider
         value={{
           onAction,
           project: {
-            content: [],
-            folders: [{ id: 1, items: [], name: 'Assets' }],
+            content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
             name: 'Initial project',
             path: '/tmp/project'
           },
@@ -166,7 +198,8 @@ describe('ProjectSection', () => {
     );
 
     expect(screen.getByTestId('FolderIcon')).toBeInTheDocument();
-    expect(screen.queryByTestId('FolderOpenIcon')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('ExpandMoreIcon')).not.toBeInTheDocument();
+    expect(screen.getByTestId('ChevronRightIcon')).toHaveClass('MuiSvgIcon-colorDisabled');
   });
 
   test('renders root folder bundles with their configured names', async () => {

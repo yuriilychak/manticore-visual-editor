@@ -2,11 +2,8 @@ import { AssetType } from './asset-type';
 
 export { AssetType } from './asset-type';
 
-export type FolderConfig = { id: number; items: string[]; name: string };
-
 export type ProjectInfo = {
   content?: ProjectContent[];
-  folders: FolderConfig[];
   name: string;
   path: string;
   version?: number;

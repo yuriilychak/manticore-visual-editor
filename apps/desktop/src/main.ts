@@ -141,7 +141,7 @@ ipcMain.handle('project:open', async (event) => {
     ? await dialog.showOpenDialog(parentWindow, options)
     : await dialog.showOpenDialog(options);
   const projectPath = result.canceled ? '' : (result.filePaths[0] ?? '');
-  if (!projectPath) return { content: [], folders: [], name: '', path: '', version: 0 };
+  if (!projectPath) return { content: [], name: '', path: '', version: 0 };
 
   try {
     const project = await getProjectInfo(projectPath);

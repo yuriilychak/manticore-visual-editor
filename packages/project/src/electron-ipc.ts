@@ -52,7 +52,7 @@ export const registerProjectIpcHandlers = ({ dialog, getWindow, ipcMain, onProje
   ipcMain.handle('project:open', async (event) => {
     const result = await getDialogResult(dialog, getWindow(event.sender), { properties: ['openDirectory'] });
     const projectPath = result.canceled ? '' : (result.filePaths[0] ?? '');
-    if (!projectPath) return { content: [], folders: [], name: '', path: '', version: 0 };
+    if (!projectPath) return { content: [], name: '', path: '', version: 0 };
     try {
       const project = await getProjectInfo(projectPath);
       await onProjectOpened(projectPath);

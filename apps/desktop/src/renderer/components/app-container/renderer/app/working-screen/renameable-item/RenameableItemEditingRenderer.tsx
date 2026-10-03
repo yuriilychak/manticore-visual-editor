@@ -1,4 +1,4 @@
-import type { FC, ReactNode } from 'react';
+import type { FC } from 'react';
 
 import { Box, FilledInput } from '@mui/material';
 
@@ -7,7 +7,6 @@ import RenameableItemActionButtons from './RenameableItemActionButtons';
 import { useRenameableItemEditingRenderer } from './useRenameableItemEditingRenderer';
 
 type RenameableItemEditingRendererProps = {
-  children: ReactNode;
   isSaving: boolean;
   name: string;
   onAction: (action: string, data?: string) => Promise<void>;
@@ -15,7 +14,6 @@ type RenameableItemEditingRendererProps = {
 };
 
 const RenameableItemEditingRenderer: FC<RenameableItemEditingRendererProps> = ({
-  children,
   isSaving,
   name,
   onAction,
@@ -29,12 +27,11 @@ const RenameableItemEditingRenderer: FC<RenameableItemEditingRendererProps> = ({
       alignItems="center"
       component="form"
       display="flex"
+      flexGrow={1}
       gap={ITEM_GAP}
       minWidth={0}
       onSubmit={handleSubmit}
-      width="100%"
     >
-      {children}
       <FilledInput
         autoFocus
         disableUnderline

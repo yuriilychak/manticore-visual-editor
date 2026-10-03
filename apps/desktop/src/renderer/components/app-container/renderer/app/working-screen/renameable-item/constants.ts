@@ -10,13 +10,17 @@ export const RENAMEABLE_ITEM_LOCALE_KEYS = {
   renameNameLabel: 'common.renameName'
 } as const;
 
-export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
+export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
   delete: [{ action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }],
   editing: [
     { action: 'save', tooltipLocale: 'common.saveRename', Icon: CheckRounded },
     { action: 'cancel', tooltipLocale: 'common.cancelRename', Icon: CloseRounded }
   ],
   viewProject: [{ action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }],
+  viewContent: [
+    { action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded },
+    { action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }
+  ],
   empty: []
 };
 

@@ -1,8 +1,8 @@
 import { AssetType } from '@manticore/project/types';
-import type { FolderConfig, ProjectInfo } from '@manticore/project/types';
+import type { ProjectInfo } from '@manticore/project/types';
 
 export { AssetType };
-export type { FolderConfig, ProjectInfo };
+export type { ProjectInfo };
 
 export const ASSET_TYPE_LOCALE_KEY: Record<AssetType, string> = {
   [AssetType.Project]: 'project',

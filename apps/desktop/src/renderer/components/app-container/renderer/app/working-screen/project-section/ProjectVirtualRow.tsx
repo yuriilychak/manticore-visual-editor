@@ -9,9 +9,8 @@ import ProjectItem from './ProjectItem';
 
 type ProjectVirtualRowProps = {
   depth: number;
-  isExpandable: boolean;
+  hasChildren: boolean;
   isExpanded: boolean;
-  isMultiSelectionActive: boolean;
   isSelected: boolean;
   onAction: ProjectActionHandler;
   onToggleExpanded: (id: number) => void;
@@ -21,9 +20,8 @@ type ProjectVirtualRowProps = {
 
 const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
   depth,
-  isExpandable,
+  hasChildren,
   isExpanded,
-  isMultiSelectionActive,
   isSelected,
   onAction,
   onToggleExpanded,
@@ -31,7 +29,7 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
   start
 }) => {
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!isExpandable || event.ctrlKey || event.metaKey || (event.target instanceof Element && event.target.closest('button, input'))) return;
+    if (!hasChildren || event.ctrlKey || event.metaKey || (event.target instanceof Element && event.target.closest('button, input'))) return;
 
     onToggleExpanded(item.id);
   };
@@ -46,9 +44,9 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
     >
       <ProjectItem
         contentType={item.type}
+        hasChildren={hasChildren}
         expanded={isExpanded}
         id={item.id}
-        isMultiSelectionActive={isMultiSelectionActive}
         isSelected={isSelected}
         name={item.name}
         onAction={onAction}

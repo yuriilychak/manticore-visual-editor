@@ -1,10 +1,13 @@
-import { type FC, type ReactNode } from 'react';
+import { memo, type FC } from 'react';
 
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import type { SvgIconComponent } from '@mui/icons-material';
+import { Box } from '@mui/material';
 import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
-import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
+import { ITEM_GAP, RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
 import RenameableItemEditingRenderer from './RenameableItemEditingRenderer';
 import RenameableItemViewRenderer from './RenameableItemViewRenderer';
 import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
@@ -12,26 +15,28 @@ import { useRenameableItem } from './useRenameableItem';
 
 type RenameableItemProps = {
   contentType: AssetType;
+  expandable: boolean;
+  expandIconDisabled: boolean;
+  expanded: boolean;
   id: number;
-  Icon?: SvgIconComponent;
-  icon?: ReactNode;
+  Icon: SvgIconComponent;
   name: string;
   onAction: ProjectActionHandler;
-  disableNameTooltip?: boolean;
-  disabledActions?: Record<string, boolean>;
+  disabledActions: Record<string, boolean>;
   actions?: ActionButtonConfig[];
 };
 
 const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
   contentType,
+  expandable,
+  expandIconDisabled,
+  expanded,
   id,
   Icon,
-  icon,
   name,
   onAction,
-  disableNameTooltip = false,
   renameNameLabel,
-  disabledActions = {},
+  disabledActions,
   actions = RENAMEABLE_ITEM_ACTIONS.empty
 }) => {
   const {
@@ -39,29 +44,30 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
     isEditing,
     isSaving
   } = useRenameableItem(contentType, id, onAction);
-  const itemIcon = Icon ? <Icon color="action" fontSize="small" /> : icon;
+  const ExpandIcon = expanded ? ExpandMoreIcon : ChevronRightIcon;
 
-  return isEditing ? (
-    <RenameableItemEditingRenderer
-      isSaving={isSaving}
-      name={name}
-      onAction={handleButtonClick}
-      renameNameLabel={renameNameLabel}
-    >
-      {itemIcon}
-    </RenameableItemEditingRenderer>
-  ) : (
-    <RenameableItemViewRenderer
-      contentType={contentType}
-      disableNameTooltip={disableNameTooltip}
-      disabledByAction={disabledActions}
-      menuActions={actions}
-      name={name}
-      onAction={handleButtonClick}
-    >
-      {itemIcon}
-    </RenameableItemViewRenderer>
+  return (
+    <Box alignItems="center" display="flex" gap={ITEM_GAP} minWidth={0} pl={expandable ? 0 : 3} width="100%">
+      {expandable && <ExpandIcon color={expandIconDisabled ? 'disabled' : 'action'} fontSize="small" />}
+      <Icon color="action" fontSize="small" />
+      {isEditing ? (
+        <RenameableItemEditingRenderer
+          isSaving={isSaving}
+          name={name}
+          onAction={handleButtonClick}
+          renameNameLabel={renameNameLabel}
+        />
+      ) : (
+        <RenameableItemViewRenderer
+          contentType={contentType}
+          disabledByAction={disabledActions}
+          menuActions={actions}
+          name={name}
+          onAction={handleButtonClick}
+        />
+      )}
+    </Box>
   );
 };
 
-export default withLocalizedProps(RENAMEABLE_ITEM_LOCALE_KEYS)(RenameableItem);
+export default memo(withLocalizedProps(RENAMEABLE_ITEM_LOCALE_KEYS)(RenameableItem));

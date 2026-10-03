@@ -7,25 +7,10 @@ import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJ
 import { createProjectContent, isAssetName } from './content';
 import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
-import type { FolderConfig, ProjectConfig, ProjectContent, ProjectInfo } from './types';
-
-function getFolderPath(folderId: number, content: ProjectConfig['content']): string {
-  const folder = content.find((item) => item.id === folderId && item.type === AssetType.ProjectFolder);
-  if (!folder || folder.parentId === 0) return folder?.name ?? '';
-
-  const parentPath = getFolderPath(folder.parentId, content);
-  return parentPath ? `${parentPath}/${folder.name}` : folder.name;
-}
+import type { ProjectConfig, ProjectContent, ProjectInfo } from './types';
 
 function toProjectInfo(projectPath: string, config: ProjectConfig): ProjectInfo {
-  const folders: FolderConfig[] = config.content
-    .filter((item) => item.type === AssetType.ProjectFolder)
-    .map((item) => ({
-      id: item.id,
-      items: config.content.filter((child) => child.parentId === item.id && child.type === AssetType.Bundle).map((child) => String(child.id)),
-      name: getFolderPath(item.id, config.content)
-    }));
-  return { content: config.content, folders, name: config.name, path: projectPath, version: config.version };
+  return { content: config.content, name: config.name, path: projectPath, version: config.version };
 }
 
 export async function createProject(projectPath: string, name: string): Promise<void> {

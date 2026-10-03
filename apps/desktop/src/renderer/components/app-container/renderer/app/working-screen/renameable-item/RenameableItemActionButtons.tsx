@@ -18,7 +18,7 @@ const RenameableItemActionButtons: FC<RenameableItemActionButtonsProps> = ({ act
     onAction(event.currentTarget.dataset.action ?? '');
   };
 
-  return actions.map(({ action, tooltipLocale, Icon, icon }) => (
+  return actions.map(({ action, tooltipLocale, Icon }) => (
     <Tooltip key={action} title={t(tooltipLocale)}>
       <span>
         <IconButton
@@ -29,7 +29,7 @@ const RenameableItemActionButtons: FC<RenameableItemActionButtonsProps> = ({ act
           size="small"
           type="button"
         >
-          {Icon ? <Icon fontSize="small" /> : icon}
+          <Icon fontSize="small" />
         </IconButton>
       </span>
     </Tooltip>
