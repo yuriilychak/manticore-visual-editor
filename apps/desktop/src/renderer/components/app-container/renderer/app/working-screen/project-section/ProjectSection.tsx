@@ -1,7 +1,7 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { type FC, useCallback, useMemo, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
-import { useVirtualizer } from '@tanstack/react-virtual';
 
 import { AssetType } from '../../../../../../../types';
 import { useProjectStructure } from '../../../../ProjectStructureContext';
@@ -10,7 +10,7 @@ import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
 import ProjectItem from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
 
-const PROJECT_ROW_HEIGHT = 32;
+const PROJECT_ROW_HEIGHT = 28;
 const estimateRowSize = () => PROJECT_ROW_HEIGHT;
 
 const ProjectSection: FC = () => {

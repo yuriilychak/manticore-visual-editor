@@ -1,8 +1,9 @@
-import { memo, type FC, type MouseEventHandler } from 'react';
+import { type FC, memo, type MouseEventHandler } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { IconButton, Tooltip } from '@mui/material';
 
+import { ITEM_ACTION_BUTTON_SIZE, ITEM_ICON_SIZE } from './constants';
 import type { ActionButtonConfig } from './types';
 
 type RenameableItemActionButtonsProps = {
@@ -27,9 +28,10 @@ const RenameableItemActionButtons: FC<RenameableItemActionButtonsProps> = ({ act
           disabled={disabledByAction[action]}
           onClick={handleActionClick}
           size="small"
+          sx={{ height: ITEM_ACTION_BUTTON_SIZE, width: ITEM_ACTION_BUTTON_SIZE }}
           type="button"
         >
-          <Icon fontSize="small" />
+          <Icon sx={{ fontSize: ITEM_ICON_SIZE }} />
         </IconButton>
       </span>
     </Tooltip>

@@ -111,6 +111,7 @@ export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
 export const PROJECT_ITEM_STYLES: Record<'root', SxProps<Theme>> = {
   root: {
     borderRadius: 1,
+    minHeight: 28,
     px: 0.5,
     transition: theme => theme.transitions.create('background-color'),
     '&:hover': { bgcolor: 'action.hover' },

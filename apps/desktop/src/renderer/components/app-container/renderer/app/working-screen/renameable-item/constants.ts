@@ -25,13 +25,22 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent
 };
 
 export const ITEM_GAP = 0.5;
+export const ITEM_ICON_SIZE = 18;
+export const ITEM_ACTION_BUTTON_SIZE = 24;
 
 export const RENAMEABLE_ITEM_STYLES: Record<'divider' | 'editingNameInput' | 'name', SxProps<Theme>> = {
   divider: { borderBottomWidth: 2, my: 0 },
   editingNameInput: {
     '&, &:hover': { backgroundColor: 'transparent' },
     flexGrow: 1,
-    '& .MuiFilledInput-input': { fontSize: '1rem', lineHeight: 1.75, padding: 0 }
+    '& .MuiFilledInput-input': { fontSize: '0.875rem', lineHeight: '20px', padding: 0 }
   },
-  name: { flexGrow: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }
+  name: {
+    flexGrow: 1,
+    fontSize: '0.875rem',
+    lineHeight: '20px',
+    minWidth: 0,
+    overflow: 'hidden',
+    textOverflow: 'ellipsis'
+  }
 };

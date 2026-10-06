@@ -1,4 +1,4 @@
-import { memo, type FC, type MouseEvent, useCallback, useState } from 'react';
+import { type FC, memo, type MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
@@ -6,8 +6,10 @@ import { Divider, IconButton, Menu, Tooltip } from '@mui/material';
 
 import { AssetType } from '../../../../../../../../types';
 import { MENU_SLOT_PROPS, MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
-import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../constants';
+
+import { ITEM_ACTION_BUTTON_SIZE, ITEM_ICON_SIZE, RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../constants';
 import type { ActionButtonConfig } from '../types';
+
 import RenameableItemActionsMenuItem from './RenameableItemActionsMenuItem';
 
 type RenameableItemActionsMenuProps = {
@@ -44,8 +46,14 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
   return (
     <>
       <Tooltip title={t('common.actions')}>
-        <IconButton aria-label={t('common.actions')} onClick={handleOpen} size="small" type="button">
-          <MoreVertRounded fontSize="small" />
+        <IconButton
+          aria-label={t('common.actions')}
+          onClick={handleOpen}
+          size="small"
+          sx={{ height: ITEM_ACTION_BUTTON_SIZE, width: ITEM_ACTION_BUTTON_SIZE }}
+          type="button"
+        >
+          <MoreVertRounded sx={{ fontSize: ITEM_ICON_SIZE }} />
         </IconButton>
       </Tooltip>
       <Menu
