@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
 
@@ -19,6 +19,7 @@ const ProjectSection: FC = () => {
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
   const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
+  const [contextMenu, setContextMenu] = useState<{ id: number; left: number; top: number } | null>(null);
   const projectTree = useMemo(
     () => getProjectTree(project?.content ?? []),
     [project?.content]
@@ -47,6 +48,11 @@ const ProjectSection: FC = () => {
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
   ), []);
+  const handleOpenContextMenu = useCallback((id: number, event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setContextMenu((current) => current ? null : { id, left: event.clientX, top: event.clientY });
+  }, []);
+  const handleCloseContextMenu = useCallback(() => setContextMenu(null), []);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const isAddFolderShortcut = event.key.toLocaleLowerCase() === 'n' && !event.altKey && !event.shiftKey &&
@@ -74,11 +80,14 @@ const ProjectSection: FC = () => {
     <Box component="header" display="flex" flexDirection="column" height="100%" minHeight={0} p={1}>
       <ProjectItem
         contentType={AssetType.Project}
+        contextMenuPosition={contextMenu?.id === 0 ? contextMenu : null}
         dropTargetId={rootFolder?.item.id}
         id={0}
         isSelected={selectedItems.includes(0)}
         name={name}
         onAction={onAction}
+        onCloseContextMenu={handleCloseContextMenu}
+        onOpenContextMenu={handleOpenContextMenu}
       />
       <Box ref={scrollElementRef} flexGrow={1} minHeight={0} sx={{ overflowX: 'hidden', overflowY: 'auto' }}>
         <Box height={virtualizer.getTotalSize()} position="relative">
@@ -89,12 +98,15 @@ const ProjectSection: FC = () => {
             return (
               <ProjectVirtualRow
                 depth={depth}
+                contextMenuPosition={contextMenu?.id === item.id ? contextMenu : null}
                 hasChildren={children.length > 0}
                 isExpanded={expandedItemIdSet.has(item.id)}
                 isSelected={selectedItems.includes(item.id)}
                 item={item}
                 key={item.id}
                 onAction={onAction}
+                onCloseContextMenu={handleCloseContextMenu}
+                onOpenContextMenu={handleOpenContextMenu}
                 onToggleExpanded={toggleExpanded}
                 start={virtualItem.start}
               />

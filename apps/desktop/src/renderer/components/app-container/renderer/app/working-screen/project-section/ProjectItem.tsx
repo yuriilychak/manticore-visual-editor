@@ -1,4 +1,4 @@
-import { type DragEvent, type FC, type MouseEvent, type ReactNode, useCallback, useState } from 'react';
+import { type DragEvent, type FC, type MouseEvent, type ReactNode } from 'react';
 
 import { Box } from '@mui/material';
 
@@ -16,24 +16,29 @@ export type ProjectItemProps = {
   id: number;
   name: string;
   onAction: ProjectActionHandler;
+  contextMenuPosition?: { left: number; top: number } | null;
+  onCloseContextMenu?: () => void;
+  onOpenContextMenu?: (id: number, event: MouseEvent<HTMLDivElement>) => void;
   dropTargetId?: number;
   isSelected?: boolean;
 };
 
 const ProjectItem: FC<ProjectItemProps> = ({
   contentType,
+  contextMenuPosition = null,
   dropTargetId,
   hasChildren = false,
   expanded = false,
   id,
   isSelected = false,
   name,
-  onAction
+  onAction,
+  onCloseContextMenu,
+  onOpenContextMenu
 }) => {
   const config = PROJECT_ITEM_CONFIG[contentType];
   const resolvedDropTargetId = dropTargetId ?? id;
   const { icon: Icon } = config;
-  const [contextMenuPosition, setContextMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (!config.dragType || (event.target instanceof Element && event.target.closest('button, input'))) {
       event.preventDefault();
@@ -73,11 +78,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
 
     void onAction('select', contentType, id, event.ctrlKey || event.metaKey);
   };
-  const handleContextMenu = useCallback((event: MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setContextMenuPosition({ left: event.clientX, top: event.clientY });
-  }, []);
-  const handleCloseContextMenu = useCallback(() => setContextMenuPosition(null), []);
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => onOpenContextMenu?.(id, event);
 
   return (
     <Box
@@ -104,7 +105,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
         id={id}
         name={name}
         onAction={onAction}
-        onCloseContextMenu={handleCloseContextMenu}
+        onCloseContextMenu={onCloseContextMenu ?? (() => undefined)}
       />
     </Box>
   );
