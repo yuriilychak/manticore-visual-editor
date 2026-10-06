@@ -28,7 +28,12 @@ type ProjectItemConfig = {
 };
 
 const ADD_CONTENT_ACTIONS: ActionButtonConfig[] = [
-  { action: 'add-folder', tooltipLocale: 'folder.add', Icon: CreateNewFolderIcon },
+  {
+    action: 'add-folder',
+    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    tooltipLocale: 'folder.add',
+    Icon: CreateNewFolderIcon
+  },
   { action: 'add-bundle', tooltipLocale: 'bundle.add', Icon: BundleAddIcon }
 ];
 
@@ -38,13 +43,23 @@ const ROOT_CONTENT_ACTIONS: ActionButtonConfig[] = [
 ];
 
 const BUNDLE_CONTENT_ACTIONS: ActionButtonConfig[] = [
-  { action: 'add-folder', tooltipLocale: 'bundleFolder.add', Icon: CreateNewFolderIcon },
+  {
+    action: 'add-folder',
+    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    tooltipLocale: 'bundleFolder.add',
+    Icon: CreateNewFolderIcon
+  },
   { action: 'add-atlas', tooltipLocale: 'textureAtlas.add', Icon: AtlasAddIcon },
   { action: 'import', tooltipLocale: 'common.import', Icon: ImportIcon }
 ];
 
 const BUNDLE_FOLDER_CONTENT_ACTIONS: ActionButtonConfig[] = [
-  { action: 'add-folder', tooltipLocale: 'bundleFolder.add', Icon: CreateNewFolderIcon },
+  {
+    action: 'add-folder',
+    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    tooltipLocale: 'bundleFolder.add',
+    Icon: CreateNewFolderIcon
+  },
   { action: 'add-atlas', tooltipLocale: 'textureAtlas.add', Icon: AtlasAddIcon }
 ];
 

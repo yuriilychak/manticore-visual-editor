@@ -10,6 +10,8 @@ export const RENAMEABLE_ITEM_LOCALE_KEYS = {
   renameNameLabel: 'common.renameName'
 } as const;
 
+const DELETE_SHORTCUT = { darwin: 'Delete', linux: 'Delete', win32: 'Delete' } as const;
+
 export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
   delete: [{ action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }],
   editing: [
@@ -19,7 +21,7 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent
   viewProject: [{ action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }],
   viewContent: [
     { action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded },
-    { action: 'open-delete-modal', shortcut: 'Delete', tooltipLocale: 'common.delete', Icon: DeleteRounded }
+    { action: 'open-delete-modal', shortcut: DELETE_SHORTCUT, tooltipLocale: 'common.delete', Icon: DeleteRounded }
   ],
   empty: []
 };

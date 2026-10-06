@@ -1,11 +1,12 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, useCallback, useMemo, useRef, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../../types';
 import { useProjectStructure } from '../../../../ProjectStructureContext';
 
+import { PROJECT_ITEM_CONFIG } from './constants';
 import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
 import ProjectItem from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
@@ -46,6 +47,25 @@ const ProjectSection: FC = () => {
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
   ), []);
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const isAddFolderShortcut = event.key.toLocaleLowerCase() === 'n' && !event.altKey && !event.shiftKey &&
+        (window.manticore?.platform === 'darwin' ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey);
+      if (!isAddFolderShortcut || selectedItems.length > 1 || event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) return;
+
+      const selectedId = selectedItems[0] ?? 0;
+      const selectedItem = selectedId === 0
+        ? { id: 0, type: AssetType.Project }
+        : project?.content?.find((item) => item.id === selectedId);
+      if (!selectedItem || !PROJECT_ITEM_CONFIG[selectedItem.type].actions?.some((action) => action.action === 'add-folder')) return;
+
+      event.preventDefault();
+      void onAction('add-folder', selectedItem.type, selectedItem.id);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onAction, project?.content, selectedItems]);
   if (!project) return null;
 
   const { name } = project;

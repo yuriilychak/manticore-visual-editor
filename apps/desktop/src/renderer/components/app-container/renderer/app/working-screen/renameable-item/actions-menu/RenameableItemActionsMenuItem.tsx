@@ -17,6 +17,7 @@ type RenameableItemActionsMenuItemProps = {
 const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({ action, disabled, onAction }) => {
   const { t } = useTranslation();
   const { action: actionId, tooltipLocale, Icon, shortcut } = action;
+  const shortcutLabel = shortcut?.[window.manticore?.platform as keyof typeof shortcut];
   const handleActionClick: MouseEventHandler<HTMLLIElement> = event => {
     event.stopPropagation();
     onAction(actionId);
@@ -36,14 +37,14 @@ const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({
       <Box component="span" display="flex" flexShrink={0} mr={0.25} width={ITEM_ICON_SIZE}>
         <Icon sx={{ fontSize: ITEM_ICON_SIZE }} />
       </Box>
-      <ListItemText sx={{ m: 0, mr: shortcut ? 1 : 0 }}>{t(tooltipLocale)}</ListItemText>
-      {shortcut && (
+      <ListItemText sx={{ m: 0, mr: shortcutLabel ? 1 : 0 }}>{t(tooltipLocale)}</ListItemText>
+      {shortcutLabel && (
         <Typography
           aria-hidden
           color="text.secondary"
           sx={{ fontSize: '0.875rem', lineHeight: '20px', whiteSpace: 'nowrap' }}
         >
-          {shortcut}
+          {shortcutLabel}
         </Typography>
       )}
     </MenuItem>
