@@ -10,7 +10,7 @@ import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
 import ProjectItem from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
 
-const PROJECT_ROW_HEIGHT = 28;
+const PROJECT_ROW_HEIGHT = 24;
 const estimateRowSize = () => PROJECT_ROW_HEIGHT;
 
 const ProjectSection: FC = () => {

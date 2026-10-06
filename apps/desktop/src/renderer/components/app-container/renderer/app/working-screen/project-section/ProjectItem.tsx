@@ -1,4 +1,4 @@
-import { type DragEvent, type FC, type MouseEvent, type ReactNode } from 'react';
+import { type DragEvent, type FC, type MouseEvent, type ReactNode, useCallback, useState } from 'react';
 
 import { Box } from '@mui/material';
 
@@ -33,6 +33,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
   const config = PROJECT_ITEM_CONFIG[contentType];
   const resolvedDropTargetId = dropTargetId ?? id;
   const { icon: Icon } = config;
+  const [contextMenuPosition, setContextMenuPosition] = useState<{ left: number; top: number } | null>(null);
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (!config.dragType || (event.target instanceof Element && event.target.closest('button, input'))) {
       event.preventDefault();
@@ -72,6 +73,11 @@ const ProjectItem: FC<ProjectItemProps> = ({
 
     void onAction('select', contentType, id, event.ctrlKey || event.metaKey);
   };
+  const handleContextMenu = useCallback((event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setContextMenuPosition({ left: event.clientX, top: event.clientY });
+  }, []);
+  const handleCloseContextMenu = useCallback(() => setContextMenuPosition(null), []);
 
   return (
     <Box
@@ -79,6 +85,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
       data-project-item
       draggable={Boolean(config.dragType)}
       onClick={handleClick}
+      onContextMenu={handleContextMenu}
       onDragOver={handleDragOver}
       onDragStart={handleDragStart}
       onDrop={handleDrop}
@@ -88,6 +95,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
       <RenameableItem
         actions={config.actions}
         contentType={contentType}
+        contextMenuPosition={contextMenuPosition}
         disabledActions={DISABLED_ACTIONS}
         expandable={Boolean(config.expandable)}
         expandIconDisabled={!hasChildren}
@@ -96,6 +104,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
         id={id}
         name={name}
         onAction={onAction}
+        onCloseContextMenu={handleCloseContextMenu}
       />
     </Box>
   );

@@ -1,87 +1,71 @@
-import { type FC, memo, type MouseEvent, useCallback, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type FC, memo, useCallback } from 'react';
 
-import MoreVertRounded from '@mui/icons-material/MoreVertRounded';
-import { Divider, IconButton, Menu, Tooltip } from '@mui/material';
+import { Divider, Menu } from '@mui/material';
 
 import { AssetType } from '../../../../../../../../types';
-import { MENU_SLOT_PROPS, MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
 
-import { ITEM_ACTION_BUTTON_SIZE, ITEM_ICON_SIZE, RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../constants';
+import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../constants';
 import type { ActionButtonConfig } from '../types';
 
 import RenameableItemActionsMenuItem from './RenameableItemActionsMenuItem';
 
 type RenameableItemActionsMenuProps = {
+  contextMenuPosition: { left: number; top: number } | null;
   contentType: AssetType;
   disabledByAction: Record<string, boolean>;
   menuActions: ActionButtonConfig[];
   onAction: (action: string) => void;
+  onClose: () => void;
 };
 
 const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
+  contextMenuPosition,
   contentType,
   disabledByAction,
   menuActions,
-  onAction
+  onAction,
+  onClose
 }) => {
   const viewActions = contentType === AssetType.Project
     ? RENAMEABLE_ITEM_ACTIONS.viewProject
     : RENAMEABLE_ITEM_ACTIONS.viewContent;
-  const { t } = useTranslation();
-  const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
-  const handleOpen = useCallback((event: MouseEvent<HTMLButtonElement>) => {
-    event.stopPropagation();
-    setMenuAnchor(event.currentTarget);
-  }, []);
-  const handleClose = useCallback((event?: { stopPropagation?: () => void }) => {
-    event?.stopPropagation?.();
-    setMenuAnchor(null);
-  }, []);
   const handleMenuAction = useCallback((action: string) => {
-    handleClose();
+    onClose();
     onAction(action);
-  }, [handleClose, onAction]);
+  }, [onAction, onClose]);
+  const handleClose = useCallback((event: { stopPropagation?: () => void }) => {
+    event.stopPropagation?.();
+    onClose();
+  }, [onClose]);
 
   return (
-    <>
-      <Tooltip title={t('common.actions')}>
-        <IconButton
-          aria-label={t('common.actions')}
-          onClick={handleOpen}
-          size="small"
-          sx={{ height: ITEM_ACTION_BUTTON_SIZE, width: ITEM_ACTION_BUTTON_SIZE }}
-          type="button"
-        >
-          <MoreVertRounded sx={{ fontSize: ITEM_ICON_SIZE }} />
-        </IconButton>
-      </Tooltip>
-      <Menu
-        anchorEl={menuAnchor}
-        onClose={handleClose}
-        open={Boolean(menuAnchor)}
-        slotProps={MENU_SLOT_PROPS}
-        sx={MENUBAR_STYLES.menu}
-      >
-        {viewActions.map((action) => (
-          <RenameableItemActionsMenuItem
-            action={action}
-            disabled={disabledByAction[action.action]}
-            key={action.action}
-            onAction={handleMenuAction}
-          />
-        ))}
-        {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
-        {menuActions.map((action) => (
-          <RenameableItemActionsMenuItem
-            action={action}
-            disabled={disabledByAction[action.action]}
-            key={action.action}
-            onAction={handleMenuAction}
-          />
-        ))}
-      </Menu>
-    </>
+    <Menu
+      anchorPosition={contextMenuPosition ?? undefined}
+      anchorReference="anchorPosition"
+      onClose={handleClose}
+      open={Boolean(contextMenuPosition)}
+      slotProps={{ list: { sx: { p: 0.5 } } }}
+      sx={MENUBAR_STYLES.menu}
+    >
+      {viewActions.map((action) => (
+        <RenameableItemActionsMenuItem
+          action={action}
+          disabled={disabledByAction[action.action]}
+          key={action.action}
+          onAction={handleMenuAction}
+        />
+      ))}
+      {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
+      {menuActions.map((action) => (
+        <RenameableItemActionsMenuItem
+          action={action}
+          disabled={disabledByAction[action.action]}
+          key={action.action}
+          onAction={handleMenuAction}
+        />
+      ))}
+    </Menu>
   );
 };
 

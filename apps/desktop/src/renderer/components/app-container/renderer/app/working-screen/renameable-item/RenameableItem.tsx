@@ -15,6 +15,7 @@ import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
 type RenameableItemProps = {
+  contextMenuPosition: { left: number; top: number } | null;
   contentType: AssetType;
   expandable: boolean;
   expandIconDisabled: boolean;
@@ -23,11 +24,13 @@ type RenameableItemProps = {
   Icon: SvgIconComponent;
   name: string;
   onAction: ProjectActionHandler;
+  onCloseContextMenu: () => void;
   disabledActions: Record<string, boolean>;
   actions?: ActionButtonConfig[];
 };
 
 const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
+  contextMenuPosition,
   contentType,
   expandable,
   expandIconDisabled,
@@ -36,6 +39,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   Icon,
   name,
   onAction,
+  onCloseContextMenu,
   renameNameLabel,
   disabledActions,
   actions = RENAMEABLE_ITEM_ACTIONS.empty
@@ -48,7 +52,15 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   const ExpandIcon = expanded ? ExpandMoreIcon : ChevronRightIcon;
 
   return (
-    <Box alignItems="center" display="flex" gap={ITEM_GAP} height={28} minWidth={0} pl={expandable ? 0 : 3} width="100%">
+    <Box
+      alignItems="center"
+      display="flex"
+      gap={ITEM_GAP}
+      height={24}
+      minWidth={0}
+      pl={expandable ? 0 : 3}
+      width="100%"
+    >
       {expandable && <ExpandIcon color={expandIconDisabled ? 'disabled' : 'action'} sx={{ fontSize: ITEM_ICON_SIZE }} />}
       <Icon color="action" sx={{ fontSize: ITEM_ICON_SIZE }} />
       {isEditing ? (
@@ -62,9 +74,11 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
         <RenameableItemViewRenderer
           contentType={contentType}
           disabledByAction={disabledActions}
+          contextMenuPosition={contextMenuPosition}
           menuActions={actions}
           name={name}
           onAction={handleButtonClick}
+          onCloseContextMenu={onCloseContextMenu}
         />
       )}
     </Box>

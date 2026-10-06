@@ -5,6 +5,7 @@ import { ListItemIcon, ListItemText, MenuItem } from '@mui/material';
 
 import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
 
+import { ITEM_ICON_SIZE } from '../constants';
 import type { ActionButtonConfig } from '../types';
 
 type RenameableItemActionsMenuItemProps = {
@@ -21,8 +22,18 @@ const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({
     onAction(actionId);
   };
   return (
-    <MenuItem disabled={disabled} onClick={handleActionClick} sx={MENUBAR_STYLES.menuItem}>
-      <ListItemIcon><Icon fontSize="small" /></ListItemIcon>
+    <MenuItem
+      disabled={disabled}
+      onClick={handleActionClick}
+      sx={{
+        ...MENUBAR_STYLES.menuItem,
+        minHeight: 24,
+        px: 0,
+        py: 0,
+        '& .MuiListItemText-primary': { fontSize: '0.875rem', lineHeight: '20px' }
+      }}
+    >
+      <ListItemIcon><Icon sx={{ fontSize: ITEM_ICON_SIZE }} /></ListItemIcon>
       <ListItemText>{t(tooltipLocale)}</ListItemText>
     </MenuItem>
   );

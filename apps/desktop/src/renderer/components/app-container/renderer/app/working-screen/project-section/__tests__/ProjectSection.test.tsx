@@ -61,6 +61,7 @@ describe('ProjectSection', () => {
         <ProjectSection />
       </ProjectStructureContext.Provider>
     );
+  const openContextMenu = (name: string) => fireEvent.contextMenu(screen.getByRole('heading', { name }));
 
   test('selects an item and extends the selection with Ctrl or Cmd click', () => {
     const onAction = jest.fn<ProjectActionHandler>();
@@ -86,7 +87,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
     await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
@@ -105,7 +106,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
     await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
@@ -116,9 +117,8 @@ describe('ProjectSection', () => {
   });
 
   test('does not show a delete action for the project root', async () => {
-    const user = userEvent.setup();
     renderProjectSection(jest.fn<ProjectActionHandler>());
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
 
     expect(screen.queryByRole('menuitem', { name: 'common.delete' })).not.toBeInTheDocument();
   });
@@ -219,7 +219,7 @@ describe('ProjectSection', () => {
 
     expect(screen.getByRole('heading', { name: 'Main bundle' })).toBeInTheDocument();
     expect(screen.getByTestId('BundleIcon')).toBeInTheDocument();
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    openContextMenu('Main bundle');
     expect(screen.getByRole('menuitem', { name: 'bundleFolder.add' })).toBeInTheDocument();
     expect(screen.getByRole('menuitem', { name: 'textureAtlas.add' })).toBeInTheDocument();
     await user.keyboard('{Escape}');
@@ -243,7 +243,7 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 }]
     );
 
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    openContextMenu('default_bundle');
     await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
@@ -262,7 +262,7 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }]
     );
 
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    openContextMenu('default_bundle');
     await user.click(screen.getByRole('menuitem', { name: 'common.delete' }));
 
     expect(onAction).toHaveBeenCalledWith('delete', AssetType.Bundle, 2);
@@ -299,7 +299,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
     await user.click(screen.getByRole('menuitem', { name: 'folder.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.Project, 0);
@@ -313,7 +313,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
     await user.click(screen.getByRole('menuitem', { name: 'bundle.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.Project, 0);
@@ -327,7 +327,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction);
 
-    await user.click(screen.getByRole('button', { name: 'common.actions' }));
+    openContextMenu('Initial project');
     await user.click(screen.getByRole('menuitem', { name: 'common.import' }));
 
     expect(onAction).toHaveBeenCalledWith('import', AssetType.Project, 0);
@@ -345,7 +345,7 @@ describe('ProjectSection', () => {
       [{ data: null, id: 2, name: 'default_bundle', parentId: 1, type: AssetType.Bundle, version: 0 }]
     );
 
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    openContextMenu('default_bundle');
     await user.click(screen.getByRole('menuitem', { name: 'common.import' }));
 
     expect(onAction).toHaveBeenCalledWith('import', AssetType.Bundle, 2);
@@ -360,7 +360,7 @@ describe('ProjectSection', () => {
     renderProjectSection(onAction, [{ id: 2, items: [], name: 'Assets' }, { id: 1, items: [], name: 'Assets/Images' }]);
 
     await user.click(screen.getByRole('button', { name: 'Assets' }));
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    openContextMenu('Images');
     await user.click(screen.getByRole('menuitem', { name: 'folder.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-folder', AssetType.ProjectFolder, 1);
@@ -375,7 +375,7 @@ describe('ProjectSection', () => {
     renderProjectSection(onAction, [{ id: 2, items: [], name: 'Assets' }, { id: 1, items: [], name: 'Assets/Images' }]);
 
     await user.click(screen.getByRole('button', { name: 'Assets' }));
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[2]);
+    openContextMenu('Images');
     await user.click(screen.getByRole('menuitem', { name: 'bundle.add' }));
 
     expect(onAction).toHaveBeenCalledWith('add-bundle', AssetType.ProjectFolder, 1);
@@ -555,7 +555,7 @@ describe('ProjectSection', () => {
 
     renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }]);
 
-    await user.click(screen.getAllByRole('button', { name: 'common.actions' })[1]);
+    openContextMenu('Assets');
     await user.click(screen.getByRole('menuitem', { name: 'common.rename' }));
     const input = screen.getByRole('textbox', { name: 'common.renameName' });
     await user.clear(input);
