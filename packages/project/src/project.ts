@@ -158,14 +158,16 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
   return results;
 }
 
-export async function deleteProjectContent(projectPath: string, id: number): Promise<ProjectInfo> {
+export async function deleteProjectContent(projectPath: string, ids: readonly number[]): Promise<ProjectInfo> {
   const config = await ProjectConfigProxy.load(projectPath);
-  const target = config.content.find((item) => item.id === id);
-  if (!target || target.type === AssetType.Project || (target.type === AssetType.ProjectFolder && target.parentId === 0)) {
+  const deletedIds = new Set(ids);
+  const targets = config.content.filter((item) => deletedIds.has(item.id));
+  if (!targets.length || targets.length !== deletedIds.size || targets.some((item) =>
+    item.type === AssetType.Project || (item.type === AssetType.ProjectFolder && item.parentId === 0)
+  )) {
     throw new Error('Content not found.');
   }
 
-  const deletedIds = new Set<number>([id]);
   // Keep collecting so child ordering in the manifest does not affect the
   // recursively deleted subtree.
   for (let previousSize = 0; previousSize !== deletedIds.size; previousSize = deletedIds.size) {

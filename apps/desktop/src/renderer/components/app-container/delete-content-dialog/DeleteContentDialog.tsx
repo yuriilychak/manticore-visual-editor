@@ -1,4 +1,4 @@
-import { memo, useEffect, useState } from 'react';
+import { memo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
@@ -7,23 +7,24 @@ import type { ModalComponent, ModalPropsMap } from '../modal-types';
 
 export type DeleteContentDialogData = ModalPropsMap['delete-content'];
 
-const DeleteContentDialog: ModalComponent<'delete-content'> = ({ assetType, id, isOpen, name, onAction }) => {
+const DeleteContentDialogContent: ModalComponent<'delete-content'> = ({ items, onAction }) => {
   const { t } = useTranslation();
   const [isDeleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    if (!isOpen) setDeleting(false);
-  }, [isOpen]);
   const handleConfirm = async () => {
+    const [item] = items;
+    if (!item) return;
+
     setDeleting(true);
-    await onAction('delete', assetType, id);
+    await onAction('delete', item.type, item.id, items.map(({ id }) => id));
   };
   const handleClose = () => {
-    void onAction('close-delete-modal', assetType, id);
+    void onAction('close-delete-modal', items[0]?.type ?? 0, items[0]?.id ?? 0);
   };
+  const name = items.map((item) => item.name).join(', ');
 
   return (
-    <Dialog disableEscapeKeyDown={isDeleting} onClose={isDeleting ? undefined : handleClose} open={isOpen}>
+    <Dialog disableEscapeKeyDown={isDeleting} onClose={isDeleting ? undefined : handleClose} open>
       <DialogTitle>{t('common.deleteContentTitle')}</DialogTitle>
       <DialogContent><DialogContentText>{t('common.deleteContentMessage', { name })}</DialogContentText></DialogContent>
       <DialogActions>
@@ -40,5 +41,8 @@ const DeleteContentDialog: ModalComponent<'delete-content'> = ({ assetType, id, 
     </Dialog>
   );
 };
+
+const DeleteContentDialog: ModalComponent<'delete-content'> = ({ isOpen, items, onAction }) =>
+  isOpen ? <DeleteContentDialogContent isOpen items={items} onAction={onAction} type="delete-content" /> : null;
 
 export default memo(DeleteContentDialog);

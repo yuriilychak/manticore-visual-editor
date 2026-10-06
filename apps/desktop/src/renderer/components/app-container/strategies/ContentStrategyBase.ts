@@ -44,7 +44,7 @@ export abstract class ContentStrategyBase implements ContentStrategy {
     }
 
     try {
-      this.#proxy.replaceProject(await window.manticore.deleteProjectContent(project.path, id));
+      this.#proxy.replaceProject(await window.manticore.deleteProjectContent(project.path, [id]));
       return new ContentAction(id, 'delete-completed', {});
     } catch {
       return new ContentAction(id, 'delete-completed', { error: NotificationError.DeleteContent });

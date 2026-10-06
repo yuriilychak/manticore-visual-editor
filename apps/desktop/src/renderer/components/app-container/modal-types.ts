@@ -1,17 +1,15 @@
 import type { ProjectContent } from '@manticore/project/types';
 import type { FC } from 'react';
 
-import type { AssetType, ProjectActionHandler } from '../../../types';
+import type { ProjectActionHandler } from '../../../types';
 
 import type { ImportAssetResult } from './common';
 import type { ContentStrategy } from './strategies';
 
 export type ModalPropsMap = {
   'delete-content': {
-    assetType: AssetType;
-    id: number;
     isOpen: boolean;
-    name: string;
+    items: readonly ProjectContent[];
     type: 'delete-content';
   };
   'import-asset': {

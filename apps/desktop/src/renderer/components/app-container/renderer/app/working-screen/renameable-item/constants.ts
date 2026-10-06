@@ -19,7 +19,7 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent
   viewProject: [{ action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }],
   viewContent: [
     { action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded },
-    { action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }
+    { action: 'open-delete-modal', shortcut: 'Delete', tooltipLocale: 'common.delete', Icon: DeleteRounded }
   ],
   empty: []
 };

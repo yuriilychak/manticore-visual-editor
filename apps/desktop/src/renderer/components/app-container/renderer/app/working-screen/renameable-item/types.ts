@@ -8,4 +8,5 @@ export type ActionButtonConfig = {
   action: string;
   tooltipLocale: string;
   Icon: SvgIconComponent;
+  shortcut?: string;
 };

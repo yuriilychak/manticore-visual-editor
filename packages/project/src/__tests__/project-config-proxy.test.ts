@@ -100,7 +100,7 @@ describe('ProjectConfigProxy', () => {
     await writeFile(path.join(destination, 'src', 'assets', '00004', 'source'), 'image');
     await writeFile(path.join(destination, 'src', 'assets', '00005', 'source'), 'font');
 
-    await expect(deleteProjectContent(destination, 2)).resolves.toMatchObject({ content: [{ id: 1 }] });
+    await expect(deleteProjectContent(destination, [2, 5])).resolves.toMatchObject({ content: [{ id: 1 }] });
     await expect(access(path.join(destination, 'src', 'assets', '00004'))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(access(path.join(destination, 'src', 'assets', '00005'))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(readFile(path.join(destination, 'src', 'config.json'), 'utf8')).resolves.toContain('"id": 1');

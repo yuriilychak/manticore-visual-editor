@@ -174,7 +174,7 @@ ipcMain.handle('project:load-import-images', async (_event, filePaths: string[])
 ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) =>
   importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result))
 );
-ipcMain.handle('project:delete-content', (_event, projectPath: string, id: number) => deleteProjectContent(projectPath, id));
+ipcMain.handle('project:delete-content', (_event, projectPath: string, ids: number[]) => deleteProjectContent(projectPath, ids));
 ipcMain.handle('project:rename', (_event, projectPath: string, name: string) => renameProject(projectPath, name));
 ipcMain.handle('project:rename-bundle', (_event, projectPath: string, id: number, name: string) => renameProjectBundle(projectPath, id, name));
 ipcMain.handle('project:create-bundle', (_event, projectPath: string, parentId: number, name: string) => createProjectBundle(projectPath, parentId, name));

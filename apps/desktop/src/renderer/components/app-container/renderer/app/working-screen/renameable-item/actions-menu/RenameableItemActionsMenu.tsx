@@ -45,7 +45,10 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
       anchorReference="anchorPosition"
       onClose={handleClose}
       open={Boolean(contextMenuPosition)}
-      slotProps={{ list: { sx: { p: 0.5 } } }}
+      slotProps={{
+        list: { sx: { p: 0.5 } },
+        paper: { sx: { minWidth: 220 } }
+      }}
       sx={MENUBAR_STYLES.menu}
     >
       {viewActions.map((action) => (

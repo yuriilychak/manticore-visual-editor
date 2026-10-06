@@ -81,6 +81,24 @@ export const useAppContainer = () => {
         case 'close-import-assets-dialog':
           dispatch({ type: 'import-assets-dialog-closed' });
           return;
+        case 'delete': {
+          const ids = Array.isArray(data) && data.every((item) => typeof item === 'number') ? data : [id];
+          const project = state.project;
+
+          if (!project || !window.manticore?.deleteProjectContent) {
+            notifyUnavailableDesktopApi();
+            dispatch({ type: 'delete-content-completed', payload: NotificationError.DeleteContent });
+            return;
+          }
+
+          try {
+            state.projectProxy.replaceProject(await window.manticore.deleteProjectContent(project.path, ids));
+            dispatch({ type: 'delete-content-completed' });
+          } catch {
+            dispatch({ type: 'delete-content-completed', payload: NotificationError.DeleteContent });
+          }
+          return;
+        }
         default:
           break;
       }
@@ -113,7 +131,7 @@ export const useAppContainer = () => {
             break;
       }
     },
-    [state.contentStrategies]
+    [state.contentStrategies, state.project, state.projectProxy]
   );
 
   const projectStructure = useMemo(() => ({

@@ -12,10 +12,8 @@ import { ProjectProxy } from './ProjectProxy';
 import { CONTENT_STRATEGY_CONSTRUCTORS, type ContentStrategy, type OpenNewContentData } from './strategies';
 
 const DEFAULT_DELETE_CONTENT: DeleteContentDialogData = {
-  assetType: AssetType.Project,
-  id: 0,
   isOpen: false,
-  name: '',
+  items: [],
   type: 'delete-content'
 };
 
@@ -87,6 +85,28 @@ const projectChanged = (state: AppContainerState, project: ProjectInfo): AppCont
   };
 };
 
+const getDeletableContent = (state: AppContainerState, assetType: AssetType, id: number) => {
+  const content = state.project?.content ?? [];
+  const selectedIds = state.selection.includes(id) ? state.selection : [id];
+  const contentById = new Map(content.map((item) => [item.id, item]));
+  const selectedIdSet = new Set(selectedIds);
+  const selectedItem = contentById.get(id);
+  if (!selectedItem || selectedItem.type !== assetType) return [];
+
+  return selectedIds
+    .map((selectedId) => contentById.get(selectedId))
+    .filter((item): item is NonNullable<typeof item> => Boolean(item))
+    .filter((item) => item.type !== AssetType.Project && !(item.type === AssetType.ProjectFolder && item.parentId === 0))
+    .filter((item) => {
+      let parentId = item.parentId;
+      while (parentId) {
+        if (selectedIdSet.has(parentId)) return false;
+        parentId = contentById.get(parentId)?.parentId ?? 0;
+      }
+      return true;
+    });
+};
+
 const REDUCER_ACTIONS = new Map<AppContainerAction['type'], ReducerActionHandler>([
   ['create-project', (state) => ({
     ...state,
@@ -99,15 +119,17 @@ const REDUCER_ACTIONS = new Map<AppContainerAction['type'], ReducerActionHandler
   ['delete-content-completed', reducerAction<NotificationError | undefined>((state, error) => ({
     ...state,
     deleteContent: DEFAULT_DELETE_CONTENT,
-    notificationError: error ?? state.notificationError
+    notificationError: error ?? state.notificationError,
+    selection: []
   }))],
-  ['delete-content-opened', reducerAction<Pick<DeleteContentDialogData, 'assetType' | 'id'>>((state, data) => {
-    const content = state.project?.content?.find((item) => item.id === data.id && item.type === data.assetType);
-    if (!content || data.assetType === AssetType.Project) return state;
+  ['delete-content-opened', reducerAction<{ assetType: AssetType; id: number }>((state, data) => {
+    const items = getDeletableContent(state, data.assetType, data.id);
+    if (!items.length) return state;
 
     return {
       ...state,
-      deleteContent: { ...data, isOpen: true, name: content.name, type: 'delete-content' }
+      deleteContent: { isOpen: true, items, type: 'delete-content' },
+      selection: items.map((item) => item.id)
     };
   })],
   ['delete-content-closed', (state) => ({ ...state, deleteContent: DEFAULT_DELETE_CONTENT })],
