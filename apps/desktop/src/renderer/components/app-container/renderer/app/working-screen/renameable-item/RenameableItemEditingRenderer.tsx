@@ -2,7 +2,7 @@ import type { FC } from 'react';
 
 import { Box, FilledInput } from '@mui/material';
 
-import { ITEM_GAP, RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from './constants';
+import { ITEM_GAP, RENAMEABLE_ITEM_STYLES } from './constants';
 import RenameableItemActionButtons from './RenameableItemActionButtons';
 import { useRenameableItemEditingRenderer } from './useRenameableItemEditingRenderer';
 
@@ -19,8 +19,8 @@ const RenameableItemEditingRenderer: FC<RenameableItemEditingRendererProps> = ({
   onAction,
   renameNameLabel
 }) => {
-  const { disabledByAction, editedName, handleAction, handleNameChange, handleSubmit, trimmedName } =
-    useRenameableItemEditingRenderer(name, isSaving, onAction);
+  const { editedName, handleAction, handleNameChange, handleSubmit, trimmedName } =
+    useRenameableItemEditingRenderer(name, onAction);
 
   return (
     <Box
@@ -35,6 +35,13 @@ const RenameableItemEditingRenderer: FC<RenameableItemEditingRendererProps> = ({
       <FilledInput
         autoFocus
         disableUnderline
+        endAdornment={
+          <RenameableItemActionButtons
+            isSaveDisabled={!trimmedName}
+            isSaving={isSaving}
+            onAction={handleAction}
+          />
+        }
         error={!trimmedName}
         fullWidth
         inputProps={{ 'aria-label': renameNameLabel }}
@@ -42,11 +49,6 @@ const RenameableItemEditingRenderer: FC<RenameableItemEditingRendererProps> = ({
         size="small"
         sx={RENAMEABLE_ITEM_STYLES.editingNameInput}
         value={editedName}
-      />
-      <RenameableItemActionButtons
-        actions={RENAMEABLE_ITEM_ACTIONS.editing}
-        disabledByAction={disabledByAction}
-        onAction={handleAction}
       />
     </Box>
   );

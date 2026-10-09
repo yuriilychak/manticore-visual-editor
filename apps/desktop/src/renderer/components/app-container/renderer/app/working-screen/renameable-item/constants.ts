@@ -36,6 +36,7 @@ export const RENAMEABLE_ITEM_STYLES: Record<'divider' | 'editingNameInput' | 'na
   editingNameInput: {
     '&, &:hover': { backgroundColor: 'transparent' },
     flexGrow: 1,
+    paddingRight: 0,
     '& .MuiFilledInput-input': { fontSize: '0.875rem', lineHeight: '20px', padding: 0 }
   },
   name: {
