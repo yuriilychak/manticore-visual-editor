@@ -3,17 +3,15 @@ import { type FC, useCallback, useEffect, useState } from 'react';
 import { Box, Fade } from '@mui/material';
 
 import { initializeI18n } from '../../../localization';
-import type { ApplicationAction } from '../../../types';
+import { useProjectStructure } from '../ProjectStructureContext';
 
-import { App } from './app';
+import { WelcomeScreen } from './welcome-screen';
+import { WorkingScreen } from './working-screen';
 import { SPLASH_TRANSITION_DURATION } from './constants';
 import { SplashScreen } from './splash-screen';
 
-type RendererProps = {
-  onAction: (action: ApplicationAction) => void;
-};
-
-const Renderer: FC<RendererProps> = ({ onAction }) => {
+const Renderer: FC = () => {
+  const { project } = useProjectStructure();
   const [isReady, setReady] = useState(false);
   const [hasLocalizationError, setHasLocalizationError] = useState(false);
   const [showApp, setShowApp] = useState(false);
@@ -37,7 +35,7 @@ const Renderer: FC<RendererProps> = ({ onAction }) => {
   return showApp ? (
     <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
       <Box display="flex" flexDirection="column" flexGrow={1}>
-        <App onAction={onAction} />
+        {project?.path ? <WorkingScreen /> : <WelcomeScreen />}
       </Box>
     </Fade>
   ) : (

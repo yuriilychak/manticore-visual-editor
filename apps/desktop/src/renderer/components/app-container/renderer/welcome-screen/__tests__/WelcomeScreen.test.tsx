@@ -2,6 +2,7 @@ import { describe, expect, jest, test } from '@jest/globals';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 
+import { ApplicationActionContext } from '../../../ApplicationActionContext';
 import WelcomeScreen from '../WelcomeScreen';
 
 jest.mock('react-i18next', () => ({
@@ -26,7 +27,11 @@ describe('WelcomeScreen', () => {
     const onAction = jest.fn();
     const user = userEvent.setup();
 
-    render(<WelcomeScreen onAction={onAction} />);
+    render(
+      <ApplicationActionContext.Provider value={onAction}>
+        <WelcomeScreen />
+      </ApplicationActionContext.Provider>
+    );
 
     screen.getByRole('heading', { name: 'Welcome to Manticore' });
     screen.getByRole('heading', { name: 'Start' });

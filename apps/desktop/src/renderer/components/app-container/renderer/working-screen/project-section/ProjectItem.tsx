@@ -2,7 +2,7 @@ import { type Dispatch, type DragEvent, type FC, type MouseEvent, type SetStateA
 
 import { Box } from '@mui/material';
 
-import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
+import { AssetType, type ProjectActionHandler } from '../../../../../../types';
 
 import { RenameableItem } from '../renameable-item';
 

@@ -6,9 +6,9 @@ import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
 import type { SxProps, Theme } from '@mui/material/styles';
 
-import { AssetType } from '../../../../../../../types';
-import { ADD_FOLDER_SHORTCUT } from '../../../../../../keyboard-shortcuts';
-import { AtlasAddIcon, AtlasIcon, BundleAddIcon, BundleIcon, ImportIcon } from '../../../../../custom-icons';
+import { AssetType } from '../../../../../../types';
+import { ADD_FOLDER_SHORTCUT } from '../../../../../keyboard-shortcuts';
+import { AtlasAddIcon, AtlasIcon, BundleAddIcon, BundleIcon, ImportIcon } from '../../../../custom-icons';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
 import type { ActionButtonConfig } from '../renameable-item/types';

@@ -4,7 +4,7 @@ import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import EditRounded from '@mui/icons-material/EditRounded';
 import type { SxProps, Theme } from '@mui/material';
 
-import { DELETE_SHORTCUT } from '../../../../../../keyboard-shortcuts';
+import { DELETE_SHORTCUT } from '../../../../../keyboard-shortcuts';
 
 import type { ActionButtonConfig } from './types';
 

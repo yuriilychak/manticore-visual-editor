@@ -1,6 +1,6 @@
 import type { SvgIconComponent } from '@mui/icons-material';
 
-import type { ApplicationAction } from '../../../../../types';
+import type { ApplicationAction } from '../../../../types';
 
 export type WelcomeScreenLocalizedProps = {
   helpTitle: string;

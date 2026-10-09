@@ -9,7 +9,7 @@ import type { ApplicationAction, ProjectInfo } from '../../types';
 import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
 import { ContentAction } from './common';
 import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
-import { PROJECT_ITEM_CONFIG } from './renderer/app/working-screen/project-section/constants';
+import { PROJECT_ITEM_CONFIG } from './renderer/working-screen/project-section/constants';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
 
 const getSelectedProjectItem = (project: ProjectInfo, selectedItems: readonly number[]) => {

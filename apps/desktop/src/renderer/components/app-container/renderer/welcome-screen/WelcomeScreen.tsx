@@ -2,25 +2,21 @@ import type { FC } from 'react';
 
 import { Box, Typography } from '@mui/material';
 
-import { withLocalizedProps } from '../../../../../localization';
-import type { ApplicationAction } from '../../../../../types';
+import { withLocalizedProps } from '../../../../localization';
+import { useApplicationAction } from '../../ApplicationActionContext';
 
 import { HELP_ACTIONS, LEARN_ACTIONS, START_ACTIONS, WELCOME_SCREEN_LOCALE_KEYS } from './constants';
 import type { WelcomeScreenLocalizedProps } from './types';
 import { WelcomeSection } from './welcome-section';
 
-type WelcomeScreenProps = {
-  onAction: (action: ApplicationAction) => void;
-};
-
-const WelcomeScreen: FC<WelcomeScreenProps & WelcomeScreenLocalizedProps> = ({
+const WelcomeScreen: FC<WelcomeScreenLocalizedProps> = ({
   helpTitle,
   learnTitle,
-  onAction,
   startTitle,
   subtitle,
   title
 }) => {
+  const onAction = useApplicationAction();
 
   return (
     <Box

@@ -4,8 +4,8 @@ import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
-import { AssetType, type ProjectActionHandler } from '../../../../../../../../types';
-import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
+import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
+import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
 

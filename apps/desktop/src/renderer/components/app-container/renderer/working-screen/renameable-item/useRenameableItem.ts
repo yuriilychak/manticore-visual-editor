@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 
-import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
+import type { AssetType, ProjectActionHandler } from '../../../../../../types';
 
 export const useRenameableItem = (
   contentType: AssetType,

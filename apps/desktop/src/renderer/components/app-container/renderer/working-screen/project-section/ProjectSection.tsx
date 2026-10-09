@@ -3,8 +3,8 @@ import { type FC, useCallback, useEffect, useMemo, type MouseEvent, useRef, useS
 
 import { Box } from '@mui/material';
 
-import { AssetType } from '../../../../../../../types';
-import { useProjectStructure } from '../../../../ProjectStructureContext';
+import { AssetType } from '../../../../../../types';
+import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
 import { ProjectActionsMenu } from './actions-menu';

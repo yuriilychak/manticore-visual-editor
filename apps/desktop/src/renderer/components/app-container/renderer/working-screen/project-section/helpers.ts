@@ -1,6 +1,6 @@
 import type { ProjectContent } from '@manticore/project/types';
 
-import { AssetType } from '../../../../../../../types';
+import { AssetType } from '../../../../../../types';
 
 export const PROJECT_FOLDER_DRAG_TYPE = 'application/x-manticore-project-folder';
 export const PROJECT_BUNDLE_DRAG_TYPE = 'application/x-manticore-project-bundle';

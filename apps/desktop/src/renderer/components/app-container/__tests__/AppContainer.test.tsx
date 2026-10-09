@@ -8,6 +8,7 @@ import { AssetType } from '../../../../types';
 import type { NewProjectOptions, ProjectCreationValidation, ProjectInfo, RestoredProject } from '../../../types';
 
 import AppContainer from '../AppContainer';
+import { ApplicationActionContext as mockApplicationActionContext } from '../ApplicationActionContext';
 import { ProjectStructureContext } from '../ProjectStructureContext';
 
 jest.mock('react-i18next', () => {
@@ -24,13 +25,14 @@ jest.mock('../app-shell', () => ({
   )
 }));
 jest.mock('../renderer', () => ({
-  Renderer: ({ onAction }: { onAction: (action: 'create-project' | 'create-window' | 'set-language-es') => void }) => {
-    const handleAction = (event: MouseEvent<HTMLButtonElement>) => {
-      onAction(event.currentTarget.dataset.action as 'create-project' | 'create-window' | 'set-language-es');
-    };
+  Renderer: () => (
+    <mockApplicationActionContext.Consumer>
+      {(onAction) => {
+        const handleAction = (event: MouseEvent<HTMLButtonElement>) => {
+          onAction?.(event.currentTarget.dataset.action as 'create-project' | 'create-window' | 'set-language-es');
+        };
 
-    return (
-      <>
+        return <>
         <ProjectStructureContext.Consumer>
           {(projectStructure) => (
             <>
@@ -59,9 +61,10 @@ jest.mock('../renderer', () => ({
         <button data-action="create-project" onClick={handleAction}>
           New project
         </button>
-      </>
-    );
-  }
+        </>;
+      }}
+    </mockApplicationActionContext.Consumer>
+  )
 }));
 
 const mockReactI18next = jest.requireMock('react-i18next') as { mockChangeLanguage: jest.Mock };

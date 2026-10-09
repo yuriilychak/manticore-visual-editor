@@ -1,6 +1,7 @@
 import type { FC } from 'react';
 
 import { AppShell } from './app-shell';
+import { ApplicationActionContext } from './ApplicationActionContext';
 import { WINDOW_CONTROLS } from './constants';
 import { DeleteContentDialog } from './delete-content-dialog';
 import { ImportAssetsDialog } from './import-assets-dialog';
@@ -38,9 +39,11 @@ const AppContainer: FC = () => {
         onAction={handleAction}
         selectedActionIds={selectedActionIds}
       >
-        <ProjectStructureContext.Provider value={projectStructure}>
-          <Renderer onAction={handleAction} />
-        </ProjectStructureContext.Provider>
+        <ApplicationActionContext.Provider value={handleAction}>
+          <ProjectStructureContext.Provider value={projectStructure}>
+            <Renderer />
+          </ProjectStructureContext.Provider>
+        </ApplicationActionContext.Provider>
       </AppShell>
       {MODAL_TYPES.map((type) => {
         const Modal = MODAL_CONFIG[type] as ModalComponent<typeof type>;

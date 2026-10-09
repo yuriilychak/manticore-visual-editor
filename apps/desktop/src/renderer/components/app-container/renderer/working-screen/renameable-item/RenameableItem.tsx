@@ -5,8 +5,8 @@ import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { Box, Typography } from '@mui/material';
 
-import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
-import { withLocalizedProps } from '../../../../../../localization';
+import type { AssetType, ProjectActionHandler } from '../../../../../../types';
+import { withLocalizedProps } from '../../../../../localization';
 
 import { ITEM_GAP, ITEM_HEIGHT, ITEM_ICON_SIZE, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
 import RenameableItemEditingRenderer from './RenameableItemEditingRenderer';

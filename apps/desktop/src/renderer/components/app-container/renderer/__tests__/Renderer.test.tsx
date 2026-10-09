@@ -5,7 +5,9 @@ import userEvent from '@testing-library/user-event';
 const mockInitializeI18n = jest.fn<() => Promise<void>>();
 
 jest.mock('../../../../localization', () => ({ initializeI18n: mockInitializeI18n }));
-jest.mock('../app', () => ({ App: () => <div>Application ready</div> }));
+jest.mock('../../ProjectStructureContext', () => ({ useProjectStructure: () => ({ project: null }) }));
+jest.mock('../welcome-screen', () => ({ WelcomeScreen: () => <div>Application ready</div> }));
+jest.mock('../working-screen', () => ({ WorkingScreen: () => <div>Working project</div> }));
 jest.mock('../splash-screen', () => ({
   SplashScreen: ({ hasError, onRetry }: { hasError?: boolean; onRetry?: () => void }) =>
     hasError ? <button onClick={onRetry}>Retry</button> : <div>Loading application</div>
@@ -21,7 +23,7 @@ describe('Renderer', () => {
   test('shows the application after localization initialization', async () => {
     mockInitializeI18n.mockResolvedValue(undefined);
 
-    render(<Renderer onAction={jest.fn()} />);
+    render(<Renderer />);
 
     await screen.findByText('Application ready');
   });
@@ -30,7 +32,7 @@ describe('Renderer', () => {
     mockInitializeI18n.mockRejectedValueOnce(new Error('Locale unavailable')).mockResolvedValueOnce(undefined);
     const user = userEvent.setup();
 
-    render(<Renderer onAction={jest.fn()} />);
+    render(<Renderer />);
 
     await screen.findByRole('button', { name: 'Retry' });
     await user.click(screen.getByRole('button', { name: 'Retry' }));

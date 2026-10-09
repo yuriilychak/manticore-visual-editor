@@ -2,8 +2,8 @@ import { type FC, memo, useCallback } from 'react';
 
 import { Divider, Menu } from '@mui/material';
 
-import { AssetType } from '../../../../../../../../types';
-import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { AssetType } from '../../../../../../../types';
+import { MENUBAR_STYLES } from '../../../../app-shell/title-bar/menubar/constants';
 import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../../renameable-item/constants';
 
 import { PROJECT_ITEM_CONFIG } from '../constants';

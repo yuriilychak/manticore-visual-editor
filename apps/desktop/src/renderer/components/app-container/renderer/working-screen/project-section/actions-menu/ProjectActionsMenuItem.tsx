@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Box, ListItemText, MenuItem, Typography } from '@mui/material';
 
-import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { MENUBAR_STYLES } from '../../../../app-shell/title-bar/menubar/constants';
 import { ITEM_HEIGHT, ITEM_ICON_SIZE } from '../../renameable-item/constants';
 import type { ActionButtonConfig } from '../../renameable-item/types';
 

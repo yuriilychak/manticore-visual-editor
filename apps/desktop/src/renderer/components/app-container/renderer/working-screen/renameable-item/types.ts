@@ -1,6 +1,6 @@
 import type { SvgIconComponent } from '@mui/icons-material';
 
-import type { ShortcutLabels } from '../../../../../../keyboard-shortcuts';
+import type { ShortcutLabels } from '../../../../../keyboard-shortcuts';
 
 export type RenameableItemLocalizedProps = {
   renameNameLabel: string;

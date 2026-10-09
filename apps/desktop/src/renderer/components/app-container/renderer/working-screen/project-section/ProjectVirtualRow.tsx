@@ -2,7 +2,7 @@ import type { ProjectContent } from '@manticore/project/types';
 import { type Dispatch, type FC, memo, type MouseEvent, type SetStateAction } from 'react';
 import { Box } from '@mui/material';
 
-import type { ProjectActionHandler } from '../../../../../../../types';
+import type { ProjectActionHandler } from '../../../../../../types';
 import type { ProjectContextMenu } from './ProjectItem';
 import ProjectItem from './ProjectItem';
 
