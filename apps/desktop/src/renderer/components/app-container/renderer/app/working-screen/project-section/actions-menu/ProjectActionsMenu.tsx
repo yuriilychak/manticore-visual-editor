@@ -53,6 +53,7 @@ const ProjectActionsMenu: FC<ProjectActionsMenuProps> = ({
         paper: { sx: { minWidth: 220 } }
       }}
       sx={MENUBAR_STYLES.menu}
+      transitionDuration={0}
     >
       {viewActions.map((action) => (
         <ProjectActionsMenuItem
