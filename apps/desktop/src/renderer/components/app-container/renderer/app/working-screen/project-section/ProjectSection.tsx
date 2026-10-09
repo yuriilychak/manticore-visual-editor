@@ -6,30 +6,21 @@ import { Box } from '@mui/material';
 import { AssetType } from '../../../../../../../types';
 import { useProjectStructure } from '../../../../ProjectStructureContext';
 
+import { ITEM_HEIGHT } from '../renameable-item/constants';
 import { ProjectActionsMenu } from './actions-menu';
 import { DISABLED_ACTIONS, PROJECT_ITEM_CONFIG } from './constants';
 import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
-import ProjectItem, { type ProjectContextMenu } from './ProjectItem';
+import ProjectItem, { DEFAULT_PROJECT_CONTEXT_MENU, type ProjectContextMenu } from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
 
-const PROJECT_ROW_HEIGHT = 24;
-const estimateRowSize = () => PROJECT_ROW_HEIGHT;
-const CLOSED_CONTEXT_MENU: ProjectContextMenu = {
-  contentType: AssetType.Project,
-  id: 0,
-  isOpen: false,
-  left: 0,
-  top: 0,
-  menuActions: [],
-  onAction: () => undefined
-};
-
+const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
   const { onAction, project, selectedItems } = useProjectStructure();
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
   const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
-  const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(CLOSED_CONTEXT_MENU);
+  const [editingId, setEditingId] = useState(-1);
+  const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
   const projectTree = useMemo(
     () => getProjectTree(project?.content ?? []),
     [project?.content]
@@ -58,9 +49,15 @@ const ProjectSection: FC = () => {
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
   ), []);
-  const handleOpenContextMenu = useCallback((contextMenu: ProjectContextMenu) =>
-    setContextMenu((current) => current.isOpen ? CLOSED_CONTEXT_MENU : contextMenu), []);
-  const handleCloseContextMenu = useCallback(() => setContextMenu(CLOSED_CONTEXT_MENU), []);
+  const handleCloseContextMenu = useCallback(() => setContextMenu(DEFAULT_PROJECT_CONTEXT_MENU), []);
+  const handleContextMenuAction = useCallback((action: string, contentType: AssetType, id: number) => {
+    if (action === 'rename') {
+      setEditingId(id);
+      return;
+    }
+
+    void onAction(action, contentType, id);
+  }, [onAction]);
   useEffect(() => {
     if (!contextMenu.isOpen) return;
 
@@ -104,11 +101,13 @@ const ProjectSection: FC = () => {
         expanded={false}
         hasChildren={false}
         id={0}
+        isEditing={editingId === 0}
         isContextMenuOpen={contextMenu.isOpen && contextMenu.id === 0}
         isSelected={selectedItems.includes(0)}
         name={name}
         onAction={onAction}
-        onOpenContextMenu={handleOpenContextMenu}
+        onEditingChange={setEditingId}
+        setContextMenu={setContextMenu}
       />
       <Box ref={scrollElementRef} flexGrow={1} minHeight={0} sx={{ overflowX: 'hidden', overflowY: 'auto' }}>
         <Box height={virtualizer.getTotalSize()} position="relative">
@@ -121,12 +120,14 @@ const ProjectSection: FC = () => {
                 depth={depth}
                 hasChildren={children.length > 0}
                 isExpanded={expandedItemIdSet.has(item.id)}
+                isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}
                 isSelected={selectedItems.includes(item.id)}
                 item={item}
                 key={item.id}
                 onAction={onAction}
-                onOpenContextMenu={handleOpenContextMenu}
+                onEditingChange={setEditingId}
+                setContextMenu={setContextMenu}
                 onToggleExpanded={toggleExpanded}
                 start={virtualItem.start}
               />
@@ -138,8 +139,8 @@ const ProjectSection: FC = () => {
         contentType={contextMenu.contentType}
         contextMenuPosition={contextMenu}
         disabledByAction={DISABLED_ACTIONS}
-        menuActions={contextMenu.menuActions}
-        onAction={contextMenu.onAction}
+        id={contextMenu.id}
+        onAction={handleContextMenuAction}
         onClose={handleCloseContextMenu}
         open={contextMenu.isOpen}
       />

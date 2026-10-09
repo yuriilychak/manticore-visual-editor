@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Box, ListItemText, MenuItem, Typography } from '@mui/material';
 
 import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
-import { ITEM_ICON_SIZE } from '../../renameable-item/constants';
+import { ITEM_HEIGHT, ITEM_ICON_SIZE } from '../../renameable-item/constants';
 import type { ActionButtonConfig } from '../../renameable-item/types';
 
 type ProjectActionsMenuItemProps = {
@@ -27,7 +27,7 @@ const ProjectActionsMenuItem: FC<ProjectActionsMenuItemProps> = ({ action, disab
       onClick={handleActionClick}
       sx={{
         ...MENUBAR_STYLES.menuItem,
-        minHeight: 24,
+        minHeight: ITEM_HEIGHT,
         px: 0,
         py: 0,
         '& .MuiListItemText-primary': { fontSize: '0.875rem', lineHeight: '20px' }

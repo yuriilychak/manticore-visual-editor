@@ -1,10 +1,8 @@
 import type { ProjectContent } from '@manticore/project/types';
-import { type FC, memo, type MouseEvent } from 'react';
-
+import { type Dispatch, type FC, memo, type MouseEvent, type SetStateAction } from 'react';
 import { Box } from '@mui/material';
 
 import type { ProjectActionHandler } from '../../../../../../../types';
-
 import type { ProjectContextMenu } from './ProjectItem';
 import ProjectItem from './ProjectItem';
 
@@ -12,10 +10,12 @@ type ProjectVirtualRowProps = {
   depth: number;
   hasChildren: boolean;
   isExpanded: boolean;
+  isEditing: boolean;
   isSelected: boolean;
   onAction: ProjectActionHandler;
+  onEditingChange: (id: number) => void;
   isContextMenuOpen: boolean;
-  onOpenContextMenu: (contextMenu: ProjectContextMenu) => void;
+  setContextMenu: Dispatch<SetStateAction<ProjectContextMenu>>;
   onToggleExpanded: (id: number) => void;
   item: ProjectContent;
   start: number;
@@ -25,10 +25,12 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
   depth,
   hasChildren,
   isExpanded,
+  isEditing,
   isSelected,
   onAction,
+  onEditingChange,
   isContextMenuOpen,
-  onOpenContextMenu,
+  setContextMenu,
   onToggleExpanded,
   item,
   start
@@ -52,11 +54,13 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
         hasChildren={hasChildren}
         expanded={isExpanded}
         id={item.id}
+        isEditing={isEditing}
         isSelected={isSelected}
         isContextMenuOpen={isContextMenuOpen}
         name={item.name}
         onAction={onAction}
-        onOpenContextMenu={onOpenContextMenu}
+        onEditingChange={onEditingChange}
+        setContextMenu={setContextMenu}
       />
     </Box>
   );

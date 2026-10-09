@@ -1,11 +1,10 @@
-import { type DragEvent, type FC, type MouseEvent, useRef } from 'react';
+import { type Dispatch, type DragEvent, type FC, type MouseEvent, type SetStateAction } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
 
 import { RenameableItem } from '../renameable-item';
-import type { ActionButtonConfig } from '../renameable-item/types';
 
 import { PROJECT_ITEM_CONFIG, PROJECT_ITEM_STYLES } from './constants';
 
@@ -15,8 +14,13 @@ export type ProjectContextMenu = {
   isOpen: boolean;
   left: number;
   top: number;
-  menuActions: ActionButtonConfig[];
-  onAction: (action: string) => void;
+};
+export const DEFAULT_PROJECT_CONTEXT_MENU: ProjectContextMenu = {
+  contentType: AssetType.Project,
+  id: 0,
+  isOpen: false,
+  left: 0,
+  top: 0
 };
 
 export type ProjectItemProps = {
@@ -24,10 +28,12 @@ export type ProjectItemProps = {
   hasChildren: boolean;
   expanded: boolean;
   id: number;
+  isEditing: boolean;
   name: string;
   onAction: ProjectActionHandler;
+  onEditingChange: (id: number) => void;
   isContextMenuOpen: boolean;
-  onOpenContextMenu: (contextMenu: ProjectContextMenu) => void;
+  setContextMenu: Dispatch<SetStateAction<ProjectContextMenu>>;
   dropTargetId?: number;
   isSelected: boolean;
 };
@@ -38,16 +44,17 @@ const ProjectItem: FC<ProjectItemProps> = ({
   hasChildren,
   expanded,
   id,
+  isEditing,
   isSelected,
   name,
   onAction,
+  onEditingChange,
   isContextMenuOpen,
-  onOpenContextMenu
+  setContextMenu
 }) => {
   const config = PROJECT_ITEM_CONFIG[contentType];
   const resolvedDropTargetId = dropTargetId ?? id;
   const { icon: Icon } = config;
-  const menuActionRef = useRef<((action: string) => void) | null>(null);
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (!config.dragType || (event.target instanceof Element && event.target.closest('button, input'))) {
       event.preventDefault();
@@ -89,15 +96,10 @@ const ProjectItem: FC<ProjectItemProps> = ({
   };
   const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
     event.preventDefault();
-    onOpenContextMenu({
-      contentType,
-      id,
-      isOpen: true,
-      left: event.clientX,
-      top: event.clientY,
-      menuActions: config.actions ?? [],
-      onAction: (action) => menuActionRef.current?.(action)
-    });
+    setContextMenu(isContextMenuOpen 
+      ? DEFAULT_PROJECT_CONTEXT_MENU 
+      : { contentType, id, isOpen: true, left: event.clientX, top: event.clientY }
+    );
   };
 
   return (
@@ -121,9 +123,10 @@ const ProjectItem: FC<ProjectItemProps> = ({
         expanded={expanded}
         Icon={Icon}
         id={id}
+        isEditing={isEditing}
         name={name}
         onAction={onAction}
-        menuActionRef={menuActionRef}
+        onEditingChange={onEditingChange}
       />
     </Box>
   );

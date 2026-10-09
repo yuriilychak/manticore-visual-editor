@@ -9,6 +9,7 @@ import type { SxProps, Theme } from '@mui/material/styles';
 import { AssetType } from '../../../../../../../types';
 import { AtlasAddIcon, AtlasIcon, BundleAddIcon, BundleIcon, ImportIcon } from '../../../../../custom-icons';
 
+import { ITEM_HEIGHT } from '../renameable-item/constants';
 import type { ActionButtonConfig } from '../renameable-item/types';
 
 import {
@@ -131,8 +132,8 @@ export const PROJECT_ITEM_STYLES: Record<'root', SxProps<Theme>> = {
     alignItems: "center",
     boxSizing: 'border-box',
     borderRadius: 1,
-    minHeight: 24,
-    height: 24,
+    minHeight: ITEM_HEIGHT,
+    height: ITEM_HEIGHT,
     px: 0.5,
     transition: theme => theme.transitions.create('background-color'),
     '&:hover': { bgcolor: 'action.hover' },

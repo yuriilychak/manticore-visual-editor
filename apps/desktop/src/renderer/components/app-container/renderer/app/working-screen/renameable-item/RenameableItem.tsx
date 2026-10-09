@@ -1,16 +1,15 @@
-import { type FC, memo, type MutableRefObject, useEffect } from 'react';
+import { type FC, memo } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Box } from '@mui/material';
+import { Box, Typography } from '@mui/material';
 
 import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
-import { ITEM_GAP, ITEM_ICON_SIZE, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
+import { ITEM_GAP, ITEM_HEIGHT, ITEM_ICON_SIZE, RENAMEABLE_ITEM_LOCALE_KEYS, RENAMEABLE_ITEM_STYLES } from './constants';
 import RenameableItemEditingRenderer from './RenameableItemEditingRenderer';
-import RenameableItemViewRenderer from './RenameableItemViewRenderer';
 import type { RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
@@ -20,10 +19,11 @@ type RenameableItemProps = {
   expandIconDisabled: boolean;
   expanded: boolean;
   id: number;
+  isEditing: boolean;
   Icon: SvgIconComponent;
   name: string;
   onAction: ProjectActionHandler;
-  menuActionRef: MutableRefObject<((action: string) => void) | null>;
+  onEditingChange: (id: number) => void;
 };
 
 const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
@@ -32,23 +32,17 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   expandIconDisabled,
   expanded,
   id,
+  isEditing,
   Icon,
   name,
   onAction,
-  renameNameLabel,
-  menuActionRef
+  onEditingChange,
+  renameNameLabel
 }) => {
   const {
     handleButtonClick,
-    isEditing,
     isSaving
-  } = useRenameableItem(contentType, id, onAction);
-  useEffect(() => {
-    menuActionRef.current = handleButtonClick;
-    return () => {
-      menuActionRef.current = null;
-    };
-  }, [handleButtonClick, menuActionRef]);
+  } = useRenameableItem(contentType, id, onAction, onEditingChange);
   const ExpandIcon = expanded ? ExpandMoreIcon : ChevronRightIcon;
 
   return (
@@ -56,7 +50,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
       alignItems="center"
       display="flex"
       gap={ITEM_GAP}
-      height={24}
+      height={ITEM_HEIGHT}
       minWidth={0}
       pl={expandable ? 0 : 3}
       width="100%"
@@ -71,9 +65,9 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
           renameNameLabel={renameNameLabel}
         />
       ) : (
-        <RenameableItemViewRenderer
-          name={name}
-        />
+        <Typography component="h2" noWrap sx={RENAMEABLE_ITEM_STYLES.name} title={name} variant="subtitle1">
+          {name}
+        </Typography>
       )}
     </Box>
   );

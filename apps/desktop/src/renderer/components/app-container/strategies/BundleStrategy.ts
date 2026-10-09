@@ -59,10 +59,10 @@ export class BundleStrategy extends ContentStrategyBase {
       }
       case 'move': {
         if (typeof data !== 'number') return;
-        if (!window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
+        if (!window.manticore?.moveProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(project.path, id, data));
+          this.projectProxy.moveBundle(id, await window.manticore.moveProjectBundle(project.path, id, data));
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }

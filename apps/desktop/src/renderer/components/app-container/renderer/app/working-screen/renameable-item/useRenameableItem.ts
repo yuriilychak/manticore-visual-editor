@@ -5,19 +5,16 @@ import type { AssetType, ProjectActionHandler } from '../../../../../../../types
 export const useRenameableItem = (
   contentType: AssetType,
   id: number,
-  onAction: ProjectActionHandler
+  onAction: ProjectActionHandler,
+  onEditingChange: (id: number) => void
 ) => {
-  const [isEditing, setEditing] = useState(false);
   const [isSaving, setSaving] = useState(false);
 
   const handleButtonClick = useCallback(
     async (action: string, data: string = '') => {
       switch (action) {
         case 'cancel':
-          setEditing(false);
-          break;
-        case 'rename':
-          setEditing(true);
+          onEditingChange(-1);
           break;
         case 'save':
           if (!data) return;
@@ -25,7 +22,7 @@ export const useRenameableItem = (
           setSaving(true);
           try {
             await onAction('rename', contentType, id, data);
-            setEditing(false);
+            onEditingChange(-1);
           } catch {
             // The caller is responsible for presenting a failed-save notification.
           } finally {
@@ -36,8 +33,8 @@ export const useRenameableItem = (
           await onAction(action, contentType, id);
       }
     },
-    [contentType, id, onAction]
+    [contentType, id, onAction, onEditingChange]
   );
 
-  return { handleButtonClick, isEditing, isSaving };
+  return { handleButtonClick, isSaving };
 };

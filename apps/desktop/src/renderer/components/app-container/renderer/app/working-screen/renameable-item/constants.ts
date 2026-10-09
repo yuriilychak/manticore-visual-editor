@@ -27,8 +27,9 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent
 };
 
 export const ITEM_GAP = 0.5;
+export const ITEM_HEIGHT = 24;
 export const ITEM_ICON_SIZE = 18;
-export const ITEM_ACTION_BUTTON_SIZE = 24;
+export const ITEM_ACTION_BUTTON_SIZE = ITEM_HEIGHT;
 
 export const RENAMEABLE_ITEM_STYLES: Record<'divider' | 'editingNameInput' | 'name', SxProps<Theme>> = {
   divider: { borderBottomWidth: 2, my: 0 },
