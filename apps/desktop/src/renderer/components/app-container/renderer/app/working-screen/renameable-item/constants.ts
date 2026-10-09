@@ -4,13 +4,13 @@ import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import EditRounded from '@mui/icons-material/EditRounded';
 import type { SxProps, Theme } from '@mui/material';
 
+import { DELETE_SHORTCUT } from '../../../../../../keyboard-shortcuts';
+
 import type { ActionButtonConfig } from './types';
 
 export const RENAMEABLE_ITEM_LOCALE_KEYS = {
   renameNameLabel: 'common.renameName'
 } as const;
-
-const DELETE_SHORTCUT = { darwin: 'Delete', linux: 'Delete', win32: 'Delete' } as const;
 
 export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent' | 'viewProject' | 'empty', ActionButtonConfig[]> = {
   delete: [{ action: 'open-delete-modal', tooltipLocale: 'common.delete', Icon: DeleteRounded }],

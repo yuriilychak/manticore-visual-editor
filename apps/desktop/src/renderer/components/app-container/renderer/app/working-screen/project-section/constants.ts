@@ -7,6 +7,7 @@ import WorkIcon from '@mui/icons-material/Work';
 import type { SxProps, Theme } from '@mui/material/styles';
 
 import { AssetType } from '../../../../../../../types';
+import { ADD_FOLDER_SHORTCUT } from '../../../../../../keyboard-shortcuts';
 import { AtlasAddIcon, AtlasIcon, BundleAddIcon, BundleIcon, ImportIcon } from '../../../../../custom-icons';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
@@ -31,7 +32,7 @@ type ProjectItemConfig = {
 const ADD_CONTENT_ACTIONS: ActionButtonConfig[] = [
   {
     action: 'add-folder',
-    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    shortcut: ADD_FOLDER_SHORTCUT,
     tooltipLocale: 'folder.add',
     Icon: CreateNewFolderIcon
   },
@@ -46,7 +47,7 @@ const ROOT_CONTENT_ACTIONS: ActionButtonConfig[] = [
 const BUNDLE_CONTENT_ACTIONS: ActionButtonConfig[] = [
   {
     action: 'add-folder',
-    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    shortcut: ADD_FOLDER_SHORTCUT,
     tooltipLocale: 'bundleFolder.add',
     Icon: CreateNewFolderIcon
   },
@@ -57,7 +58,7 @@ const BUNDLE_CONTENT_ACTIONS: ActionButtonConfig[] = [
 const BUNDLE_FOLDER_CONTENT_ACTIONS: ActionButtonConfig[] = [
   {
     action: 'add-folder',
-    shortcut: { darwin: '⌘+N', linux: 'Ctrl+N', win32: 'Ctrl+N' },
+    shortcut: ADD_FOLDER_SHORTCUT,
     tooltipLocale: 'bundleFolder.add',
     Icon: CreateNewFolderIcon
   },

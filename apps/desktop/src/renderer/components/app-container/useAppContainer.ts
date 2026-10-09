@@ -1,14 +1,23 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import type { ProjectActionHandler } from '../../../types';
+import { AssetType, type ProjectActionHandler } from '../../../types';
 
-import type { ApplicationAction } from '../../types';
+import { type KeyboardShortcutId, keyboardShortcuts } from '../../keyboard-shortcuts';
+import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
 import { ContentAction } from './common';
 import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
+
+const getSelectedProjectItem = (project: ProjectInfo, selectedItems: readonly number[]) => {
+  const selectedId = selectedItems.at(-1) ?? 0;
+
+  return selectedId === 0
+    ? { id: 0, type: AssetType.Project }
+    : project.content?.find((item) => item.id === selectedId);
+};
 
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
@@ -69,6 +78,9 @@ export const useAppContainer = () => {
           dispatch({ type: 'selection-changed', payload: { id, isExtended: Boolean(data) } });
           return;
         }
+        case 'selection-cleared':
+          dispatch({ type: 'selection-cleared' });
+          return;
         case 'open-delete-modal':
           dispatch({ type: 'delete-content-opened', payload: { assetType, id } });
           return;
@@ -133,6 +145,18 @@ export const useAppContainer = () => {
     },
     [state.contentStrategies, state.project, state.projectProxy]
   );
+  const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
+    if (!state.project) return;
+
+    const selectedItem = getSelectedProjectItem(state.project, state.selection);
+    if (!selectedItem) return;
+
+    const action = keyboardShortcuts.getAction(shortcutId, selectedItem.type);
+    if (!action) return;
+
+    void handleWorkingScreenAction(action, selectedItem.type, selectedItem.id);
+  }, [handleWorkingScreenAction, state.project, state.selection]);
+  useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
 
   const projectStructure = useMemo(() => ({
     onAction: handleWorkingScreenAction,

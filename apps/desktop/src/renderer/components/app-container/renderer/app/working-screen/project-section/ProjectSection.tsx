@@ -1,5 +1,5 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, type MouseEvent, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
 
@@ -8,7 +8,7 @@ import { useProjectStructure } from '../../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
 import { ProjectActionsMenu } from './actions-menu';
-import { DISABLED_ACTIONS, PROJECT_ITEM_CONFIG } from './constants';
+import { DISABLED_ACTIONS } from './constants';
 import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
 import ProjectItem, { DEFAULT_PROJECT_CONTEXT_MENU, type ProjectContextMenu } from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
@@ -49,6 +49,11 @@ const ProjectSection: FC = () => {
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
   ), []);
+  const handleListClick = (event: MouseEvent<HTMLDivElement>) => {
+    if (event.target instanceof Element && event.target.closest('[data-project-item]')) return;
+
+    void onAction('selection-cleared', AssetType.Project, 0);
+  };
   const handleCloseContextMenu = useCallback(() => setContextMenu(DEFAULT_PROJECT_CONTEXT_MENU), []);
   const handleContextMenuAction = useCallback((action: string, contentType: AssetType, id: number) => {
     if (action === 'rename') {
@@ -70,25 +75,6 @@ const ProjectSection: FC = () => {
     window.addEventListener('contextmenu', handleContextMenu, true);
     return () => window.removeEventListener('contextmenu', handleContextMenu, true);
   }, [contextMenu.isOpen, handleCloseContextMenu]);
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      const isAddFolderShortcut = event.key.toLocaleLowerCase() === 'n' && !event.altKey && !event.shiftKey &&
-        (window.manticore?.platform === 'darwin' ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey);
-      if (!isAddFolderShortcut || selectedItems.length > 1 || event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]')) return;
-
-      const selectedId = selectedItems[0] ?? 0;
-      const selectedItem = selectedId === 0
-        ? { id: 0, type: AssetType.Project }
-        : project?.content?.find((item) => item.id === selectedId);
-      if (!selectedItem || !PROJECT_ITEM_CONFIG[selectedItem.type].actions?.some((action) => action.action === 'add-folder')) return;
-
-      event.preventDefault();
-      void onAction('add-folder', selectedItem.type, selectedItem.id);
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [onAction, project?.content, selectedItems]);
   if (!project) return null;
 
   const { name } = project;
@@ -109,7 +95,13 @@ const ProjectSection: FC = () => {
         onEditingChange={setEditingId}
         setContextMenu={setContextMenu}
       />
-      <Box ref={scrollElementRef} flexGrow={1} minHeight={0} sx={{ overflowX: 'hidden', overflowY: 'auto' }}>
+      <Box
+        flexGrow={1}
+        minHeight={0}
+        onClick={handleListClick}
+        ref={scrollElementRef}
+        sx={{ overflowX: 'hidden', overflowY: 'auto' }}
+      >
         <Box height={virtualizer.getTotalSize()} position="relative">
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const { depth, node } = visibleItems[virtualItem.index];

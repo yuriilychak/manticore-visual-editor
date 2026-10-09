@@ -179,6 +179,7 @@ const REDUCER_ACTIONS = new Map<AppContainerAction['type'], ReducerActionHandler
     if (project) return projectChanged(state, project);
     return error ? { ...state, notificationError: NotificationError.RestoreProject } : state;
   })],
+  ['selection-cleared', (state) => ({ ...state, selection: [] })],
   ['selection-changed', reducerAction<{ id: number; isExtended: boolean }>((state, { id, isExtended }) => {
     const selection = isExtended
       ? state.selection.includes(id)
