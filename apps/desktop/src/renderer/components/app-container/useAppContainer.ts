@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { AssetType, type ProjectActionHandler } from '../../../types';
@@ -9,6 +9,7 @@ import type { ApplicationAction, ProjectInfo } from '../../types';
 import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
 import { ContentAction } from './common';
 import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
+import { PROJECT_ITEM_CONFIG } from './renderer/app/working-screen/project-section/constants';
 import { notifyUnavailableDesktopApi } from './strategies/helpers';
 
 const getSelectedProjectItem = (project: ProjectInfo, selectedItems: readonly number[]) => {
@@ -22,6 +23,8 @@ const getSelectedProjectItem = (project: ProjectInfo, selectedItems: readonly nu
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
   const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
+  const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
+  const previousProjectRef = useRef<{ contentIds: ReadonlySet<number>; path: string } | undefined>(undefined);
   useEffect(() => {
     state.projectProxy.setOnProjectChange((project) => dispatch({ type: 'project-changed', payload: project }));
 
@@ -37,6 +40,34 @@ export const useAppContainer = () => {
       .then((payload) => dispatch({ type: 'restore-project-completed', payload }))
       .catch(() => dispatch({ type: 'notification-error-set', payload: NotificationError.RestoreProject }));
   }, []);
+  useEffect(() => {
+    const project = state.project;
+    const content = project?.content ?? [];
+    const previousProject = previousProjectRef.current;
+    const createdItems = previousProject && previousProject.path === project?.path
+      ? content.filter((item) => !previousProject.contentIds.has(item.id))
+      : [];
+    previousProjectRef.current = project ? { contentIds: new Set(content.map((item) => item.id)), path: project.path } : undefined;
+
+    setExpandedItemIds((current) => {
+      const validExpandedItemIds = current.filter((id) => {
+        const item = content.find((contentItem) => contentItem.id === id);
+
+        return Boolean(item && PROJECT_ITEM_CONFIG[item.type].expandable && content.some((contentItem) => contentItem.parentId === id));
+      });
+      const nextExpandedItemIds = createdItems.reduce<readonly number[]>((ids, { parentId }) => {
+        const parent = content.find((item) => item.id === parentId);
+
+        return parent && PROJECT_ITEM_CONFIG[parent.type].expandable && !ids.includes(parentId)
+          ? ids.concat(parentId)
+          : ids;
+      }, validExpandedItemIds);
+
+      return nextExpandedItemIds.length === current.length && nextExpandedItemIds.every((id, index) => id === current[index])
+        ? current
+        : nextExpandedItemIds;
+    });
+  }, [state.project]);
 
   const handleAction = useCallback(
     (action: ApplicationAction) => {
@@ -159,10 +190,12 @@ export const useAppContainer = () => {
   useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
 
   const projectStructure = useMemo(() => ({
+    expandedItemIds,
     onAction: handleWorkingScreenAction,
     project: state.project,
-    selectedItems: state.selection
-  }), [handleWorkingScreenAction, state.project, state.selection]);
+    selectedItems: state.selection,
+    setExpandedItemIds
+  }), [expandedItemIds, handleWorkingScreenAction, state.project, state.selection]);
 
   const handleCloseNotification = useCallback(
     () => dispatch({ type: 'notification-error-set', payload: NotificationError.None }),

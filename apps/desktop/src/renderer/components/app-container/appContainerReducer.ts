@@ -75,13 +75,17 @@ const reducerAction = <Payload>(
 ): ReducerActionHandler => (prevState, payload) => handler(prevState, payload as Payload);
 
 const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
+  const previousProject = state.project;
+  const createdItem = previousProject?.path === project.path
+    ? project.content?.find((item) => !previousProject.content?.some(({ id }) => id === item.id))
+    : undefined;
   state.projectProxy.setProject(project);
 
   return {
     ...state,
     bundles: project.content?.filter((content) => content.type === AssetType.Bundle) ?? [],
     project,
-    selection: state.project?.path === project.path ? state.selection : []
+    selection: createdItem ? [createdItem.id] : previousProject?.path === project.path ? state.selection : []
   };
 };
 

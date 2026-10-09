@@ -2,6 +2,7 @@ import { describe, expect, jest, test } from '@jest/globals';
 import type { ProjectContent } from '@manticore/project/types';
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { useState } from 'react';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../../types';
 import { ProjectStructureContext } from '../../../../../ProjectStructureContext';
@@ -53,14 +54,27 @@ describe('ProjectSection', () => {
     folders: FolderFixture[] = [],
     content: ProjectContent[] = [],
     selectedItems: readonly number[] = []
-  ) =>
-    render(
+  ) => {
+    const ProjectSectionWithContext = () => {
+      const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
+
+      return (
       <ProjectStructureContext.Provider
-        value={{ onAction, project: { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' }, selectedItems }}
+        value={{
+          expandedItemIds,
+          onAction,
+          project: { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' },
+          selectedItems,
+          setExpandedItemIds
+        }}
       >
         <ProjectSection />
       </ProjectStructureContext.Provider>
-    );
+      );
+    };
+
+    return render(<ProjectSectionWithContext />);
+  };
   const openContextMenu = (name: string) => fireEvent.contextMenu(screen.getByRole('heading', { name }));
 
   test('selects an item and extends the selection with Ctrl or Cmd click', () => {
@@ -211,13 +225,15 @@ describe('ProjectSection', () => {
     rerender(
       <ProjectStructureContext.Provider
         value={{
+          expandedItemIds: [],
           onAction,
           project: {
             content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
             name: 'Initial project',
             path: '/tmp/project'
           },
-          selectedItems: []
+          selectedItems: [],
+          setExpandedItemIds: jest.fn()
         }}
       >
         <ProjectSection />

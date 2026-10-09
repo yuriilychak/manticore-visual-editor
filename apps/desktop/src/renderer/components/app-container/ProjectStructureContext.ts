@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react';
+import { createContext, type Dispatch, type SetStateAction, useContext } from 'react';
 
 import type { ProjectActionHandler } from '../../../types';
 
@@ -8,6 +8,8 @@ type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
   project: ProjectInfo | null;
   selectedItems: readonly number[];
+  expandedItemIds: readonly number[];
+  setExpandedItemIds: Dispatch<SetStateAction<readonly number[]>>;
 };
 
 export const ProjectStructureContext = createContext<ProjectStructureContextValue | null>(null);

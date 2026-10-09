@@ -15,10 +15,9 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { onAction, project, selectedItems } = useProjectStructure();
+  const { expandedItemIds, onAction, project, selectedItems, setExpandedItemIds } = useProjectStructure();
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
-  const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
   const [editingId, setEditingId] = useState(-1);
   const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
   const projectTree = useMemo(
@@ -48,7 +47,7 @@ const ProjectSection: FC = () => {
   });
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
-  ), []);
+  ), [setExpandedItemIds]);
   const handleListClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target instanceof Element && event.target.closest('[data-project-item]')) return;
 
