@@ -79,6 +79,33 @@ describe('ProjectSection', () => {
     expect(onAction).toHaveBeenNthCalledWith(3, 'select', AssetType.ProjectFolder, 1, true);
   });
 
+  test('shows a border beneath the item whose context menu is open', async () => {
+    const user = userEvent.setup();
+    renderProjectSection(jest.fn<ProjectActionHandler>());
+
+    const projectItem = screen.getByRole('heading', { name: 'Initial project' }).closest('[data-project-item]');
+
+    openContextMenu('Initial project');
+    expect(projectItem).toHaveAttribute('data-menu-open', 'true');
+
+    await user.keyboard('{Escape}');
+    expect(projectItem).toHaveAttribute('data-menu-open', 'false');
+  });
+
+  test('closes an item context menu when it is right-clicked again', () => {
+    const { container } = renderProjectSection(jest.fn<ProjectActionHandler>());
+
+    const projectItem = container.querySelector('[data-project-item]');
+
+    expect(projectItem).not.toBeNull();
+
+    fireEvent.contextMenu(projectItem!);
+    expect(projectItem).toHaveAttribute('data-menu-open', 'true');
+
+    fireEvent.contextMenu(document.body);
+    expect(projectItem).toHaveAttribute('data-menu-open', 'false');
+  });
+
   test('renames the project with a trimmed name', async () => {
     const user = userEvent.setup();
     const onAction = jest

@@ -1,25 +1,35 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../../types';
 import { useProjectStructure } from '../../../../ProjectStructureContext';
 
-import { PROJECT_ITEM_CONFIG } from './constants';
+import { ProjectActionsMenu } from './actions-menu';
+import { DISABLED_ACTIONS, PROJECT_ITEM_CONFIG } from './constants';
 import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
-import ProjectItem from './ProjectItem';
+import ProjectItem, { type ProjectContextMenu } from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
 
 const PROJECT_ROW_HEIGHT = 24;
 const estimateRowSize = () => PROJECT_ROW_HEIGHT;
+const CLOSED_CONTEXT_MENU: ProjectContextMenu = {
+  contentType: AssetType.Project,
+  id: 0,
+  isOpen: false,
+  left: 0,
+  top: 0,
+  menuActions: [],
+  onAction: () => undefined
+};
 
 const ProjectSection: FC = () => {
   const { onAction, project, selectedItems } = useProjectStructure();
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
   const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
-  const [contextMenu, setContextMenu] = useState<{ id: number; left: number; top: number } | null>(null);
+  const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(CLOSED_CONTEXT_MENU);
   const projectTree = useMemo(
     () => getProjectTree(project?.content ?? []),
     [project?.content]
@@ -48,11 +58,21 @@ const ProjectSection: FC = () => {
   const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
     current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
   ), []);
-  const handleOpenContextMenu = useCallback((id: number, event: MouseEvent<HTMLDivElement>) => {
-    event.preventDefault();
-    setContextMenu((current) => current ? null : { id, left: event.clientX, top: event.clientY });
-  }, []);
-  const handleCloseContextMenu = useCallback(() => setContextMenu(null), []);
+  const handleOpenContextMenu = useCallback((contextMenu: ProjectContextMenu) =>
+    setContextMenu((current) => current.isOpen ? CLOSED_CONTEXT_MENU : contextMenu), []);
+  const handleCloseContextMenu = useCallback(() => setContextMenu(CLOSED_CONTEXT_MENU), []);
+  useEffect(() => {
+    if (!contextMenu.isOpen) return;
+
+    const handleContextMenu = (event: globalThis.MouseEvent) => {
+      event.preventDefault();
+      event.stopPropagation();
+      handleCloseContextMenu();
+    };
+
+    window.addEventListener('contextmenu', handleContextMenu, true);
+    return () => window.removeEventListener('contextmenu', handleContextMenu, true);
+  }, [contextMenu.isOpen, handleCloseContextMenu]);
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const isAddFolderShortcut = event.key.toLocaleLowerCase() === 'n' && !event.altKey && !event.shiftKey &&
@@ -80,13 +100,14 @@ const ProjectSection: FC = () => {
     <Box component="header" display="flex" flexDirection="column" height="100%" minHeight={0} p={1}>
       <ProjectItem
         contentType={AssetType.Project}
-        contextMenuPosition={contextMenu?.id === 0 ? contextMenu : null}
         dropTargetId={rootFolder?.item.id}
+        expanded={false}
+        hasChildren={false}
         id={0}
+        isContextMenuOpen={contextMenu.isOpen && contextMenu.id === 0}
         isSelected={selectedItems.includes(0)}
         name={name}
         onAction={onAction}
-        onCloseContextMenu={handleCloseContextMenu}
         onOpenContextMenu={handleOpenContextMenu}
       />
       <Box ref={scrollElementRef} flexGrow={1} minHeight={0} sx={{ overflowX: 'hidden', overflowY: 'auto' }}>
@@ -98,14 +119,13 @@ const ProjectSection: FC = () => {
             return (
               <ProjectVirtualRow
                 depth={depth}
-                contextMenuPosition={contextMenu?.id === item.id ? contextMenu : null}
                 hasChildren={children.length > 0}
                 isExpanded={expandedItemIdSet.has(item.id)}
+                isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}
                 isSelected={selectedItems.includes(item.id)}
                 item={item}
                 key={item.id}
                 onAction={onAction}
-                onCloseContextMenu={handleCloseContextMenu}
                 onOpenContextMenu={handleOpenContextMenu}
                 onToggleExpanded={toggleExpanded}
                 start={virtualItem.start}
@@ -114,6 +134,15 @@ const ProjectSection: FC = () => {
           })}
         </Box>
       </Box>
+      <ProjectActionsMenu
+        contentType={contextMenu.contentType}
+        contextMenuPosition={contextMenu}
+        disabledByAction={DISABLED_ACTIONS}
+        menuActions={contextMenu.menuActions}
+        onAction={contextMenu.onAction}
+        onClose={handleCloseContextMenu}
+        open={contextMenu.isOpen}
+      />
     </Box>
   );
 };

@@ -4,26 +4,27 @@ import { Divider, Menu } from '@mui/material';
 
 import { AssetType } from '../../../../../../../../types';
 import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../../renameable-item/constants';
+import type { ActionButtonConfig } from '../../renameable-item/types';
 
-import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../constants';
-import type { ActionButtonConfig } from '../types';
+import ProjectActionsMenuItem from './ProjectActionsMenuItem';
 
-import RenameableItemActionsMenuItem from './RenameableItemActionsMenuItem';
-
-type RenameableItemActionsMenuProps = {
-  contextMenuPosition: { left: number; top: number } | null;
+type ProjectActionsMenuProps = {
+  contextMenuPosition: { left: number; top: number };
   contentType: AssetType;
   disabledByAction: Record<string, boolean>;
   menuActions: ActionButtonConfig[];
+  open: boolean;
   onAction: (action: string) => void;
   onClose: () => void;
 };
 
-const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
+const ProjectActionsMenu: FC<ProjectActionsMenuProps> = ({
   contextMenuPosition,
   contentType,
   disabledByAction,
   menuActions,
+  open,
   onAction,
   onClose
 }) => {
@@ -41,10 +42,10 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
 
   return (
     <Menu
-      anchorPosition={contextMenuPosition ?? undefined}
+      anchorPosition={contextMenuPosition}
       anchorReference="anchorPosition"
       onClose={handleClose}
-      open={Boolean(contextMenuPosition)}
+      open={open}
       slotProps={{
         list: { sx: { p: 0.5 } },
         paper: { sx: { minWidth: 220 } }
@@ -52,7 +53,7 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
       sx={MENUBAR_STYLES.menu}
     >
       {viewActions.map((action) => (
-        <RenameableItemActionsMenuItem
+        <ProjectActionsMenuItem
           action={action}
           disabled={disabledByAction[action.action]}
           key={action.action}
@@ -61,7 +62,7 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
       ))}
       {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
       {menuActions.map((action) => (
-        <RenameableItemActionsMenuItem
+        <ProjectActionsMenuItem
           action={action}
           disabled={disabledByAction[action.action]}
           key={action.action}
@@ -72,4 +73,4 @@ const RenameableItemActionsMenu: FC<RenameableItemActionsMenuProps> = ({
   );
 };
 
-export default memo(RenameableItemActionsMenu);
+export default memo(ProjectActionsMenu);

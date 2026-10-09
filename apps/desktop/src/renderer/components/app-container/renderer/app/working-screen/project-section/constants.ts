@@ -125,11 +125,18 @@ export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
 
 export const PROJECT_ITEM_STYLES: Record<'root', SxProps<Theme>> = {
   root: {
+    border: 1,
+    borderColor: 'transparent',
+    display: "flex",
+    alignItems: "center",
+    boxSizing: 'border-box',
     borderRadius: 1,
     minHeight: 24,
+    height: 24,
     px: 0.5,
     transition: theme => theme.transitions.create('background-color'),
     '&:hover': { bgcolor: 'action.hover' },
-    '&[aria-selected="true"], &[aria-selected="true"]:hover': { bgcolor: 'action.selected' }
+    '&[aria-selected="true"], &[aria-selected="true"]:hover': { bgcolor: 'action.selected' },
+    '&[data-menu-open="true"]': { borderColor: 'primary.main' }
   }
 };

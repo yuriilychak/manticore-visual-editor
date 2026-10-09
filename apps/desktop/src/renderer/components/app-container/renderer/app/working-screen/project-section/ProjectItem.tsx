@@ -1,44 +1,53 @@
-import { type DragEvent, type FC, type MouseEvent, type ReactNode } from 'react';
+import { type DragEvent, type FC, type MouseEvent, useRef } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
 
 import { RenameableItem } from '../renameable-item';
+import type { ActionButtonConfig } from '../renameable-item/types';
 
-import { DISABLED_ACTIONS, PROJECT_ITEM_CONFIG, PROJECT_ITEM_STYLES } from './constants';
+import { PROJECT_ITEM_CONFIG, PROJECT_ITEM_STYLES } from './constants';
+
+export type ProjectContextMenu = {
+  contentType: AssetType;
+  id: number;
+  isOpen: boolean;
+  left: number;
+  top: number;
+  menuActions: ActionButtonConfig[];
+  onAction: (action: string) => void;
+};
 
 export type ProjectItemProps = {
-  children?: ReactNode;
   contentType: AssetType;
-  hasChildren?: boolean;
-  expanded?: boolean;
+  hasChildren: boolean;
+  expanded: boolean;
   id: number;
   name: string;
   onAction: ProjectActionHandler;
-  contextMenuPosition?: { left: number; top: number } | null;
-  onCloseContextMenu?: () => void;
-  onOpenContextMenu?: (id: number, event: MouseEvent<HTMLDivElement>) => void;
+  isContextMenuOpen: boolean;
+  onOpenContextMenu: (contextMenu: ProjectContextMenu) => void;
   dropTargetId?: number;
-  isSelected?: boolean;
+  isSelected: boolean;
 };
 
 const ProjectItem: FC<ProjectItemProps> = ({
   contentType,
-  contextMenuPosition = null,
   dropTargetId,
-  hasChildren = false,
-  expanded = false,
+  hasChildren,
+  expanded,
   id,
-  isSelected = false,
+  isSelected,
   name,
   onAction,
-  onCloseContextMenu,
+  isContextMenuOpen,
   onOpenContextMenu
 }) => {
   const config = PROJECT_ITEM_CONFIG[contentType];
   const resolvedDropTargetId = dropTargetId ?? id;
   const { icon: Icon } = config;
+  const menuActionRef = useRef<((action: string) => void) | null>(null);
   const handleDragStart = (event: DragEvent<HTMLDivElement>) => {
     if (!config.dragType || (event.target instanceof Element && event.target.closest('button, input'))) {
       event.preventDefault();
@@ -78,11 +87,23 @@ const ProjectItem: FC<ProjectItemProps> = ({
 
     void onAction('select', contentType, id, event.ctrlKey || event.metaKey);
   };
-  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => onOpenContextMenu?.(id, event);
+  const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    onOpenContextMenu({
+      contentType,
+      id,
+      isOpen: true,
+      left: event.clientX,
+      top: event.clientY,
+      menuActions: config.actions ?? [],
+      onAction: (action) => menuActionRef.current?.(action)
+    });
+  };
 
   return (
     <Box
       aria-selected={isSelected}
+      data-menu-open={isContextMenuOpen}
       data-project-item
       draggable={Boolean(config.dragType)}
       onClick={handleClick}
@@ -94,10 +115,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
       width="100%"
     >
       <RenameableItem
-        actions={config.actions}
         contentType={contentType}
-        contextMenuPosition={contextMenuPosition}
-        disabledActions={DISABLED_ACTIONS}
         expandable={Boolean(config.expandable)}
         expandIconDisabled={!hasChildren}
         expanded={expanded}
@@ -105,7 +123,7 @@ const ProjectItem: FC<ProjectItemProps> = ({
         id={id}
         name={name}
         onAction={onAction}
-        onCloseContextMenu={onCloseContextMenu ?? (() => undefined)}
+        menuActionRef={menuActionRef}
       />
     </Box>
   );

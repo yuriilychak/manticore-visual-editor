@@ -4,17 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Box, ListItemText, MenuItem, Typography } from '@mui/material';
 
 import { MENUBAR_STYLES } from '../../../../../app-shell/title-bar/menubar/constants';
+import { ITEM_ICON_SIZE } from '../../renameable-item/constants';
+import type { ActionButtonConfig } from '../../renameable-item/types';
 
-import { ITEM_ICON_SIZE } from '../constants';
-import type { ActionButtonConfig } from '../types';
-
-type RenameableItemActionsMenuItemProps = {
+type ProjectActionsMenuItemProps = {
   action: ActionButtonConfig;
   disabled: boolean;
   onAction: (action: string) => void;
 };
 
-const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({ action, disabled, onAction }) => {
+const ProjectActionsMenuItem: FC<ProjectActionsMenuItemProps> = ({ action, disabled, onAction }) => {
   const { t } = useTranslation();
   const { action: actionId, tooltipLocale, Icon, shortcut } = action;
   const shortcutLabel = shortcut?.[window.manticore?.platform as keyof typeof shortcut];
@@ -51,4 +50,4 @@ const RenameableItemActionsMenuItem: FC<RenameableItemActionsMenuItemProps> = ({
   );
 };
 
-export default RenameableItemActionsMenuItem;
+export default ProjectActionsMenuItem;

@@ -1,4 +1,4 @@
-import { type FC, memo } from 'react';
+import { type FC, memo, type MutableRefObject, useEffect } from 'react';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
@@ -8,14 +8,13 @@ import { Box } from '@mui/material';
 import type { AssetType, ProjectActionHandler } from '../../../../../../../types';
 import { withLocalizedProps } from '../../../../../../localization';
 
-import { ITEM_GAP, ITEM_ICON_SIZE, RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
+import { ITEM_GAP, ITEM_ICON_SIZE, RENAMEABLE_ITEM_LOCALE_KEYS } from './constants';
 import RenameableItemEditingRenderer from './RenameableItemEditingRenderer';
 import RenameableItemViewRenderer from './RenameableItemViewRenderer';
-import type { ActionButtonConfig, RenameableItemLocalizedProps } from './types';
+import type { RenameableItemLocalizedProps } from './types';
 import { useRenameableItem } from './useRenameableItem';
 
 type RenameableItemProps = {
-  contextMenuPosition: { left: number; top: number } | null;
   contentType: AssetType;
   expandable: boolean;
   expandIconDisabled: boolean;
@@ -24,13 +23,10 @@ type RenameableItemProps = {
   Icon: SvgIconComponent;
   name: string;
   onAction: ProjectActionHandler;
-  onCloseContextMenu: () => void;
-  disabledActions: Record<string, boolean>;
-  actions?: ActionButtonConfig[];
+  menuActionRef: MutableRefObject<((action: string) => void) | null>;
 };
 
 const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = ({
-  contextMenuPosition,
   contentType,
   expandable,
   expandIconDisabled,
@@ -39,16 +35,20 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
   Icon,
   name,
   onAction,
-  onCloseContextMenu,
   renameNameLabel,
-  disabledActions,
-  actions = RENAMEABLE_ITEM_ACTIONS.empty
+  menuActionRef
 }) => {
   const {
     handleButtonClick,
     isEditing,
     isSaving
   } = useRenameableItem(contentType, id, onAction);
+  useEffect(() => {
+    menuActionRef.current = handleButtonClick;
+    return () => {
+      menuActionRef.current = null;
+    };
+  }, [handleButtonClick, menuActionRef]);
   const ExpandIcon = expanded ? ExpandMoreIcon : ChevronRightIcon;
 
   return (
@@ -72,13 +72,7 @@ const RenameableItem: FC<RenameableItemProps & RenameableItemLocalizedProps> = (
         />
       ) : (
         <RenameableItemViewRenderer
-          contentType={contentType}
-          disabledByAction={disabledActions}
-          contextMenuPosition={contextMenuPosition}
-          menuActions={actions}
           name={name}
-          onAction={handleButtonClick}
-          onCloseContextMenu={onCloseContextMenu}
         />
       )}
     </Box>
