@@ -5,35 +5,25 @@ import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
 import { useProjectStructure } from '../../../ProjectStructureContext';
+import { getProjectTreeRootNodes, getVisibleProjectTreeItems } from '../../../helpers';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
 import { ProjectActionsMenu } from './actions-menu';
 import { DISABLED_ACTIONS } from './constants';
-import { getProjectTree, getVisibleProjectTreeItems } from './helpers';
 import ProjectItem, { DEFAULT_PROJECT_CONTEXT_MENU, type ProjectContextMenu } from './ProjectItem';
 import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, project, selectedItems, setExpandedItemIds } = useProjectStructure();
+  const { expandedItemIds, onAction, onToggleExpanded, project, selection } = useProjectStructure();
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
   const [editingId, setEditingId] = useState(-1);
   const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
-  const projectTree = useMemo(
-    () => getProjectTree(project?.content ?? []),
+  const { rootFolder, rootNodes } = useMemo(
+    () => getProjectTreeRootNodes(project?.content ?? []),
     [project?.content]
   );
-  const { rootFolder, rootNodes } = useMemo(() => {
-    const rootFolder = projectTree.find(
-      (node) => node.item.type === AssetType.ProjectFolder && node.item.parentId === 0 && !node.item.name
-    );
-
-    return {
-      rootFolder,
-      rootNodes: rootFolder ? rootFolder.children.concat(projectTree.filter((node) => node !== rootFolder)) : projectTree
-    };
-  }, [projectTree]);
   const expandedItemIdSet = useMemo(() => new Set(expandedItemIds), [expandedItemIds]);
   const visibleItems = useMemo(
     () => getVisibleProjectTreeItems(rootNodes, expandedItemIdSet),
@@ -45,9 +35,6 @@ const ProjectSection: FC = () => {
     getScrollElement,
     overscan: 8
   });
-  const toggleExpanded = useCallback((id: number) => setExpandedItemIds((current) =>
-    current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
-  ), [setExpandedItemIds]);
   const handleListClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target instanceof Element && event.target.closest('[data-project-item]')) return;
 
@@ -88,7 +75,7 @@ const ProjectSection: FC = () => {
         id={0}
         isEditing={editingId === 0}
         isContextMenuOpen={contextMenu.isOpen && contextMenu.id === 0}
-        isSelected={selectedItems.includes(0)}
+        isSelected={selection.includes(0)}
         name={name}
         onAction={onAction}
         onEditingChange={setEditingId}
@@ -113,13 +100,13 @@ const ProjectSection: FC = () => {
                 isExpanded={expandedItemIdSet.has(item.id)}
                 isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}
-                isSelected={selectedItems.includes(item.id)}
+                isSelected={selection.includes(item.id)}
                 item={item}
                 key={item.id}
                 onAction={onAction}
                 onEditingChange={setEditingId}
                 setContextMenu={setContextMenu}
-                onToggleExpanded={toggleExpanded}
+                onToggleExpanded={onToggleExpanded}
                 start={virtualItem.start}
               />
             );

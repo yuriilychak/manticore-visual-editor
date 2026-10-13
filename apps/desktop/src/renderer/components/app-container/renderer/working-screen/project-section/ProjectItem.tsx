@@ -92,7 +92,8 @@ const ProjectItem: FC<ProjectItemProps> = ({
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target instanceof Element && event.target.closest('button, input')) return;
 
-    void onAction('select', contentType, id, event.ctrlKey || event.metaKey);
+    const isExtended = event.ctrlKey || event.metaKey;
+    void onAction('select', contentType, id, { id, isExtended, isRange: event.shiftKey });
   };
   const handleContextMenu = (event: MouseEvent<HTMLDivElement>) => {
     event.preventDefault();

@@ -36,7 +36,7 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
   start
 }) => {
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
-    if (!hasChildren || event.ctrlKey || event.metaKey || (event.target instanceof Element && event.target.closest('button, input'))) return;
+    if (!hasChildren || event.ctrlKey || event.metaKey || event.shiftKey || (event.target instanceof Element && event.target.closest('button, input'))) return;
 
     onToggleExpanded(item.id);
   };

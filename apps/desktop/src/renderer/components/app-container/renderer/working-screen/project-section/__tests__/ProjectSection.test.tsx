@@ -53,7 +53,7 @@ describe('ProjectSection', () => {
     onAction: ProjectActionHandler,
     folders: FolderFixture[] = [],
     content: ProjectContent[] = [],
-    selectedItems: readonly number[] = []
+    selection: readonly number[] = []
   ) => {
     const ProjectSectionWithContext = () => {
       const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
@@ -64,8 +64,10 @@ describe('ProjectSection', () => {
           expandedItemIds,
           onAction,
           project: { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' },
-          selectedItems,
-          setExpandedItemIds
+          selection,
+          onToggleExpanded: (id) => setExpandedItemIds((current) =>
+            current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
+          )
         }}
       >
         <ProjectSection />
@@ -88,9 +90,26 @@ describe('ProjectSection', () => {
     fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { ctrlKey: true });
     fireEvent.click(screen.getByRole('heading', { name: 'Assets' }), { metaKey: true });
 
-    expect(onAction).toHaveBeenNthCalledWith(1, 'select', AssetType.Project, 0, false);
-    expect(onAction).toHaveBeenNthCalledWith(2, 'select', AssetType.ProjectFolder, 1, true);
-    expect(onAction).toHaveBeenNthCalledWith(3, 'select', AssetType.ProjectFolder, 1, true);
+    expect(onAction).toHaveBeenNthCalledWith(1, 'select', AssetType.Project, 0, { id: 0, isExtended: false, isRange: false });
+    expect(onAction).toHaveBeenNthCalledWith(2, 'select', AssetType.ProjectFolder, 1, { id: 1, isExtended: true, isRange: false });
+    expect(onAction).toHaveBeenNthCalledWith(3, 'select', AssetType.ProjectFolder, 1, { id: 1, isExtended: true, isRange: false });
+  });
+
+  test('selects the visible inclusive range with Shift click', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Bundles' }]
+    );
+
+    fireEvent.click(screen.getByRole('heading', { name: 'Initial project' }));
+    fireEvent.click(screen.getByRole('heading', { name: 'Bundles' }), { shiftKey: true });
+
+    expect(onAction).toHaveBeenLastCalledWith('select', AssetType.ProjectFolder, 2, {
+      id: 2,
+      isExtended: false,
+      isRange: true
+    });
   });
 
   test('shows a border beneath the item whose context menu is open', async () => {
@@ -200,12 +219,12 @@ describe('ProjectSection', () => {
     fireEvent.click(assetsAccordion, { ctrlKey: true });
 
     expect(screen.queryByRole('heading', { name: 'Images' })).not.toBeInTheDocument();
-    expect(onAction).toHaveBeenCalledWith('select', AssetType.ProjectFolder, 1, true);
+    expect(onAction).toHaveBeenCalledWith('select', AssetType.ProjectFolder, 1, { id: 1, isExtended: true, isRange: false });
 
     fireEvent.click(assetsAccordion);
 
     expect(screen.getByRole('heading', { name: 'Images' })).toBeInTheDocument();
-    expect(onAction).toHaveBeenLastCalledWith('select', AssetType.ProjectFolder, 1, false);
+    expect(onAction).toHaveBeenLastCalledWith('select', AssetType.ProjectFolder, 1, { id: 1, isExtended: false, isRange: false });
   });
 
   test('hides the expand icon when a folder no longer has children', async () => {
@@ -232,8 +251,8 @@ describe('ProjectSection', () => {
             name: 'Initial project',
             path: '/tmp/project'
           },
-          selectedItems: [],
-          setExpandedItemIds: jest.fn()
+          selection: [],
+          onToggleExpanded: jest.fn()
         }}
       >
         <ProjectSection />

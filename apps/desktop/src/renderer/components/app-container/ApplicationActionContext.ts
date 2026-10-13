@@ -1,8 +1,6 @@
 import { createContext, useContext } from 'react';
 
-import type { ApplicationAction } from '../../types';
-
-type ApplicationActionHandler = (action: ApplicationAction) => void;
+import type { ApplicationActionHandler } from './types';
 
 export const ApplicationActionContext = createContext<ApplicationActionHandler | null>(null);
 

@@ -20,4 +20,8 @@ export class ContentAction<TAction extends string = string, TData = unknown> {
   get id() {
     return this.#id;
   }
+
+  getResult() {
+    return { payload: this.#data, type: this.#action };
+  }
 }

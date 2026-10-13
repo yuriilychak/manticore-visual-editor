@@ -6,7 +6,8 @@ import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
+import { notifyUnavailableDesktopApi } from '../helpers';
+import { createErrorResult } from './helpers';
 
 export class ProjectStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[];

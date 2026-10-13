@@ -2,44 +2,25 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo, RestoredProject } from '../../types';
 
-import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import type { ImportAssetResult } from './common';
-import { NotificationError } from './constants';
-import type { DeleteContentDialogData } from './delete-content-dialog';
-import type { ImportAssetsDialogData } from './import-assets-dialog';
-import type { NewContentDialogData } from './new-content-dialog';
+import { DEFAULT_DELETE_CONTENT, DEFAULT_IMPORT_ASSETS_DIALOG, LAST_INDEX, NotificationError } from './constants';
 import { ProjectProxy } from './ProjectProxy';
+import {
+  getDeletableContent,
+  getNewContentState,
+  getProjectTreeRootNodes,
+  getVisibleProjectTreeItems,
+  projectChanged,
+  reducerAction,
+  updateModalData
+} from './helpers';
 import { CONTENT_STRATEGY_CONSTRUCTORS, type ContentStrategy, type OpenNewContentData } from './strategies';
-
-const DEFAULT_DELETE_CONTENT: DeleteContentDialogData = {
-  isOpen: false,
-  items: [],
-  type: 'delete-content'
-};
-
-const DEFAULT_IMPORT_ASSETS_DIALOG: ImportAssetsDialogData = {
-  bundleId: 0,
-  bundles: [],
-  errors: [],
-  isOpen: false,
-  type: 'import-asset'
-};
-
-export type AppContainerState = {
-  bundles: ImportAssetsDialogData['bundles'];
-  contentStrategies: ReadonlyMap<AssetType, ContentStrategy>;
-  defaultNewContentDialog: NewContentDialogData;
-  deleteContent: DeleteContentDialogData;
-  disabledItemIds: readonly MenubarItemId[];
-  importAssetsDialog: ImportAssetsDialogData;
-  newContentDialog: NewContentDialogData;
-  notificationError: NotificationError;
-  project: ProjectInfo | null;
-  projectProxy: ProjectProxy;
-  selection: readonly number[];
-};
-
-export type AppContainerAction = { type: string; payload?: unknown };
+import type {
+  AppContainerAction,
+  AppContainerState,
+  ReducerActionHandler,
+  WorkingScreenActionPayload
+} from './types';
 
 export const createInitialAppContainerState = (): AppContainerState => {
   const projectProxy = new ProjectProxy();
@@ -47,153 +28,142 @@ export const createInitialAppContainerState = (): AppContainerState => {
     (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
     new Map()
   );
-  const defaultNewContentDialog: NewContentDialogData = {
-    isOpen: false,
-    strategy: contentStrategies.get(AssetType.ProjectFolder)!,
-    type: 'new-content'
-  };
-
   return {
     bundles: [],
+    contentById: new Map(),
     contentStrategies,
-    defaultNewContentDialog,
-    deleteContent: DEFAULT_DELETE_CONTENT,
     disabledItemIds: [],
-    importAssetsDialog: DEFAULT_IMPORT_ASSETS_DIALOG,
-    newContentDialog: defaultNewContentDialog,
+    expandedItemIds: [],
+    modalData: {
+      'delete-content': DEFAULT_DELETE_CONTENT,
+      'import-asset': DEFAULT_IMPORT_ASSETS_DIALOG,
+      'new-content': getNewContentState(contentStrategies, AssetType.ProjectFolder, false)
+    },
     notificationError: NotificationError.None,
     project: null,
     projectProxy,
+    selectionAnchor: null,
     selection: []
   };
-};
-
-type ReducerActionHandler = (prevState: AppContainerState, payload?: unknown) => AppContainerState;
-
-const reducerAction = <Payload>(
-  handler: (prevState: AppContainerState, payload: Payload) => AppContainerState
-): ReducerActionHandler => (prevState, payload) => handler(prevState, payload as Payload);
-
-const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
-  const previousProject = state.project;
-  const createdItem = previousProject?.path === project.path
-    ? project.content?.find((item) => !previousProject.content?.some(({ id }) => id === item.id))
-    : undefined;
-  state.projectProxy.setProject(project);
-
-  return {
-    ...state,
-    bundles: project.content?.filter((content) => content.type === AssetType.Bundle) ?? [],
-    project,
-    selection: createdItem ? [createdItem.id] : previousProject?.path === project.path ? state.selection : []
-  };
-};
-
-const getDeletableContent = (state: AppContainerState, assetType: AssetType, id: number) => {
-  const content = state.project?.content ?? [];
-  const selectedIds = state.selection.includes(id) ? state.selection : [id];
-  const contentById = new Map(content.map((item) => [item.id, item]));
-  const selectedIdSet = new Set(selectedIds);
-  const selectedItem = contentById.get(id);
-  if (!selectedItem || selectedItem.type !== assetType) return [];
-
-  return selectedIds
-    .map((selectedId) => contentById.get(selectedId))
-    .filter((item): item is NonNullable<typeof item> => Boolean(item))
-    .filter((item) => item.type !== AssetType.Project && !(item.type === AssetType.ProjectFolder && item.parentId === 0))
-    .filter((item) => {
-      let parentId = item.parentId;
-      while (parentId) {
-        if (selectedIdSet.has(parentId)) return false;
-        parentId = contentById.get(parentId)?.parentId ?? 0;
-      }
-      return true;
-    });
 };
 
 const REDUCER_ACTIONS = new Map<AppContainerAction['type'], ReducerActionHandler>([
   ['create-project', (state) => ({
     ...state,
-    newContentDialog: {
-      isOpen: true,
-      strategy: state.contentStrategies.get(AssetType.Project)!,
-      type: 'new-content'
-    }
+    modalData: updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.Project, true))
   })],
-  ['delete-content-completed', reducerAction<NotificationError | undefined>((state, error) => ({
+  ['delete-completed', reducerAction<{ error?: NotificationError }>((state, { error }) => ({
     ...state,
-    deleteContent: DEFAULT_DELETE_CONTENT,
+    modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notificationError: error ?? state.notificationError,
-    selection: []
+    selection: [],
+    selectionAnchor: null
   }))],
-  ['delete-content-opened', reducerAction<{ assetType: AssetType; id: number }>((state, data) => {
-    const items = getDeletableContent(state, data.assetType, data.id);
-    if (!items.length) return state;
+  ['open-delete-modal', reducerAction<WorkingScreenActionPayload>((state, { assetType, id }) => {
+    const items = getDeletableContent(state, assetType, id);
 
-    return {
-      ...state,
-      deleteContent: { isOpen: true, items, type: 'delete-content' },
-      selection: items.map((item) => item.id)
-    };
+    return items.length
+      ? {
+          ...state,
+          modalData: updateModalData(state.modalData, { isOpen: true, items, type: 'delete-content' }),
+          selection: items.map((item) => item.id)
+        }
+      : state;
   })],
-  ['delete-content-closed', (state) => ({ ...state, deleteContent: DEFAULT_DELETE_CONTENT })],
-  ['import-assets-dialog-opened', reducerAction<number | null>((state, bundleId) => {
-    const selectedBundle = state.bundles.find((bundle) => bundle.id === bundleId) ?? state.bundles[0];
-    if (!selectedBundle) return { ...state, notificationError: NotificationError.ContentTypeUnavailable };
-
-    return {
-      ...state,
-      importAssetsDialog: {
-        bundleId: selectedBundle.id,
-        bundles: state.bundles,
-        errors: [],
-        isOpen: true,
-        type: 'import-asset'
-      }
-    };
-  })],
-  ['import-assets-dialog-closed', (state) => ({ ...state, importAssetsDialog: DEFAULT_IMPORT_ASSETS_DIALOG })],
-  ['import-assets-completed', reducerAction<ImportAssetResult[]>((state, errors) => ({
+  ['close-delete-modal', (state) => ({
     ...state,
-    importAssetsDialog: errors.length
-      ? { ...state.importAssetsDialog, errors }
-      : DEFAULT_IMPORT_ASSETS_DIALOG
+    modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT)
+  })],
+  ['expanded-item-toggled', reducerAction<number>((state, id) => ({
+    ...state,
+    expandedItemIds: state.expandedItemIds.includes(id)
+      ? state.expandedItemIds.filter((expandedId) => expandedId !== id)
+      : state.expandedItemIds.concat(id)
   }))],
-  ['new-content-dialog-opened', reducerAction<OpenNewContentData>((state, data) => {
+  ['open-import-assets', reducerAction<{ bundleId: number | null }>((state, { bundleId }) => {
+    const selectedBundle = state.bundles.find((bundle) => bundle.id === bundleId) ?? state.bundles[0];
+
+    return selectedBundle
+      ? {
+          ...state,
+          modalData: updateModalData(state.modalData, {
+            bundleId: selectedBundle.id,
+            bundles: state.bundles,
+            errors: [],
+            isOpen: true,
+            type: 'import-asset'
+          })
+        }
+      : { ...state, notificationError: NotificationError.ContentTypeUnavailable };
+  })],
+  ['close-import-assets-dialog', (state) => ({
+    ...state,
+    modalData: updateModalData(state.modalData, DEFAULT_IMPORT_ASSETS_DIALOG)
+  })],
+  ['import-assets-completed', reducerAction<readonly ImportAssetResult[]>((state, results) => {
+    const errors = results.filter(({ error }) => error);
+
+    return {
+      ...state,
+      modalData: updateModalData(
+        state.modalData,
+        errors.length ? { ...state.modalData['import-asset'], errors } : DEFAULT_IMPORT_ASSETS_DIALOG
+      )
+    };
+  })],
+  ['open-new-content', reducerAction<OpenNewContentData>((state, data) => {
     const strategy = state.contentStrategies.get(data.assetType);
     if (!strategy) return { ...state, notificationError: NotificationError.ContentTypeUnavailable };
 
     try {
       strategy.setFields(data.fields);
-      return { ...state, newContentDialog: { isOpen: true, strategy, type: 'new-content' } };
+      const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, data.assetType, true));
+
+      return { ...state, modalData };
     } catch {
       return { ...state, notificationError: NotificationError.ContentConfiguration };
     }
   })],
-  ['new-content-dialog-closed', (state) => {
-    state.newContentDialog.strategy.setField('parentPath', '');
-    return { ...state, newContentDialog: state.defaultNewContentDialog };
+  ['close-new-content-dialog', (state) => {
+    state.modalData['new-content'].strategy.setField('parentPath', '');
+    const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.ProjectFolder, false));
+    return { ...state, modalData };
   }],
-  ['notification-error-set', reducerAction<NotificationError>((state, notificationError) => ({
+  ['show-notification', reducerAction<{ error: NotificationError }>((state, { error: notificationError }) => ({
     ...state,
     notificationError
   }))],
   ['project-changed', reducerAction<ProjectInfo>(projectChanged)],
-  ['restore-project-completed', reducerAction<RestoredProject>((state, { error, project }) => {
-    if (project) return projectChanged(state, project);
-    return error ? { ...state, notificationError: NotificationError.RestoreProject } : state;
-  })],
-  ['selection-cleared', (state) => ({ ...state, selection: [] })],
-  ['selection-changed', reducerAction<{ id: number; isExtended: boolean }>((state, { id, isExtended }) => {
-    const selection = isExtended
+  ['restore-project-completed', reducerAction<RestoredProject>((state, { error, project }) =>
+    project
+      ? projectChanged(state, project)
+      : { ...state, notificationError: error ? NotificationError.RestoreProject : NotificationError.None }
+  )],
+  ['selection-cleared', (state) => ({ ...state, selection: [], selectionAnchor: null })],
+  ['select', reducerAction<WorkingScreenActionPayload>((state, { data }) => {
+    const { id, isExtended, isRange } = data as { id: number; isExtended: boolean; isRange: boolean };
+    const { rootNodes } = getProjectTreeRootNodes(state.project?.content ?? []);
+    const rangeIds = isRange
+      ? [0, ...getVisibleProjectTreeItems(rootNodes, new Set(state.expandedItemIds)).map(({ node }) => node.item.id)]
+      : [];
+    const isRangeSelection = rangeIds.includes(id);
+    const anchor = state.selectionAnchor ?? state.selection.at(LAST_INDEX) ?? id;
+    const start = isRangeSelection ? rangeIds.indexOf(anchor) : LAST_INDEX;
+    const end = isRangeSelection ? rangeIds.indexOf(id) : LAST_INDEX;
+    const range = start === LAST_INDEX || end === LAST_INDEX
+      ? [id]
+      : rangeIds.slice(Math.min(start, end), Math.max(start, end) + 1);
+    const selection = isRangeSelection
+      ? Array.from(new Set(state.selection.concat(range)))
+      : isExtended
       ? state.selection.includes(id)
         ? state.selection.filter((item) => item !== id)
         : state.selection.concat(id)
       : [id];
 
-    return { ...state, selection };
+    return { ...state, selection, selectionAnchor: isRangeSelection ? anchor : id };
   })]
 ]);
 
-export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState =>
-  REDUCER_ACTIONS.has(action.type) ? REDUCER_ACTIONS.get(action.type)!(state, action.payload) : state;
+export const appContainerReducer = (state: AppContainerState, { payload, type }: AppContainerAction): AppContainerState =>
+  REDUCER_ACTIONS.get(type)?.(state, payload) ?? state;

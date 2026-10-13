@@ -6,7 +6,8 @@ import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { createErrorResult, notifyUnavailableDesktopApi } from './helpers';
+import { notifyUnavailableDesktopApi } from '../helpers';
+import { createErrorResult } from './helpers';
 
 export class TextureAtlasStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
@@ -23,7 +24,7 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
-    if (action === 'delete') return this.deleteContent(id);
+    if (action === 'delete') return this.deleteContent(id, data);
 
     const project = this.projectProxy.project;
     if (!project) return notifyUnavailableDesktopApi();
