@@ -1,20 +1,12 @@
 import type { ProjectActionHandler } from '../../../types';
 
-import { DeleteContentDialog } from './delete-content-dialog';
-import { ImportAssetsDialog } from './import-assets-dialog';
+import { MODAL_CONFIG } from './dialogs';
 import type { ModalComponent, ModalPropsMap, ModalType } from './modal-types';
-import { NewContentDialog } from './new-content-dialog';
 
 type AppModalProps = {
   modalData: ModalPropsMap;
   onAction: ProjectActionHandler;
   type: ModalType;
-};
-
-const MODAL_CONFIG: { [Type in ModalType]: ModalComponent<Type> } = {
-  'delete-content': DeleteContentDialog,
-  'import-asset': ImportAssetsDialog,
-  'new-content': NewContentDialog
 };
 
 const AppModal = ({ modalData, onAction, type }: AppModalProps) => {

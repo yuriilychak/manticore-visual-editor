@@ -7,10 +7,10 @@ import ImageRounded from '@mui/icons-material/ImageRounded';
 import SearchRounded from '@mui/icons-material/SearchRounded';
 import { Alert, Box, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, MenuItem, Select, Stack, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Toolbar, Tooltip } from '@mui/material';
 
-import { AssetType } from '../../../../types';
+import { AssetType } from '../../../../../types';
 
-import { ImportAssets } from '../common';
-import type { ModalComponent, ModalPropsMap } from '../modal-types';
+import { ImportAssets } from '../../common';
+import type { ModalComponent, ModalPropsMap } from '../../modal-types';
 
 export type ImportAssetsDialogData = ModalPropsMap['import-asset'];
 

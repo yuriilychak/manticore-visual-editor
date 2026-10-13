@@ -6,12 +6,14 @@ import ImageIcon from '@mui/icons-material/Image';
 import WorkIcon from '@mui/icons-material/Work';
 
 import { AssetType } from '../../../types';
+
+import { ADD_FOLDER_SHORTCUT } from '../../keyboard-shortcuts';
 import type { ApplicationAction, WindowControls } from '../../types';
 
-import type { DeleteContentDialogData } from './delete-content-dialog';
-import type { ImportAssetsDialogData } from './import-assets-dialog';
 import { AtlasAddIcon, AtlasIcon, BundleAddIcon, BundleIcon, ImportIcon } from '../custom-icons';
-import { ADD_FOLDER_SHORTCUT } from '../../keyboard-shortcuts';
+
+import type { DeleteContentDialogData } from './dialogs/delete-content-dialog';
+import type { ImportAssetsDialogData } from './dialogs/import-assets-dialog';
 import { notifyUnavailableDesktopApi } from './helpers';
 import type { ModalType } from './modal-types';
 import { type ActionButtonConfig, ProjectContentDragType } from './types';

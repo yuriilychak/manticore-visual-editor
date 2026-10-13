@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { ASSET_TYPE_LOCALE_KEY } from '../../../../types';
+import { ASSET_TYPE_LOCALE_KEY } from '../../../../../types';
 
-import { NewContentValidation } from '../common';
-import type { NewContentStrategy, NewContentValues } from '../types';
+import { NewContentValidation } from '../../common';
+import type { NewContentStrategy, NewContentValues } from '../../types';
 
 const INITIAL_VALIDATION = new NewContentValidation();
 

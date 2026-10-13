@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
 
-import type { ModalComponent, ModalPropsMap } from '../modal-types';
+import type { ModalComponent, ModalPropsMap } from '../../modal-types';
 
 export type DeleteContentDialogData = ModalPropsMap['delete-content'];
 

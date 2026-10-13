@@ -3,9 +3,9 @@ import { memo } from 'react';
 import FolderOpenRounded from '@mui/icons-material/FolderOpenRounded';
 import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, InputAdornment, TextField, Tooltip } from '@mui/material';
 
-import { ASSET_TYPE_LOCALE_KEY } from '../../../../types';
+import { ASSET_TYPE_LOCALE_KEY } from '../../../../../types';
 
-import type { ModalComponent, ModalPropsMap } from '../modal-types';
+import type { ModalComponent, ModalPropsMap } from '../../modal-types';
 
 import { useNewContentDialog } from './useNewContentDialog';
 
