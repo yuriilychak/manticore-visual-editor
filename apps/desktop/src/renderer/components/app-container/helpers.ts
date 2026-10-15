@@ -1,10 +1,12 @@
 import type { ProjectContent } from '@manticore/project/types';
 
 import { AssetType } from '../../../types';
+
 import type { ProjectInfo } from '../../types';
-import type { ModalPropsMap } from './modal-types';
+
 import { PROJECT_ITEM_CONFIG } from './constants';
-import type { AppContainerState, ProjectTreeNode, ReducerActionHandler, VisibleProjectTreeItem } from './types';
+import type { ModalPropsMap } from './modal-types';
+import type { AppContainerState, ProjectTreeNode, VisibleProjectTreeItem } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
@@ -65,47 +67,47 @@ export const getNewContentState = (
   isOpen: boolean
 ): ModalPropsMap['new-content'] => ({ isOpen, strategy: strategies.get(assetType)!, type: 'new-content' });
 
-export const reducerAction = <Payload>(
-  handler: (prevState: AppContainerState, payload: Payload) => AppContainerState
-): ReducerActionHandler => (prevState, payload) => handler(prevState, payload as Payload);
-
 export const updateModalData = <Key extends keyof ModalPropsMap>(
   prevData: ModalPropsMap,
   value: ModalPropsMap[Key]
 ): ModalPropsMap => ({ ...prevData, [value.type]: value });
 
+const isExpandableItem = (id: number, contentById: ReadonlyMap<number, ProjectContent>, content: readonly ProjectContent[]) =>
+  contentById.has(id) && PROJECT_ITEM_CONFIG[contentById.get(id)!.type].expandable && content.some(({ parentId }) => parentId === id);
+
+const getProjectSelectionState = (
+  state: Pick<AppContainerState, 'selection' | 'selectionAnchor'>,
+  isCurrentProject: boolean,
+  createdItem?: ProjectContent
+) => {
+  if (createdItem) return { selection: [createdItem.id], selectionAnchor: createdItem.id };
+  return isCurrentProject ? { selection: state.selection, selectionAnchor: state.selectionAnchor } : { selection: [], selectionAnchor: null };
+};
+
 export const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
-  const previousProject = state.project;
+  const previousProject = state.projectProxy.project;
+  const isCurrentProject = previousProject?.path === project.path;
   const content = project.content ?? [];
   const contentById = new Map(content.map((item) => [item.id, item]));
-  const createdItem = previousProject?.path === project.path
-    ? content.find((item) => !previousProject.content?.some(({ id }) => id === item.id))
-    : undefined;
-  const createdItems = previousProject?.path === project.path
+  const bundleIds = content.reduce<number[]>((ids, { id, type }) => {
+    if (type === AssetType.Bundle) ids.push(id);
+    return ids;
+  }, []);
+  const createdItems = isCurrentProject
     ? content.filter((item) => !previousProject.content?.some(({ id }) => id === item.id))
     : [];
-  const validExpandedItemIds = state.expandedItemIds.filter((id) => {
-    const item = contentById.get(id);
-
-    return Boolean(item && PROJECT_ITEM_CONFIG[item.type].expandable && content.some((contentItem) => contentItem.parentId === id));
-  });
-  const expandedItemIds = createdItems.reduce<readonly number[]>((ids, { parentId }) => {
-    const parent = contentById.get(parentId);
-
-    return parent && PROJECT_ITEM_CONFIG[parent.type].expandable && !ids.includes(parentId)
-      ? ids.concat(parentId)
-      : ids;
-  }, validExpandedItemIds);
+  const createdItem = createdItems[0];
+  const createdParentIds = createdItems.map(({ parentId }) => parentId);
+  const expandedItemCandidates = state.expandedItemIds.concat(createdParentIds);
+  const expandedItemIds = expandedItemCandidates.filter((id) => isExpandableItem(id, contentById, content));
   state.projectProxy.setProject(project);
 
   return {
     ...state,
-    bundles: project.content?.filter((content) => content.type === AssetType.Bundle) ?? [],
+    bundleIds,
     contentById,
     expandedItemIds,
-    project,
-    selection: createdItem ? [createdItem.id] : previousProject?.path === project.path ? state.selection : [],
-    selectionAnchor: createdItem ? createdItem.id : previousProject?.path === project.path ? state.selectionAnchor : null
+    ...getProjectSelectionState(state, isCurrentProject, createdItem)
   };
 };
 

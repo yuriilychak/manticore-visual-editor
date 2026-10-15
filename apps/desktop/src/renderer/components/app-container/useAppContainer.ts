@@ -8,7 +8,7 @@ import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
 import { ContentAction } from './common';
-import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE, WORKING_SCREEN_REDUCER_ACTIONS } from './constants';
+import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
 
 const getSelectedProjectItem = (project: ProjectInfo, selection: readonly number[]) => {
@@ -19,6 +19,12 @@ const getSelectedProjectItem = (project: ProjectInfo, selection: readonly number
     : project.content?.find((item) => item.id === selectedId);
 };
 
+const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
+  typeof data === 'object' && data !== null
+  && typeof (data as { id?: unknown }).id === 'number'
+  && typeof (data as { isExtended?: unknown }).isExtended === 'boolean'
+  && typeof (data as { isRange?: unknown }).isRange === 'boolean';
+
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
   const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
@@ -28,10 +34,10 @@ export const useAppContainer = () => {
     expandedItemIds,
     modalData,
     notificationError,
-    project,
     projectProxy,
     selection
   } = state;
+  const project = projectProxy.project;
   const showNotification = useCallback(
     (error: NotificationError) => dispatch({ type: 'show-notification', payload: { error } }),
     []
@@ -88,8 +94,17 @@ export const useAppContainer = () => {
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
-      if (WORKING_SCREEN_REDUCER_ACTIONS.includes(action)) {
-        return dispatch({ type: action, payload: { assetType, data, id } });
+      switch (action) {
+        case 'select':
+          if (!isSelectionData(data)) return;
+          return dispatch({ type: action, payload: { assetType, data, id } });
+        case 'open-delete-modal':
+          return dispatch({ type: action, payload: { assetType, data, id } });
+        case 'selection-cleared':
+        case 'close-delete-modal':
+        case 'close-new-content-dialog':
+        case 'close-import-assets-dialog':
+          return dispatch({ type: action });
       }
 
       const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));

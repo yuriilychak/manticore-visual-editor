@@ -4,9 +4,9 @@ import { AssetType } from '../../../../types';
 import { appContainerReducer, createInitialAppContainerState } from '../appContainerReducer';
 
 describe('appContainerReducer selection', () => {
-  const createState = () => ({
-    ...createInitialAppContainerState(),
-    project: {
+  const createState = () => {
+    const state = createInitialAppContainerState();
+    state.projectProxy.setProject({
       content: [
         { id: 1, name: '01', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
         { id: 2, name: '02', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
@@ -14,8 +14,9 @@ describe('appContainerReducer selection', () => {
       ],
       name: 'Project',
       path: '/tmp/project'
-    }
-  });
+    });
+    return state;
+  };
 
   test('selects an inclusive Shift range from the selection anchor', () => {
     const initialState = createState();
