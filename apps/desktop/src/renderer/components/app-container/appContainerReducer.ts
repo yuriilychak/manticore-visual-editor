@@ -4,7 +4,6 @@ import { DEFAULT_DELETE_CONTENT, DEFAULT_IMPORT_ASSETS_DIALOG, LAST_INDEX, Notif
 import {
   getDeletableContent,
   getNewContentState,
-  getProjectTreeRootNodes,
   getVisibleProjectTreeItems,
   projectChanged,
   updateModalData
@@ -19,7 +18,9 @@ export const createInitialAppContainerState = (): AppContainerState => {
     (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
     new Map()
   );
+  const projectTree = { rootFolder: undefined, rootNodes: [] };
   return {
+    activeModalType: '',
     bundleIds: [],
     contentById: new Map(),
     contentStrategies,
@@ -31,9 +32,11 @@ export const createInitialAppContainerState = (): AppContainerState => {
       'new-content': getNewContentState(contentStrategies, AssetType.ProjectFolder, false)
     },
     notificationError: NotificationError.None,
+    projectTree,
     projectProxy,
     selectionAnchor: null,
-    selection: []
+    selection: [],
+    visibleProjectItems: []
   };
 };
 
@@ -46,12 +49,14 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'create-project':
     return {
     ...state,
+    activeModalType: 'new-content',
     modalData: updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.Project, true))
     };
   case 'delete-completed': {
     const { error } = action.payload;
     return {
     ...state,
+    activeModalType: '',
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notificationError: error ?? state.notificationError,
     selection: [],
@@ -65,6 +70,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return items.length
       ? {
           ...state,
+          activeModalType: 'delete-content',
           modalData: updateModalData(state.modalData, { isOpen: true, items, type: 'delete-content' }),
           selection: items.map((item) => item.id)
         }
@@ -73,15 +79,18 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'close-delete-modal':
     return {
     ...state,
+    activeModalType: '',
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT)
     };
   case 'expanded-item-toggled': {
     const id = action.payload;
+    const expandedItemIds = state.expandedItemIds.includes(id)
+      ? state.expandedItemIds.filter((expandedId) => expandedId !== id)
+      : state.expandedItemIds.concat(id);
     return {
     ...state,
-    expandedItemIds: state.expandedItemIds.includes(id)
-      ? state.expandedItemIds.filter((expandedId) => expandedId !== id)
-      : state.expandedItemIds.concat(id)
+    expandedItemIds,
+    visibleProjectItems: getVisibleProjectTreeItems(state.projectTree.rootNodes, new Set(expandedItemIds))
     };
   }
   case 'open-import-assets': {
@@ -94,6 +103,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return selectedBundle
       ? {
           ...state,
+          activeModalType: 'import-asset',
           modalData: updateModalData(state.modalData, {
             bundleId: selectedBundle.id,
             bundles,
@@ -107,6 +117,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'close-import-assets-dialog':
     return {
     ...state,
+    activeModalType: '',
     modalData: updateModalData(state.modalData, DEFAULT_IMPORT_ASSETS_DIALOG)
     };
   case 'import-assets-completed': {
@@ -130,7 +141,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       strategy.setFields(data.fields);
       const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, data.assetType, true));
 
-      return { ...state, modalData };
+      return { ...state, activeModalType: 'new-content', modalData };
     } catch {
       return { ...state, notificationError: NotificationError.ContentConfiguration };
     }
@@ -138,7 +149,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'close-new-content-dialog': {
     state.modalData['new-content'].strategy.setField('parentPath', '');
     const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.ProjectFolder, false));
-    return { ...state, modalData };
+    return { ...state, activeModalType: '', modalData };
   }
   case 'show-notification': {
     const { error: notificationError } = action.payload;
@@ -159,9 +170,8 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return { ...state, selection: [], selectionAnchor: null };
   case 'select': {
     const { id, isExtended, isRange } = action.payload.data;
-    const { rootNodes } = getProjectTreeRootNodes(state.projectProxy.project?.content ?? []);
     const rangeIds = isRange
-      ? [0, ...getVisibleProjectTreeItems(rootNodes, new Set(state.expandedItemIds)).map(({ node }) => node.item.id)]
+      ? [0, ...state.visibleProjectItems.map(({ node }) => node.item.id)]
       : [];
     const isRangeSelection = rangeIds.includes(id);
     const anchor = state.selectionAnchor ?? state.selection.at(LAST_INDEX) ?? id;

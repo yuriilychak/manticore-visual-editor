@@ -10,7 +10,7 @@ import type { ApplicationAction, ProjectInfo, RestoredProject } from '../../type
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import type { ImportAssetResult } from './common';
 import type { NotificationError } from './constants';
-import type { ModalPropsMap } from './modal-types';
+import type { ModalPropsMap, ModalType } from './modal-types';
 import type { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy, OpenNewContentData } from './strategies';
 
@@ -53,6 +53,11 @@ export type VisibleProjectTreeItem = {
   node: ProjectTreeNode;
 };
 
+export type ProjectTree = {
+  rootFolder: ProjectTreeNode | undefined;
+  rootNodes: readonly ProjectTreeNode[];
+};
+
 export interface NewContentStrategy {
   contentType: AssetType;
   create: (values: NewContentValues) => Promise<void>;
@@ -61,6 +66,7 @@ export interface NewContentStrategy {
 }
 
 export type AppContainerState = {
+  activeModalType: ModalType | '';
   bundleIds: readonly number[];
   contentById: ReadonlyMap<number, ProjectContent>;
   contentStrategies: ReadonlyMap<AssetType, ContentStrategy>;
@@ -68,9 +74,11 @@ export type AppContainerState = {
   expandedItemIds: readonly number[];
   modalData: ModalPropsMap;
   notificationError: NotificationError;
+  projectTree: ProjectTree;
   projectProxy: ProjectProxy;
   selectionAnchor: number | null;
   selection: readonly number[];
+  visibleProjectItems: readonly VisibleProjectTreeItem[];
 };
 
 export type WorkingScreenActionPayload = { assetType: AssetType; data?: unknown; id: number };

@@ -29,6 +29,7 @@ export const useAppContainer = () => {
   const { i18n } = useTranslation();
   const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
   const {
+    activeModalType,
     contentStrategies,
     disabledItemIds,
     expandedItemIds,
@@ -38,6 +39,7 @@ export const useAppContainer = () => {
     selection
   } = state;
   const project = projectProxy.project;
+  const selectedIdSet = useMemo(() => new Set(selection), [selection]);
   const showNotification = useCallback(
     (error: NotificationError) => dispatch({ type: 'show-notification', payload: { error } }),
     []
@@ -135,11 +137,13 @@ export const useAppContainer = () => {
     onAction: handleWorkingScreenAction,
     onToggleExpanded,
     project,
-    selection
-  }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selection]);
+    selection,
+    selectedIdSet
+  }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selectedIdSet, selection]);
 
   const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
   return {
+    activeModalType,
     disabledItemIds,
     handleAction,
     handleCloseNotification,

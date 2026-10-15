@@ -80,11 +80,13 @@ export default class Parallel {
     }
 
     public terminate(): void {
+        const onError = this.#onError;
         for (let i = 0; i < this.#threads.length; ++i) {
             this.#threads[i].terminate();
         }
 
         this.#reset(true);
+        onError(new ErrorEvent('error', { message: 'Operation cancelled' }));
     }
 
     public get threadCount(): number {

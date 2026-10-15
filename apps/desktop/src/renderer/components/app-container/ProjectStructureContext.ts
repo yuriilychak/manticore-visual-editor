@@ -9,6 +9,7 @@ type ProjectStructureContextValue = {
   onToggleExpanded: (id: number) => void;
   project: ProjectInfo | null;
   selection: readonly number[];
+  selectedIdSet?: ReadonlySet<number>;
   expandedItemIds: readonly number[];
 };
 

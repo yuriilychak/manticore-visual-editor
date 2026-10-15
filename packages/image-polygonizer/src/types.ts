@@ -30,6 +30,7 @@ export interface ImageConfig extends ImageMetadata {
 export type ImageActionPayload<T = any> = { id: string; data?: T };
 
 export interface ImagePolygonizerInstance {
+    cancel(): void;
     init(): Promise<void>;
     importImages(files: FileList): Promise<ImageConfig[]>;
     polygonize(polygonizeImages: ImageConfig[]): Promise<ImageActionPayload<Uint16Array>[]>;

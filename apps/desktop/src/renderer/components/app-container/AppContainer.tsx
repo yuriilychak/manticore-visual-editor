@@ -3,7 +3,7 @@ import type { FC } from 'react';
 import { AppShell } from './app-shell';
 import { ApplicationActionContext } from './ApplicationActionContext';
 import AppModal from './AppModal';
-import { MODAL_TYPES, WINDOW_CONTROLS } from './constants';
+import { WINDOW_CONTROLS } from './constants';
 import NotificationSnackbar from './NotificationSnackbar';
 import { ProjectStructureContext } from './ProjectStructureContext';
 import { Renderer } from './renderer';
@@ -11,6 +11,7 @@ import { useAppContainer } from './useAppContainer';
 
 const AppContainer: FC = () => {
   const {
+    activeModalType,
     disabledItemIds,
     handleAction,
     handleWorkingScreenAction,
@@ -35,9 +36,7 @@ const AppContainer: FC = () => {
           </ProjectStructureContext.Provider>
         </ApplicationActionContext.Provider>
       </AppShell>
-      {MODAL_TYPES.map((type) => (
-        <AppModal key={type} modalData={modalData} onAction={handleWorkingScreenAction} type={type} />
-      ))}
+      <AppModal modalData={modalData} onAction={handleWorkingScreenAction} type={activeModalType} />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />
     </>
   );

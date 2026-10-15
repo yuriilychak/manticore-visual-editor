@@ -12,6 +12,10 @@ export default class ImagePolygonizer implements ImagePolygonizerInstance {
         this.#parallel = new Parallel();
     }
 
+    cancel(): void {
+        this.#parallel.terminate();
+    }
+
     async init(): Promise<void> {
         if (!this.#isInit) {
             this.#isInit = true;

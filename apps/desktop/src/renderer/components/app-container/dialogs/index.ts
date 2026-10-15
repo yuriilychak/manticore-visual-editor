@@ -1,8 +1,11 @@
+import { lazy } from 'react';
+
 import type { ModalComponent, ModalType } from '../modal-types';
 
 import { DeleteContentDialog } from './delete-content-dialog';
-import { ImportAssetsDialog } from './import-assets-dialog';
 import { NewContentDialog } from './new-content-dialog';
+
+const ImportAssetsDialog = lazy(() => import('./import-assets-dialog/ImportAssetsDialog'));
 
 export const MODAL_CONFIG: { [Type in ModalType]: ModalComponent<Type> } = {
   'delete-content': DeleteContentDialog,

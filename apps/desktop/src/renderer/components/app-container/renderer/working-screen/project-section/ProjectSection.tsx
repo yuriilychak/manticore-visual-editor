@@ -1,13 +1,14 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, useCallback, useEffect, useMemo, type MouseEvent, useRef, useState } from 'react';
+import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
-import { useProjectStructure } from '../../../ProjectStructureContext';
 import { getProjectTreeRootNodes, getVisibleProjectTreeItems } from '../../../helpers';
+import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
+
 import { ProjectActionsMenu } from './actions-menu';
 import { DISABLED_ACTIONS } from './constants';
 import ProjectItem, { DEFAULT_PROJECT_CONTEXT_MENU, type ProjectContextMenu } from './ProjectItem';
@@ -15,7 +16,7 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, onToggleExpanded, project, selection } = useProjectStructure();
+  const { expandedItemIds, onAction, onToggleExpanded, project, selection, selectedIdSet } = useProjectStructure();
   const scrollElementRef = useRef<HTMLDivElement>(null);
   const getScrollElement = useCallback(() => scrollElementRef.current, []);
   const [editingId, setEditingId] = useState(-1);
@@ -25,6 +26,8 @@ const ProjectSection: FC = () => {
     [project?.content]
   );
   const expandedItemIdSet = useMemo(() => new Set(expandedItemIds), [expandedItemIds]);
+  const derivedSelectedIdSet = useMemo(() => new Set(selection), [selection]);
+  const selectedIds = selectedIdSet ?? derivedSelectedIdSet;
   const visibleItems = useMemo(
     () => getVisibleProjectTreeItems(rootNodes, expandedItemIdSet),
     [expandedItemIdSet, rootNodes]
@@ -75,7 +78,7 @@ const ProjectSection: FC = () => {
         id={0}
         isEditing={editingId === 0}
         isContextMenuOpen={contextMenu.isOpen && contextMenu.id === 0}
-        isSelected={selection.includes(0)}
+        isSelected={selectedIds.has(0)}
         name={name}
         onAction={onAction}
         onEditingChange={setEditingId}
@@ -100,7 +103,7 @@ const ProjectSection: FC = () => {
                 isExpanded={expandedItemIdSet.has(item.id)}
                 isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}
-                isSelected={selection.includes(item.id)}
+                isSelected={selectedIds.has(item.id)}
                 item={item}
                 key={item.id}
                 onAction={onAction}

@@ -1,3 +1,4 @@
+import { useVirtualizer } from '@tanstack/react-virtual';
 import { type ImageConfig, ImagePolygonizer } from 'image-polygonizer';
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,6 +24,8 @@ const getAssetName = (filePath: string) => {
   return extension ? fileName.slice(0, -(extension.length + 1)) : fileName;
 };
 const IMAGE_EXTENSIONS = new Set(['avif', 'bmp', 'gif', 'jpeg', 'jpg', 'png', 'svg', 'webp']);
+const IMAGE_PROCESSING_BATCH_SIZE = 16;
+const TABLE_ROW_HEIGHT = 52;
 const isImage = (filePath: string) => IMAGE_EXTENSIONS.has(getFileExtension(filePath));
 const toFileUrl = (filePath: string) => encodeURI(`file://${filePath.replaceAll('\\', '/')}`).replaceAll('#', '%23').replaceAll('?', '%3F');
 
@@ -38,6 +41,7 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
   const [importProgress, setImportProgress] = useState({ completed: 0, total: 0 });
   const imageConfigs = useRef(new Map<string, ImageConfig>());
   const previewUrls = useRef(new Map<string, string>());
+  const tableContainerRef = useRef<HTMLDivElement>(null);
   const imagePolygonizer = useMemo(() => new ImagePolygonizer(), []);
 
   const clearImportedImages = useCallback(() => {
@@ -62,11 +66,20 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
   }, [bundleId, clearImportedImages, isOpen]);
 
   useEffect(() => clearImportedImages, [clearImportedImages]);
+  useEffect(() => () => imagePolygonizer.cancel(), [imagePolygonizer]);
 
   const visibleFilePaths = useMemo(
     () => filePaths.filter((filePath) => getFileName(filePath).toLocaleLowerCase().includes(query.trim().toLocaleLowerCase())),
     [filePaths, query]
   );
+  const getTableScrollElement = useCallback(() => tableContainerRef.current, []);
+  const fileVirtualizer = useVirtualizer({
+    count: visibleFilePaths.length,
+    estimateSize: () => TABLE_ROW_HEIGHT,
+    getScrollElement: getTableScrollElement,
+    overscan: 8
+  });
+  const processingImagePathSet = useMemo(() => new Set(processingImagePaths), [processingImagePaths]);
   const handleSelectFiles = async () => {
     setSelectingFiles(true);
     let selectedFilePaths: string[] | undefined;
@@ -85,20 +98,23 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
 
     setProcessingImagePaths((current) => Array.from(new Set([...current, ...imagePaths])));
     try {
-      const loadedImages = await window.manticore.loadImportImages(imagePaths);
-      const files = loadedImages.map(({ content, name, type }) => new File([content], name, { type }));
-      const imageConfigsByPath = await imagePolygonizer.importImages(files as unknown as FileList);
-      const previews = imageConfigsByPath.map((image, index) => ({
-        image,
-        path: loadedImages[index].path,
-        url: image.preview ? URL.createObjectURL(new Blob([new Uint8Array(image.preview)], { type: 'image/png' })) : undefined
-      }));
+      for (let start = 0; start < imagePaths.length; start += IMAGE_PROCESSING_BATCH_SIZE) {
+        const batchPaths = imagePaths.slice(start, start + IMAGE_PROCESSING_BATCH_SIZE);
+        const loadedImages = await window.manticore.loadImportImages(batchPaths);
+        const files = loadedImages.map(({ content, name, type }) => new File([content], name, { type }));
+        const imageConfigsByPath = await imagePolygonizer.importImages(files as unknown as FileList);
+        const previews = imageConfigsByPath.map((image, index) => ({
+          image,
+          path: loadedImages[index].path,
+          url: image.preview ? URL.createObjectURL(new Blob([new Uint8Array(image.preview)], { type: 'image/png' })) : undefined
+        }));
 
-      previews.forEach(({ image, path, url }) => {
-        imageConfigs.current.set(path, image);
-        if (url) previewUrls.current.set(path, url);
-      });
-      setImagePreviewUrls((current) => ({ ...current, ...Object.fromEntries(previews.flatMap(({ path, url }) => url ? [[path, url]] : [])) }));
+        previews.forEach(({ image, path, url }) => {
+          imageConfigs.current.set(path, image);
+          if (url) previewUrls.current.set(path, url);
+        });
+        setImagePreviewUrls((current) => ({ ...current, ...Object.fromEntries(previews.flatMap(({ path, url }) => url ? [[path, url]] : [])) }));
+      }
     } catch {
       // The original file URL remains available as a fallback preview.
     } finally {
@@ -174,19 +190,21 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
               {t('importAssets.addFiles')}
             </Button>
           </Toolbar>
-          <TableContainer sx={{ bgcolor: 'background.default', height: '30vh' }}>
+          <TableContainer ref={tableContainerRef} sx={{ bgcolor: 'background.default', height: '30vh' }}>
             <Table size="small" stickyHeader>
               <TableHead><TableRow><TableCell aria-label={t('importAssets.preview')} sx={{ width: 48 }} /><TableCell>{t('importAssets.fileName')}</TableCell><TableCell>{t('importAssets.fileType')}</TableCell><TableCell>{t('importAssets.asset')}</TableCell><TableCell align="right">{t('importAssets.actions')}</TableCell></TableRow></TableHead>
-              <TableBody>
-              {visibleFilePaths.map((filePath) => (
-                <TableRow key={filePath}>
+              <TableBody sx={{ display: 'block', height: fileVirtualizer.getTotalSize(), position: 'relative' }}>
+              {fileVirtualizer.getVirtualItems().map((virtualItem) => {
+                const filePath = visibleFilePaths[virtualItem.index];
+                return (
+                <TableRow key={filePath} sx={{ display: 'table', position: 'absolute', tableLayout: 'fixed', transform: `translateY(${virtualItem.start}px)`, width: '100%' }}>
                     <TableCell>
                       <Tooltip
                         disableHoverListener={!isImage(filePath)}
                         slotProps={{ tooltip: { sx: { bgcolor: 'background.paper', maxWidth: 'none', p: 1 } } }}
                         title={isImage(filePath) ? <Box alt={getFileName(filePath)} component="img" src={imagePreviewUrls[filePath] ?? toFileUrl(filePath)} sx={{ display: 'block', maxHeight: 256, maxWidth: 256 }} /> : ''}
                       >
-                        {processingImagePaths.includes(filePath)
+                        {processingImagePathSet.has(filePath)
                           ? <CircularProgress aria-label={`${t('importAssets.preview')} ${getFileName(filePath)}`} size={18} />
                           : <ImageRounded color={isImage(filePath) ? 'primary' : 'disabled'} fontSize="small" />}
                       </Tooltip>
@@ -197,8 +215,9 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
                     <TableCell align="right">
                       <Tooltip title={t('importAssets.remove')}><IconButton aria-label={`${t('importAssets.remove')} ${getFileName(filePath)}`} disabled={isSubmitting} onClick={() => handleRemoveFile(filePath)} size="small"><DeleteOutlineRounded fontSize="small" /></IconButton></Tooltip>
                     </TableCell>
-                  </TableRow>
-                ))}
+                </TableRow>
+                );
+              })}
                 {!visibleFilePaths.length && <TableRow><TableCell colSpan={5}>{t('importAssets.noAssets')}</TableCell></TableRow>}
               </TableBody>
             </Table>

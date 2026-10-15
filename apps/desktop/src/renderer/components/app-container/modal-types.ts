@@ -1,5 +1,5 @@
 import type { ProjectContent } from '@manticore/project/types';
-import type { FC } from 'react';
+import type { ComponentType } from 'react';
 
 import type { ProjectActionHandler } from '../../../types';
 
@@ -27,4 +27,4 @@ export type ModalPropsMap = {
 };
 
 export type ModalType = keyof ModalPropsMap;
-export type ModalComponent<Type extends ModalType> = FC<{ onAction: ProjectActionHandler } & ModalPropsMap[Type]>;
+export type ModalComponent<Type extends ModalType> = ComponentType<{ onAction: ProjectActionHandler } & ModalPropsMap[Type]>;

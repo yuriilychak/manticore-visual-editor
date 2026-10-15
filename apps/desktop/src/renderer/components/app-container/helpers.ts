@@ -6,7 +6,7 @@ import type { ProjectInfo } from '../../types';
 
 import { PROJECT_ITEM_CONFIG } from './constants';
 import type { ModalPropsMap } from './modal-types';
-import type { AppContainerState, ProjectTreeNode, VisibleProjectTreeItem } from './types';
+import type { AppContainerState, ProjectTree, ProjectTreeNode, VisibleProjectTreeItem } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
@@ -49,7 +49,7 @@ export const getProjectTree = (content: ProjectContent[]): ProjectTreeNode[] => 
   return roots;
 };
 
-export const getProjectTreeRootNodes = (content: ProjectContent[]) => {
+export const getProjectTreeRootNodes = (content: ProjectContent[]): ProjectTree => {
   const projectTree = getProjectTree(content);
   const rootFolder = projectTree.find(
     (node) => node.item.type === AssetType.ProjectFolder && node.item.parentId === 0 && !node.item.name
@@ -100,6 +100,8 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
   const createdParentIds = createdItems.map(({ parentId }) => parentId);
   const expandedItemCandidates = state.expandedItemIds.concat(createdParentIds);
   const expandedItemIds = expandedItemCandidates.filter((id) => isExpandableItem(id, contentById, content));
+  const projectTree = getProjectTreeRootNodes(content);
+  const visibleProjectItems = getVisibleProjectTreeItems(projectTree.rootNodes, new Set(expandedItemIds));
   state.projectProxy.setProject(project);
 
   return {
@@ -107,6 +109,8 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
     bundleIds,
     contentById,
     expandedItemIds,
+    projectTree,
+    visibleProjectItems,
     ...getProjectSelectionState(state, isCurrentProject, createdItem)
   };
 };
