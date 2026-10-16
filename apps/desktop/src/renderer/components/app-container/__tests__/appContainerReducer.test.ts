@@ -64,3 +64,21 @@ describe('appContainerReducer selection', () => {
     expect(rangeSelectedState.selection).toEqual([1, 3, 2]);
   });
 });
+
+describe('appContainerReducer project proxy', () => {
+  test('indexes content and bundle IDs in the project proxy', () => {
+    const state = appContainerReducer(createInitialAppContainerState(), { type: 'project-changed', payload: {
+      content: [
+        { id: 1, name: 'Bundle', parentId: 0, type: AssetType.Bundle, version: 0 },
+        { id: 2, name: 'Image', parentId: 1, type: AssetType.Image, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } });
+
+    expect(state.projectProxy.bundles.map(({ id }) => id)).toEqual([1]);
+    expect(state.projectProxy.getChildrenIds(0)).toEqual([1]);
+    expect(state.projectProxy.getSelectedBundleId(-1)).toBe(1);
+    expect(state.projectProxy.getContent(2)?.name).toBe('Image');
+  });
+});

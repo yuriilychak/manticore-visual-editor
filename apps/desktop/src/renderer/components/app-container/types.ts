@@ -43,19 +43,9 @@ export type ActionButtonConfig = {
   shortcut?: ShortcutLabels;
 };
 
-export type ProjectTreeNode = {
-  children: ProjectTreeNode[];
-  item: ProjectContent;
-};
-
-export type VisibleProjectTreeItem = {
+export type VisibleProjectItem = {
   depth: number;
-  node: ProjectTreeNode;
-};
-
-export type ProjectTree = {
-  rootFolder: ProjectTreeNode | undefined;
-  rootNodes: readonly ProjectTreeNode[];
+  id: number;
 };
 
 export interface NewContentStrategy {
@@ -67,18 +57,15 @@ export interface NewContentStrategy {
 
 export type AppContainerState = {
   activeModalType: ModalType | '';
-  bundleIds: readonly number[];
-  contentById: ReadonlyMap<number, ProjectContent>;
   contentStrategies: ReadonlyMap<AssetType, ContentStrategy>;
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: readonly number[];
   modalData: ModalPropsMap;
   notificationError: NotificationError;
-  projectTree: ProjectTree;
   projectProxy: ProjectProxy;
   selectionAnchor: number | null;
   selection: readonly number[];
-  visibleProjectItems: readonly VisibleProjectTreeItem[];
+  visibleProjectItemIds: readonly number[];
 };
 
 export type WorkingScreenActionPayload = { assetType: AssetType; data?: unknown; id: number };
@@ -96,7 +83,7 @@ export type AppContainerAction =
   | PayloadAction<'expanded-item-toggled', number>
   | PayloadAction<'import-assets-completed', readonly ImportAssetResult[]>
   | PayloadAction<'open-delete-modal', WorkingScreenActionPayload>
-  | PayloadAction<'open-import-assets', { bundleId: number | null }>
+  | PayloadAction<'open-import-assets', { bundleId: number }>
   | PayloadAction<'open-new-content', OpenNewContentData>
   | PayloadAction<'project-changed', ProjectInfo>
   | PayloadAction<'restore-project-completed', RestoredProject>

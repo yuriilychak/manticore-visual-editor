@@ -4,10 +4,13 @@ import type { ProjectActionHandler } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
+import type { ProjectProxy } from './ProjectProxy';
+
 type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
   onToggleExpanded: (id: number) => void;
   project: ProjectInfo | null;
+  projectProxy: ProjectProxy;
   selection: readonly number[];
   selectedIdSet?: ReadonlySet<number>;
   expandedItemIds: readonly number[];

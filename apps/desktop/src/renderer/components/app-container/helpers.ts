@@ -6,60 +6,31 @@ import type { ProjectInfo } from '../../types';
 
 import { PROJECT_ITEM_CONFIG } from './constants';
 import type { ModalPropsMap } from './modal-types';
-import type { AppContainerState, ProjectTree, ProjectTreeNode, VisibleProjectTreeItem } from './types';
+import type { ProjectProxy } from './ProjectProxy';
+import type { AppContainerState, VisibleProjectItem } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
-export const getVisibleProjectTreeItems = (
-  nodes: readonly ProjectTreeNode[],
+export const getVisibleProjectItems = (
+  projectProxy: ProjectProxy,
   expandedItemIds: ReadonlySet<number>,
+  parentId = 0,
   depth = 0
-): VisibleProjectTreeItem[] => {
-  const items: VisibleProjectTreeItem[] = [];
+): VisibleProjectItem[] => {
+  const items: VisibleProjectItem[] = [];
 
-  for (const node of nodes) {
-    items.push({ depth, node });
-    if (expandedItemIds.has(node.item.id)) items.push(...getVisibleProjectTreeItems(node.children, expandedItemIds, depth + 1));
+  for (const id of projectProxy.getChildrenIds(parentId)) {
+    items.push({ depth, id });
+    if (expandedItemIds.has(id)) items.push(...getVisibleProjectItems(projectProxy, expandedItemIds, id, depth + 1));
   }
 
   return items;
 };
 
-const isFolder = (item: ProjectContent) => item.type === AssetType.ProjectFolder || item.type === AssetType.BundleFolder;
-const compareTreeNodes = (left: ProjectTreeNode, right: ProjectTreeNode) => {
-  const folderOrder = Number(isFolder(right.item)) - Number(isFolder(left.item));
-  if (folderOrder) return folderOrder;
-
-  return left.item.name.localeCompare(right.item.name, undefined, { numeric: true, sensitivity: 'base' }) || left.item.id - right.item.id;
-};
-
-export const getProjectTree = (content: ProjectContent[]): ProjectTreeNode[] => {
-  const nodes = new Map<number, ProjectTreeNode>(content.map((item) => [item.id, { children: [], item }]));
-  const roots: ProjectTreeNode[] = [];
-
-  for (const node of nodes.values()) {
-    const parent = nodes.get(node.item.parentId);
-    if (!parent || parent === node) roots.push(node);
-    else parent.children.push(node);
-  }
-
-  roots.sort(compareTreeNodes);
-  for (const node of nodes.values()) node.children.sort(compareTreeNodes);
-
-  return roots;
-};
-
-export const getProjectTreeRootNodes = (content: ProjectContent[]): ProjectTree => {
-  const projectTree = getProjectTree(content);
-  const rootFolder = projectTree.find(
-    (node) => node.item.type === AssetType.ProjectFolder && node.item.parentId === 0 && !node.item.name
-  );
-
-  return {
-    rootFolder,
-    rootNodes: rootFolder ? rootFolder.children.concat(projectTree.filter((node) => node !== rootFolder)) : projectTree
-  };
-};
+export const getVisibleProjectItemIds = (
+  projectProxy: ProjectProxy,
+  expandedItemIds: ReadonlySet<number>
+) => getVisibleProjectItems(projectProxy, expandedItemIds).map(({ id }) => id);
 
 export const getNewContentState = (
   strategies: AppContainerState['contentStrategies'],
@@ -72,8 +43,10 @@ export const updateModalData = <Key extends keyof ModalPropsMap>(
   value: ModalPropsMap[Key]
 ): ModalPropsMap => ({ ...prevData, [value.type]: value });
 
-const isExpandableItem = (id: number, contentById: ReadonlyMap<number, ProjectContent>, content: readonly ProjectContent[]) =>
-  contentById.has(id) && PROJECT_ITEM_CONFIG[contentById.get(id)!.type].expandable && content.some(({ parentId }) => parentId === id);
+const isExpandableItem = (id: number, projectProxy: ProjectProxy) => {
+  const item = projectProxy.getContent(id);
+  return !!item && PROJECT_ITEM_CONFIG[item.type].expandable && projectProxy.hasChildren(id);
+};
 
 const getProjectSelectionState = (
   state: Pick<AppContainerState, 'selection' | 'selectionAnchor'>,
@@ -88,42 +61,33 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
   const previousProject = state.projectProxy.project;
   const isCurrentProject = previousProject?.path === project.path;
   const content = project.content ?? [];
-  const contentById = new Map(content.map((item) => [item.id, item]));
-  const bundleIds = content.reduce<number[]>((ids, { id, type }) => {
-    if (type === AssetType.Bundle) ids.push(id);
-    return ids;
-  }, []);
   const createdItems = isCurrentProject
     ? content.filter((item) => !previousProject.content?.some(({ id }) => id === item.id))
     : [];
   const createdItem = createdItems[0];
   const createdParentIds = createdItems.map(({ parentId }) => parentId);
   const expandedItemCandidates = state.expandedItemIds.concat(createdParentIds);
-  const expandedItemIds = expandedItemCandidates.filter((id) => isExpandableItem(id, contentById, content));
-  const projectTree = getProjectTreeRootNodes(content);
-  const visibleProjectItems = getVisibleProjectTreeItems(projectTree.rootNodes, new Set(expandedItemIds));
   state.projectProxy.setProject(project);
+  const expandedItemIds = expandedItemCandidates.filter((id) => isExpandableItem(id, state.projectProxy));
+  const visibleProjectItemIds = getVisibleProjectItemIds(state.projectProxy, new Set(expandedItemIds));
 
   return {
     ...state,
-    bundleIds,
-    contentById,
     expandedItemIds,
-    projectTree,
-    visibleProjectItems,
+    visibleProjectItemIds,
     ...getProjectSelectionState(state, isCurrentProject, createdItem)
   };
 };
 
 export const getDeletableContent = (state: AppContainerState, assetType: AssetType, id: number) => {
   const selectedIds = state.selection.includes(id) ? state.selection : [id];
-  const { contentById } = state;
+  const { projectProxy } = state;
   const selectedIdSet = new Set(selectedIds);
-  const selectedItem = contentById.get(id);
+  const selectedItem = projectProxy.getContent(id);
   if (!selectedItem || selectedItem.type !== assetType) return [];
 
   return selectedIds.reduce<typeof selectedItem[]>((items, selectedId) => {
-    const item = contentById.get(selectedId);
+    const item = projectProxy.getContent(selectedId);
     if (!item || item.type === AssetType.Project || (item.type === AssetType.ProjectFolder && item.parentId === 0)) {
       return items;
     }
@@ -131,7 +95,7 @@ export const getDeletableContent = (state: AppContainerState, assetType: AssetTy
     let parentId = item.parentId;
     while (parentId) {
       if (selectedIdSet.has(parentId)) return items;
-      parentId = contentById.get(parentId)?.parentId ?? 0;
+      parentId = projectProxy.getContent(parentId)?.parentId ?? 0;
     }
 
     items.push(item);

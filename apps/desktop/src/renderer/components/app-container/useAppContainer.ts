@@ -137,6 +137,7 @@ export const useAppContainer = () => {
     onAction: handleWorkingScreenAction,
     onToggleExpanded,
     project,
+    projectProxy,
     selection,
     selectedIdSet
   }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selectedIdSet, selection]);

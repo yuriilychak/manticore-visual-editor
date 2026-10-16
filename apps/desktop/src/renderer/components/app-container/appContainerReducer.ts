@@ -1,10 +1,10 @@
 import { AssetType } from '../../../types';
 
-import { DEFAULT_DELETE_CONTENT, DEFAULT_IMPORT_ASSETS_DIALOG, LAST_INDEX, NotificationError } from './constants';
+import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NO_BUNDLE_ID, NotificationError } from './constants';
 import {
   getDeletableContent,
   getNewContentState,
-  getVisibleProjectTreeItems,
+  getVisibleProjectItemIds,
   projectChanged,
   updateModalData
 } from './helpers';
@@ -18,25 +18,21 @@ export const createInitialAppContainerState = (): AppContainerState => {
     (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
     new Map()
   );
-  const projectTree = { rootFolder: undefined, rootNodes: [] };
   return {
     activeModalType: '',
-    bundleIds: [],
-    contentById: new Map(),
     contentStrategies,
     disabledItemIds: [],
     expandedItemIds: [],
     modalData: {
       'delete-content': DEFAULT_DELETE_CONTENT,
-      'import-asset': DEFAULT_IMPORT_ASSETS_DIALOG,
+      'import-asset': getDefaultImportAssetsDialog(projectProxy),
       'new-content': getNewContentState(contentStrategies, AssetType.ProjectFolder, false)
     },
     notificationError: NotificationError.None,
-    projectTree,
     projectProxy,
     selectionAnchor: null,
     selection: [],
-    visibleProjectItems: []
+    visibleProjectItemIds: []
   };
 };
 
@@ -90,25 +86,23 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return {
     ...state,
     expandedItemIds,
-    visibleProjectItems: getVisibleProjectTreeItems(state.projectTree.rootNodes, new Set(expandedItemIds))
+    visibleProjectItemIds: getVisibleProjectItemIds(state.projectProxy, new Set(expandedItemIds))
     };
   }
   case 'open-import-assets': {
     const { bundleId } = action.payload;
-    const bundles = state.bundleIds.map((id) => state.contentById.get(id)!);
-    const selectedBundle = bundleId !== null && state.bundleIds.includes(bundleId)
-      ? state.contentById.get(bundleId)!
-      : bundles[0];
+    const { projectProxy } = state;
+    const selectedBundleId = projectProxy.getSelectedBundleId(bundleId);
 
-    return selectedBundle
+    return selectedBundleId !== NO_BUNDLE_ID
       ? {
           ...state,
           activeModalType: 'import-asset',
           modalData: updateModalData(state.modalData, {
-            bundleId: selectedBundle.id,
-            bundles,
+            bundleId: selectedBundleId,
             errors: [],
             isOpen: true,
+            projectProxy,
             type: 'import-asset'
           })
         }
@@ -118,7 +112,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return {
     ...state,
     activeModalType: '',
-    modalData: updateModalData(state.modalData, DEFAULT_IMPORT_ASSETS_DIALOG)
+    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(state.projectProxy))
     };
   case 'import-assets-completed': {
     const results = action.payload;
@@ -128,7 +122,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       ...state,
       modalData: updateModalData(
         state.modalData,
-        errors.length ? { ...state.modalData['import-asset'], errors } : DEFAULT_IMPORT_ASSETS_DIALOG
+        errors.length ? { ...state.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(state.projectProxy)
       )
     };
   }
@@ -171,7 +165,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'select': {
     const { id, isExtended, isRange } = action.payload.data;
     const rangeIds = isRange
-      ? [0, ...state.visibleProjectItems.map(({ node }) => node.item.id)]
+      ? [0, ...state.visibleProjectItemIds]
       : [];
     const isRangeSelection = rangeIds.includes(id);
     const anchor = state.selectionAnchor ?? state.selection.at(LAST_INDEX) ?? id;

@@ -5,11 +5,18 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
+import { ProjectProxy } from '../../../../ProjectProxy';
 import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
+jest.mock('@tanstack/react-virtual', () => ({
+  useVirtualizer: ({ count }: { count: number }) => ({
+    getTotalSize: () => count * 36,
+    getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ index, start: index * 36 }))
+  })
+}));
 
 describe('ProjectSection', () => {
   type FolderFixture = { id: number; items: string[]; name: string };
@@ -57,13 +64,17 @@ describe('ProjectSection', () => {
   ) => {
     const ProjectSectionWithContext = () => {
       const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
+      const project = { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' };
+      const projectProxy = new ProjectProxy();
+      projectProxy.setProject(project);
 
       return (
       <ProjectStructureContext.Provider
         value={{
           expandedItemIds,
           onAction,
-          project: { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' },
+          project,
+          projectProxy,
           selection,
           onToggleExpanded: (id) => setExpandedItemIds((current) =>
             current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
@@ -251,6 +262,15 @@ describe('ProjectSection', () => {
             name: 'Initial project',
             path: '/tmp/project'
           },
+          projectProxy: (() => {
+            const projectProxy = new ProjectProxy();
+            projectProxy.setProject({
+              content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
+              name: 'Initial project',
+              path: '/tmp/project'
+            });
+            return projectProxy;
+          })(),
           selection: [],
           onToggleExpanded: jest.fn()
         }}

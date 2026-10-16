@@ -1,10 +1,10 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
-import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
-import { getProjectTreeRootNodes, getVisibleProjectTreeItems } from '../../../helpers';
+import { getVisibleProjectItems } from '../../../helpers';
 import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
@@ -16,21 +16,17 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, onToggleExpanded, project, selection, selectedIdSet } = useProjectStructure();
-  const scrollElementRef = useRef<HTMLDivElement>(null);
-  const getScrollElement = useCallback(() => scrollElementRef.current, []);
+  const { expandedItemIds, onAction, onToggleExpanded, project, projectProxy, selection, selectedIdSet } = useProjectStructure();
+  const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
+  const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(-1);
   const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
-  const { rootFolder, rootNodes } = useMemo(
-    () => getProjectTreeRootNodes(project?.content ?? []),
-    [project?.content]
-  );
   const expandedItemIdSet = useMemo(() => new Set(expandedItemIds), [expandedItemIds]);
   const derivedSelectedIdSet = useMemo(() => new Set(selection), [selection]);
   const selectedIds = selectedIdSet ?? derivedSelectedIdSet;
   const visibleItems = useMemo(
-    () => getVisibleProjectTreeItems(rootNodes, expandedItemIdSet),
-    [expandedItemIdSet, rootNodes]
+    () => getVisibleProjectItems(projectProxy, expandedItemIdSet),
+    [expandedItemIdSet, projectProxy, project]
   );
   const virtualizer = useVirtualizer({
     count: visibleItems.length,
@@ -72,7 +68,7 @@ const ProjectSection: FC = () => {
     <Box component="header" display="flex" flexDirection="column" height="100%" minHeight={0} p={1}>
       <ProjectItem
         contentType={AssetType.Project}
-        dropTargetId={rootFolder?.item.id}
+        dropTargetId={projectProxy.rootNodeId}
         expanded={false}
         hasChildren={false}
         id={0}
@@ -88,18 +84,19 @@ const ProjectSection: FC = () => {
         flexGrow={1}
         minHeight={0}
         onClick={handleListClick}
-        ref={scrollElementRef}
+        ref={setScrollElement}
         sx={{ overflowX: 'hidden', overflowY: 'auto' }}
       >
         <Box height={virtualizer.getTotalSize()} position="relative">
           {virtualizer.getVirtualItems().map((virtualItem) => {
-            const { depth, node } = visibleItems[virtualItem.index];
-            const { children, item } = node;
+            const { depth, id } = visibleItems[virtualItem.index];
+            const item = projectProxy.getContent(id);
+            if (!item) return null;
 
             return (
               <ProjectVirtualRow
                 depth={depth}
-                hasChildren={children.length > 0}
+                hasChildren={projectProxy.hasChildren(id)}
                 isExpanded={expandedItemIdSet.has(item.id)}
                 isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}

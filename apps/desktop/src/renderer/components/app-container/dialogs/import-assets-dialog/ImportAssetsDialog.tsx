@@ -29,8 +29,9 @@ const TABLE_ROW_HEIGHT = 52;
 const isImage = (filePath: string) => IMAGE_EXTENSIONS.has(getFileExtension(filePath));
 const toFileUrl = (filePath: string) => encodeURI(`file://${filePath.replaceAll('\\', '/')}`).replaceAll('#', '%23').replaceAll('?', '%3F');
 
-const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles, errors, isOpen, onAction }) => {
+const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, errors, isOpen, onAction, projectProxy }) => {
   const { t } = useTranslation();
+  const bundles = projectProxy.bundles;
   const [selectedBundleId, setSelectedBundleId] = useState(bundleId);
   const [filePaths, setFilePaths] = useState<string[]>([]);
   const [imagePreviewUrls, setImagePreviewUrls] = useState<Record<string, string>>({});

@@ -16,6 +16,7 @@ import type { DeleteContentDialogData } from './dialogs/delete-content-dialog';
 import type { ImportAssetsDialogData } from './dialogs/import-assets-dialog';
 import { notifyUnavailableDesktopApi } from './helpers';
 import type { ModalType } from './modal-types';
+import type { ProjectProxy } from './ProjectProxy';
 import { type ActionButtonConfig, ProjectContentDragType } from './types';
 
 export enum NotificationError {
@@ -55,13 +56,15 @@ export const DEFAULT_DELETE_CONTENT: DeleteContentDialogData = {
   type: 'delete-content'
 };
 
-export const DEFAULT_IMPORT_ASSETS_DIALOG: ImportAssetsDialogData = {
-  bundleId: 0,
-  bundles: [],
+export const NO_BUNDLE_ID = -1;
+
+export const getDefaultImportAssetsDialog = (projectProxy: ProjectProxy): ImportAssetsDialogData => ({
+  bundleId: NO_BUNDLE_ID,
   errors: [],
   isOpen: false,
+  projectProxy,
   type: 'import-asset'
-};
+});
 
 export const LAST_INDEX = -1;
 export const MODAL_TYPES: readonly ModalType[] = ['new-content', 'import-asset', 'delete-content'];

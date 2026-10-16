@@ -4,6 +4,7 @@ import type { ComponentType } from 'react';
 import type { ProjectActionHandler } from '../../../types';
 
 import type { ImportAssetResult } from './common';
+import type { ProjectProxy } from './ProjectProxy';
 import type { ContentStrategy } from './strategies';
 
 export type ModalPropsMap = {
@@ -14,9 +15,9 @@ export type ModalPropsMap = {
   };
   'import-asset': {
     bundleId: number;
-    bundles: readonly ProjectContent[];
     errors: readonly ImportAssetResult[];
     isOpen: boolean;
+    projectProxy: ProjectProxy;
     type: 'import-asset';
   };
   'new-content': {
