@@ -4,7 +4,6 @@ import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NO_BU
 import {
   getDeletableContent,
   getNewContentState,
-  getVisibleProjectItemIds,
   projectChanged,
   updateModalData
 } from './helpers';
@@ -22,7 +21,7 @@ export const createInitialAppContainerState = (): AppContainerState => {
     activeModalType: '',
     contentStrategies,
     disabledItemIds: [],
-    expandedItemIds: [],
+    expandedItemIds: new Set(),
     modalData: {
       'delete-content': DEFAULT_DELETE_CONTENT,
       'import-asset': getDefaultImportAssetsDialog(projectProxy),
@@ -30,9 +29,9 @@ export const createInitialAppContainerState = (): AppContainerState => {
     },
     notificationError: NotificationError.None,
     projectProxy,
-    selectionAnchor: null,
+    selectionAnchor: LAST_INDEX,
     selection: [],
-    visibleProjectItemIds: []
+    visibleProjectItems: []
   };
 };
 
@@ -56,7 +55,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notificationError: error ?? state.notificationError,
     selection: [],
-    selectionAnchor: null
+    selectionAnchor: LAST_INDEX
     };
   }
   case 'open-delete-modal': {
@@ -80,13 +79,13 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     };
   case 'expanded-item-toggled': {
     const id = action.payload;
-    const expandedItemIds = state.expandedItemIds.includes(id)
-      ? state.expandedItemIds.filter((expandedId) => expandedId !== id)
-      : state.expandedItemIds.concat(id);
+    const expandedItemIds = new Set(state.expandedItemIds);
+    if (expandedItemIds.has(id)) expandedItemIds.delete(id);
+    else expandedItemIds.add(id);
     return {
     ...state,
     expandedItemIds,
-    visibleProjectItemIds: getVisibleProjectItemIds(state.projectProxy, new Set(expandedItemIds))
+    visibleProjectItems: state.projectProxy.getVisibleProjectItems(expandedItemIds)
     };
   }
   case 'open-import-assets': {
@@ -161,14 +160,14 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       : { ...state, notificationError: error ? NotificationError.RestoreProject : NotificationError.None };
   }
   case 'selection-cleared':
-    return { ...state, selection: [], selectionAnchor: null };
+    return { ...state, selection: [], selectionAnchor: LAST_INDEX };
   case 'select': {
     const { id, isExtended, isRange } = action.payload.data;
     const rangeIds = isRange
-      ? [0, ...state.visibleProjectItemIds]
+      ? [0, ...state.visibleProjectItems.map(({ id }) => id)]
       : [];
     const isRangeSelection = rangeIds.includes(id);
-    const anchor = state.selectionAnchor ?? state.selection.at(LAST_INDEX) ?? id;
+    const anchor = state.selectionAnchor === LAST_INDEX ? state.selection.at(LAST_INDEX) ?? id : state.selectionAnchor;
     const start = isRangeSelection ? rangeIds.indexOf(anchor) : LAST_INDEX;
     const end = isRangeSelection ? rangeIds.indexOf(id) : LAST_INDEX;
     const range = start === LAST_INDEX || end === LAST_INDEX

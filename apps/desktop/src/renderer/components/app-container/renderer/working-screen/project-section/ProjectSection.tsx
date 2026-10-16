@@ -4,7 +4,6 @@ import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useState } f
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
-import { getVisibleProjectItems } from '../../../helpers';
 import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
@@ -16,20 +15,15 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, onToggleExpanded, project, projectProxy, selection, selectedIdSet } = useProjectStructure();
+  const { expandedItemIds, onAction, onToggleExpanded, project, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(-1);
   const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
-  const expandedItemIdSet = useMemo(() => new Set(expandedItemIds), [expandedItemIds]);
   const derivedSelectedIdSet = useMemo(() => new Set(selection), [selection]);
   const selectedIds = selectedIdSet ?? derivedSelectedIdSet;
-  const visibleItems = useMemo(
-    () => getVisibleProjectItems(projectProxy, expandedItemIdSet),
-    [expandedItemIdSet, projectProxy, project]
-  );
   const virtualizer = useVirtualizer({
-    count: visibleItems.length,
+    count: visibleProjectItems.length,
     estimateSize: estimateRowSize,
     getScrollElement,
     overscan: 8
@@ -89,7 +83,7 @@ const ProjectSection: FC = () => {
       >
         <Box height={virtualizer.getTotalSize()} position="relative">
           {virtualizer.getVirtualItems().map((virtualItem) => {
-            const { depth, id } = visibleItems[virtualItem.index];
+            const { depth, id } = visibleProjectItems[virtualItem.index];
             const item = projectProxy.getContent(id);
             if (!item) return null;
 
@@ -97,7 +91,7 @@ const ProjectSection: FC = () => {
               <ProjectVirtualRow
                 depth={depth}
                 hasChildren={projectProxy.hasChildren(id)}
-                isExpanded={expandedItemIdSet.has(item.id)}
+                isExpanded={expandedItemIds.has(item.id)}
                 isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}
                 isSelected={selectedIds.has(item.id)}

@@ -5,6 +5,7 @@ import { AssetType } from '../../../types';
 import type { ProjectInfo } from '../../types';
 
 import { NO_BUNDLE_ID } from './constants';
+import type { VisibleProjectItem } from './types';
 
 export class ProjectProxy {
   #bundleIds: readonly number[] = [];
@@ -33,6 +34,17 @@ export class ProjectProxy {
 
   getChildrenIds(itemId: number) {
     return itemId === 0 ? this.#rootItemIds : this.#childrenIdsByParentId.get(itemId) ?? [];
+  }
+
+  getVisibleProjectItems(expandedItemIds: ReadonlySet<number>, parentId = 0, depth = 0): VisibleProjectItem[] {
+    const items: VisibleProjectItem[] = [];
+
+    for (const id of this.getChildrenIds(parentId)) {
+      items.push({ depth, id });
+      if (expandedItemIds.has(id)) items.push(...this.getVisibleProjectItems(expandedItemIds, id, depth + 1));
+    }
+
+    return items;
   }
 
   hasChildren(itemId: number) {

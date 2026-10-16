@@ -11,13 +11,6 @@ import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 import ProjectSection from '../ProjectSection';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
-jest.mock('@tanstack/react-virtual', () => ({
-  useVirtualizer: ({ count }: { count: number }) => ({
-    getTotalSize: () => count * 36,
-    getVirtualItems: () => Array.from({ length: count }, (_, index) => ({ index, start: index * 36 }))
-  })
-}));
-
 describe('ProjectSection', () => {
   type FolderFixture = { id: number; items: string[]; name: string };
 
@@ -63,7 +56,7 @@ describe('ProjectSection', () => {
     selection: readonly number[] = []
   ) => {
     const ProjectSectionWithContext = () => {
-      const [expandedItemIds, setExpandedItemIds] = useState<readonly number[]>([]);
+      const [expandedItemIds, setExpandedItemIds] = useState<ReadonlySet<number>>(new Set());
       const project = { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' };
       const projectProxy = new ProjectProxy();
       projectProxy.setProject(project);
@@ -76,9 +69,13 @@ describe('ProjectSection', () => {
           project,
           projectProxy,
           selection,
-          onToggleExpanded: (id) => setExpandedItemIds((current) =>
-            current.includes(id) ? current.filter((expandedId) => expandedId !== id) : current.concat(id)
-          )
+          visibleProjectItems: projectProxy.getVisibleProjectItems(expandedItemIds),
+          onToggleExpanded: (id) => setExpandedItemIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+          })
         }}
       >
         <ProjectSection />
@@ -255,7 +252,7 @@ describe('ProjectSection', () => {
     rerender(
       <ProjectStructureContext.Provider
         value={{
-          expandedItemIds: [],
+          expandedItemIds: new Set(),
           onAction,
           project: {
             content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
@@ -272,6 +269,7 @@ describe('ProjectSection', () => {
             return projectProxy;
           })(),
           selection: [],
+          visibleProjectItems: [],
           onToggleExpanded: jest.fn()
         }}
       >

@@ -36,7 +36,8 @@ export const useAppContainer = () => {
     modalData,
     notificationError,
     projectProxy,
-    selection
+    selection,
+    visibleProjectItems
   } = state;
   const project = projectProxy.project;
   const selectedIdSet = useMemo(() => new Set(selection), [selection]);
@@ -139,8 +140,9 @@ export const useAppContainer = () => {
     project,
     projectProxy,
     selection,
-    selectedIdSet
-  }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selectedIdSet, selection]);
+    selectedIdSet,
+    visibleProjectItems
+  }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selectedIdSet, selection, visibleProjectItems]);
 
   const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
   return {

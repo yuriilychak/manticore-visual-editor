@@ -17,6 +17,11 @@ import type { ContentStrategy, OpenNewContentData } from './strategies';
 export type NewContentValues = Record<string, string>;
 export type ApplicationActionHandler = (action: ApplicationAction) => void;
 
+export type VisibleProjectItem = {
+  depth: number;
+  id: number;
+};
+
 export enum ProjectContentDragType {
   ProjectFolder = 'application/x-manticore-project-folder',
   ProjectBundle = 'application/x-manticore-project-bundle',
@@ -43,11 +48,6 @@ export type ActionButtonConfig = {
   shortcut?: ShortcutLabels;
 };
 
-export type VisibleProjectItem = {
-  depth: number;
-  id: number;
-};
-
 export interface NewContentStrategy {
   contentType: AssetType;
   create: (values: NewContentValues) => Promise<void>;
@@ -59,13 +59,13 @@ export type AppContainerState = {
   activeModalType: ModalType | '';
   contentStrategies: ReadonlyMap<AssetType, ContentStrategy>;
   disabledItemIds: readonly MenubarItemId[];
-  expandedItemIds: readonly number[];
+  expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
   notificationError: NotificationError;
   projectProxy: ProjectProxy;
-  selectionAnchor: number | null;
+  selectionAnchor: number;
   selection: readonly number[];
-  visibleProjectItemIds: readonly number[];
+  visibleProjectItems: readonly VisibleProjectItem[];
 };
 
 export type WorkingScreenActionPayload = { assetType: AssetType; data?: unknown; id: number };

@@ -5,6 +5,7 @@ import type { ProjectActionHandler } from '../../../types';
 import type { ProjectInfo } from '../../types';
 
 import type { ProjectProxy } from './ProjectProxy';
+import type { VisibleProjectItem } from './types';
 
 type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
@@ -13,7 +14,8 @@ type ProjectStructureContextValue = {
   projectProxy: ProjectProxy;
   selection: readonly number[];
   selectedIdSet?: ReadonlySet<number>;
-  expandedItemIds: readonly number[];
+  visibleProjectItems: readonly VisibleProjectItem[];
+  expandedItemIds: ReadonlySet<number>;
 };
 
 export const ProjectStructureContext = createContext<ProjectStructureContextValue | null>(null);

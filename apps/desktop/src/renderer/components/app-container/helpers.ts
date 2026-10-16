@@ -4,33 +4,12 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { PROJECT_ITEM_CONFIG } from './constants';
+import { LAST_INDEX, PROJECT_ITEM_CONFIG } from './constants';
 import type { ModalPropsMap } from './modal-types';
 import type { ProjectProxy } from './ProjectProxy';
-import type { AppContainerState, VisibleProjectItem } from './types';
+import type { AppContainerState } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
-
-export const getVisibleProjectItems = (
-  projectProxy: ProjectProxy,
-  expandedItemIds: ReadonlySet<number>,
-  parentId = 0,
-  depth = 0
-): VisibleProjectItem[] => {
-  const items: VisibleProjectItem[] = [];
-
-  for (const id of projectProxy.getChildrenIds(parentId)) {
-    items.push({ depth, id });
-    if (expandedItemIds.has(id)) items.push(...getVisibleProjectItems(projectProxy, expandedItemIds, id, depth + 1));
-  }
-
-  return items;
-};
-
-export const getVisibleProjectItemIds = (
-  projectProxy: ProjectProxy,
-  expandedItemIds: ReadonlySet<number>
-) => getVisibleProjectItems(projectProxy, expandedItemIds).map(({ id }) => id);
 
 export const getNewContentState = (
   strategies: AppContainerState['contentStrategies'],
@@ -54,7 +33,7 @@ const getProjectSelectionState = (
   createdItem?: ProjectContent
 ) => {
   if (createdItem) return { selection: [createdItem.id], selectionAnchor: createdItem.id };
-  return isCurrentProject ? { selection: state.selection, selectionAnchor: state.selectionAnchor } : { selection: [], selectionAnchor: null };
+  return isCurrentProject ? { selection: state.selection, selectionAnchor: state.selectionAnchor } : { selection: [], selectionAnchor: LAST_INDEX };
 };
 
 export const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
@@ -66,15 +45,14 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
     : [];
   const createdItem = createdItems[0];
   const createdParentIds = createdItems.map(({ parentId }) => parentId);
-  const expandedItemCandidates = state.expandedItemIds.concat(createdParentIds);
   state.projectProxy.setProject(project);
-  const expandedItemIds = expandedItemCandidates.filter((id) => isExpandableItem(id, state.projectProxy));
-  const visibleProjectItemIds = getVisibleProjectItemIds(state.projectProxy, new Set(expandedItemIds));
+  const expandedItemIds = new Set([...state.expandedItemIds, ...createdParentIds].filter((id) => isExpandableItem(id, state.projectProxy)));
+  const visibleProjectItems = state.projectProxy.getVisibleProjectItems(expandedItemIds);
 
   return {
     ...state,
     expandedItemIds,
-    visibleProjectItemIds,
+    visibleProjectItems,
     ...getProjectSelectionState(state, isCurrentProject, createdItem)
   };
 };
