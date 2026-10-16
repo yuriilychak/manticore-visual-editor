@@ -13,6 +13,7 @@ export type NewContentDialogData = ModalPropsMap['new-content'];
 
 const NewContentDialog: ModalComponent<'new-content'> = ({ isOpen, onAction, strategy }) => {
   const handleClose = () => {
+    strategy.setField('parentPath', '');
     void onAction('close-new-content-dialog', strategy.contentType, 0);
   };
   const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, handleClose);

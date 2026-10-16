@@ -127,20 +127,10 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   }
   case 'open-new-content': {
     const data = action.payload;
-    const strategy = state.contentStrategies.get(data.assetType);
-    if (!strategy) return { ...state, notificationError: NotificationError.ContentTypeUnavailable };
-
-    try {
-      strategy.setFields(data.fields);
-      const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, data.assetType, true));
-
-      return { ...state, activeModalType: 'new-content', modalData };
-    } catch {
-      return { ...state, notificationError: NotificationError.ContentConfiguration };
-    }
+    const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, data.assetType, true));
+    return { ...state, activeModalType: 'new-content', modalData };
   }
   case 'close-new-content-dialog': {
-    state.modalData['new-content'].strategy.setField('parentPath', '');
     const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.ProjectFolder, false));
     return { ...state, activeModalType: '', modalData };
   }

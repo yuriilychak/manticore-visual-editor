@@ -116,6 +116,11 @@ export const useAppContainer = () => {
         return;
       }
 
+      if (result.action === 'open-new-content') {
+        const { assetType, fields } = result.data;
+        contentStrategies.get(assetType)!.setFields(fields);
+      }
+
       return dispatch(result.getResult());
     },
     [contentStrategies]
