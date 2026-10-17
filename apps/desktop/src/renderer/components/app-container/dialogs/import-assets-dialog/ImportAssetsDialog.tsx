@@ -71,10 +71,10 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, errors, 
       dispatch({ type: 'images-processing-finished', payload: { filePaths: imagePaths } });
     }
   };
-  const handleRemoveFile = (filePath: string) => {
+  const handleRemoveFile = useCallback((filePath: string) => {
     importSession.remove(filePath);
     dispatch({ type: 'file-removed', payload: { filePath } });
-  };
+  }, [importSession]);
   const handleImportProgress = useCallback((current: number, total: number) => {
     dispatch({ type: 'submission-progressed', payload: { completed: current, total } });
   }, []);

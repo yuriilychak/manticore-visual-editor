@@ -1,3 +1,5 @@
+import { memo } from 'react';
+
 import { TableRow } from '@mui/material';
 
 import { ImportAssetActionsCell } from './ImportAssetActionsCell';
@@ -15,7 +17,7 @@ type ImportAssetRowProps = {
   start: number;
 };
 
-export const ImportAssetRow = ({ disabled, filePath, isProcessing, onRemove, previewUrl, start }: ImportAssetRowProps) => (
+const ImportAssetRow = ({ disabled, filePath, isProcessing, onRemove, previewUrl, start }: ImportAssetRowProps) => (
   <TableRow sx={{ display: 'table', position: 'absolute', tableLayout: 'fixed', transform: `translateY(${start}px)`, width: '100%' }}>
     <ImportAssetPreviewCell filePath={filePath} isProcessing={isProcessing} previewUrl={previewUrl} />
     <ImportAssetNameCell filePath={filePath} />
@@ -24,3 +26,5 @@ export const ImportAssetRow = ({ disabled, filePath, isProcessing, onRemove, pre
     <ImportAssetActionsCell disabled={disabled} filePath={filePath} onRemove={onRemove} />
   </TableRow>
 );
+
+export default memo(ImportAssetRow);
