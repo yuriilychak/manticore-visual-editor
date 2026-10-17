@@ -32,7 +32,7 @@ export class ProjectStrategy extends ContentStrategyBase {
     this.projectProxy.replaceProject(await window.manticore.createProject({ name: name.trim(), parentPath: location }));
   }
 
-  async handle({ action, data, id }: ContentAction) {
+  async handle({ action, data, id }: ContentAction, projectPath: string) {
     switch (action) {
       case 'add-folder':
         return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentId: ProjectItemId.RootFolder }));
@@ -44,11 +44,10 @@ export class ProjectStrategy extends ContentStrategyBase {
         if (typeof data !== 'string') return;
 
         {
-          const project = this.projectProxy.project;
-          if (!project || !window.manticore?.renameProject) return notifyUnavailableDesktopApi();
+          if (!projectPath || !window.manticore?.renameProject) return notifyUnavailableDesktopApi();
 
           try {
-            this.projectProxy.renameProject(await window.manticore.renameProject(project.path, data));
+            this.projectProxy.renameProject(await window.manticore.renameProject(projectPath, data));
           } catch {
             return createErrorResult(id, NotificationError.RenameProject);
           }

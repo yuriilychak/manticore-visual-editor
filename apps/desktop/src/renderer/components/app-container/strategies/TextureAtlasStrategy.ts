@@ -17,25 +17,23 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
   }
 
   async create({ name = '' }: NewContentValues) {
-    const project = this.projectProxy.project;
-    if (!project || !window.manticore?.createProjectTextureAtlas) return notifyUnavailableDesktopApi();
+    if (!this.projectProxy.hasProject() || !window.manticore?.createProjectTextureAtlas) return notifyUnavailableDesktopApi();
 
+    const project = this.projectProxy.project!;
     this.projectProxy.addContent(await window.manticore.createProjectTextureAtlas(project.path, this.getField('parentId', ProjectItemId.Project), name.trim()));
   }
 
-  async handle({ action, data, id }: ContentAction) {
-    if (action === 'delete') return this.deleteContent(id, data);
+  async handle({ action, data, id }: ContentAction, projectPath: string) {
+    if (action === 'delete') return this.deleteContent(id, projectPath, data);
 
-    const project = this.projectProxy.project;
-    if (!project) return notifyUnavailableDesktopApi();
-
+    if (!projectPath) return notifyUnavailableDesktopApi();
     switch (action) {
       case 'move':
         if (typeof data !== 'number') return;
         if (!window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(project.path, id, data));
+          this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }
@@ -45,7 +43,7 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
         if (!window.manticore?.renameProjectTextureAtlas) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.renameBundle(id, await window.manticore.renameProjectTextureAtlas(project.path, id, data));
+          this.projectProxy.renameBundle(id, await window.manticore.renameProjectTextureAtlas(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.RenameTextureAtlas);
         }

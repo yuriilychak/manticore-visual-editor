@@ -17,16 +17,16 @@ export class BundleStrategy extends ContentStrategyBase {
   }
 
   async create({ name = '' }: NewContentValues) {
-    const project = this.projectProxy.project;
-    if (!project || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
+    if (!this.projectProxy.hasProject() || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
 
+    const project = this.projectProxy.project!;
     this.projectProxy.addBundle(
       await window.manticore.createProjectBundle(project.path, this.getField('parentId', ProjectItemId.Project), name.trim())
     );
   }
 
-  async handle({ action, data, id }: ContentAction) {
-    if (action === 'delete') return this.deleteContent(id, data);
+  async handle({ action, data, id }: ContentAction, projectPath: string) {
+    if (action === 'delete') return this.deleteContent(id, projectPath, data);
 
     switch (action) {
       case 'add-folder':
@@ -36,13 +36,12 @@ export class BundleStrategy extends ContentStrategyBase {
       case 'import':
         return new ContentAction(id, 'open-import-assets', new OpenImportAssets(id));
       case 'import-asset':
-        return new ContentAction(id, 'import-assets-completed', await this.importAssets(id, data));
+        return new ContentAction(id, 'import-assets-completed', await this.importAssets(id, projectPath, data));
       default:
         break;
     }
 
-    const project = this.projectProxy.project;
-    if (!project) {
+    if (!projectPath) {
       return notifyUnavailableDesktopApi();
     }
 
@@ -52,7 +51,7 @@ export class BundleStrategy extends ContentStrategyBase {
         if (!window.manticore?.renameProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundle(project.path, id, data));
+          this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundle(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.RenameBundle);
         }
@@ -63,7 +62,7 @@ export class BundleStrategy extends ContentStrategyBase {
         if (!window.manticore?.moveProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.moveBundle(id, await window.manticore.moveProjectBundle(project.path, id, data));
+          this.projectProxy.moveBundle(id, await window.manticore.moveProjectBundle(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }
@@ -74,11 +73,10 @@ export class BundleStrategy extends ContentStrategyBase {
     }
   }
 
-  private async importAssets(bundleId: number, data: unknown): Promise<ImportAssetResult[]> {
+  private async importAssets(bundleId: number, projectPath: string, data: unknown): Promise<ImportAssetResult[]> {
     if (!(data instanceof ImportAssets)) return [];
 
-    const project = this.projectProxy.project;
-    if (!project || !window.manticore?.importAssets) {
+    if (!projectPath || !window.manticore?.importAssets) {
       notifyUnavailableDesktopApi();
       return data.assets.map(({ filePath }) => ({ asset: null, error: 'Desktop API is unavailable.', filePath }));
     }
@@ -93,7 +91,7 @@ export class BundleStrategy extends ContentStrategyBase {
       data.onProgress(Math.min(++current, total), total);
     });
     try {
-      const results = await window.manticore.importAssets(project.path, bundleId, [...data.assets], jobId);
+      const results = await window.manticore.importAssets(projectPath, bundleId, [...data.assets], jobId);
       results.forEach(({ asset }) => {
         if (asset) this.projectProxy.addContent(asset);
       });

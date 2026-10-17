@@ -22,6 +22,10 @@ export class ProjectProxy {
     return this.#currentProject;
   }
 
+  hasProject() {
+    return this.#currentProject !== null;
+  }
+
   get bundles() {
     return this.#bundleIds.map((id) => this.getContent(id)!);
   }
@@ -112,9 +116,10 @@ export class ProjectProxy {
   }
 
   #update(updater: (project: ProjectInfo) => ProjectInfo) {
-    if (!this.#currentProject) return;
+    if (!this.hasProject()) return;
 
-    this.setProject(updater(this.#currentProject));
-    this.#onProjectChange?.(this.#currentProject);
+    const project = updater(this.#currentProject!);
+    this.setProject(project);
+    this.#onProjectChange?.(project);
   }
 }

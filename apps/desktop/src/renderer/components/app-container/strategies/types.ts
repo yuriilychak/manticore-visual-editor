@@ -17,7 +17,7 @@ export type DeleteCompletedResult = ContentAction<'delete-completed', { error?: 
 export type ContentStrategyResult = DeleteCompletedResult | ImportAssetsCompletedResult | OpenImportAssetsResult | OpenNewContentResult | ContentAction<'show-notification', { error: NotificationError }>;
 
 export interface WorkingScreenActionStrategy {
-  handle: (contentAction: ContentAction) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
+  handle: (contentAction: ContentAction, projectPath: string) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
 }
 
 export interface ContentStrategy extends NewContentStrategy, WorkingScreenActionStrategy {

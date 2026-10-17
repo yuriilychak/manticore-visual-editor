@@ -110,7 +110,7 @@ export const useAppContainer = () => {
           return dispatch({ type: action });
       }
 
-      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data));
+      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data), project?.path ?? '');
 
       if (!result) {
         return;
@@ -123,7 +123,7 @@ export const useAppContainer = () => {
 
       return dispatch(result.getResult());
     },
-    [contentStrategies]
+    [contentStrategies, project?.path]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
     if (!project) return;

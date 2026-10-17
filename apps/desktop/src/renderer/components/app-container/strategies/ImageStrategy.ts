@@ -2,11 +2,11 @@ import { AssetType } from '../../../../types';
 
 import { ContentAction, NewContentValidation } from '../common';
 import { NotificationError } from '../constants';
+import { notifyUnavailableDesktopApi } from '../helpers';
 import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { notifyUnavailableDesktopApi } from '../helpers';
 import { createErrorResult } from './helpers';
 
 export class ImageStrategy extends ContentStrategyBase {
@@ -20,15 +20,14 @@ export class ImageStrategy extends ContentStrategyBase {
     return Promise.resolve();
   }
 
-  async handle({ action, data, id }: ContentAction) {
-    if (action === 'delete') return this.deleteContent(id, data);
+  async handle({ action, data, id }: ContentAction, projectPath: string) {
+    if (action === 'delete') return this.deleteContent(id, projectPath, data);
     if (action !== 'move' || typeof data !== 'number') return;
 
-    const project = this.projectProxy.project;
-    if (!project || !window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
+    if (!projectPath || !window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
 
     try {
-      this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(project.path, id, data));
+      this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(projectPath, id, data));
     } catch {
       return createErrorResult(id, NotificationError.MoveBundle);
     }
