@@ -29,7 +29,7 @@ export const createInitialAppContainerState = (): AppContainerState => {
     },
     notificationError: NotificationError.None,
     projectProxy,
-    selectionAnchor: LAST_INDEX,
+    selectionAnchor: ProjectItemId.Empty,
     selection: [],
     visibleProjectItems: []
   };
@@ -55,7 +55,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notificationError: error ?? state.notificationError,
     selection: [],
-    selectionAnchor: LAST_INDEX
+    selectionAnchor: ProjectItemId.Empty
     };
   }
   case 'open-delete-modal': {
@@ -150,14 +150,14 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       : { ...state, notificationError: error ? NotificationError.RestoreProject : NotificationError.None };
   }
   case 'selection-cleared':
-    return { ...state, selection: [], selectionAnchor: LAST_INDEX };
+    return { ...state, selection: [], selectionAnchor: ProjectItemId.Empty };
   case 'select': {
     const { id, isExtended, isRange } = action.payload.data;
     const rangeIds = isRange
       ? [ProjectItemId.Project, ...state.visibleProjectItems.map(({ id }) => id)]
       : [];
     const isRangeSelection = rangeIds.includes(id);
-    const anchor = state.selectionAnchor === LAST_INDEX ? state.selection.at(LAST_INDEX) ?? id : state.selectionAnchor;
+    const anchor = state.selectionAnchor === ProjectItemId.Empty ? state.selection.at(LAST_INDEX) ?? id : state.selectionAnchor;
     const start = isRangeSelection ? rangeIds.indexOf(anchor) : LAST_INDEX;
     const end = isRangeSelection ? rangeIds.indexOf(id) : LAST_INDEX;
     const range = start === LAST_INDEX || end === LAST_INDEX

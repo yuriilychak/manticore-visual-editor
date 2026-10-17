@@ -4,7 +4,7 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { LAST_INDEX, PROJECT_ITEM_CONFIG,ProjectItemId } from './constants';
+import { PROJECT_ITEM_CONFIG, ProjectItemId } from './constants';
 import type { ModalPropsMap } from './modal-types';
 import type { ProjectProxy } from './ProjectProxy';
 import type { AppContainerState } from './types';
@@ -33,7 +33,9 @@ const getProjectSelectionState = (
   createdItem?: ProjectContent
 ) => {
   if (createdItem) return { selection: [createdItem.id], selectionAnchor: createdItem.id };
-  return isCurrentProject ? { selection: state.selection, selectionAnchor: state.selectionAnchor } : { selection: [], selectionAnchor: LAST_INDEX };
+  return isCurrentProject
+    ? { selection: state.selection, selectionAnchor: state.selectionAnchor }
+    : { selection: [], selectionAnchor: ProjectItemId.Empty };
 };
 
 export const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
