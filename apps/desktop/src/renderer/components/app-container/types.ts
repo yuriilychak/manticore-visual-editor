@@ -2,7 +2,7 @@ import type { ProjectContent } from '@manticore/project/types';
 
 import type { SvgIconComponent } from '@mui/icons-material';
 
-import type { AssetType } from '../../../types';
+import type { AssetType, ReducerAction } from '../../../types';
 
 import type { ShortcutLabels } from '../../keyboard-shortcuts';
 import type { ApplicationAction, ProjectInfo, RestoredProject } from '../../types';
@@ -74,8 +74,8 @@ type SelectionPayload = Omit<WorkingScreenActionPayload, 'data'> & {
   data: { id: number; isExtended: boolean; isRange: boolean };
 };
 
-type PayloadAction<TType extends string, TPayload> = { payload: TPayload; type: TType };
-type EmptyAction<TType extends string> = { type: TType };
+type PayloadAction<TType extends string, TPayload> = Required<ReducerAction<TType, TPayload>>;
+type EmptyAction<TType extends string> = ReducerAction<TType>;
 
 export type AppContainerAction =
   | EmptyAction<'create-project' | 'close-delete-modal' | 'close-import-assets-dialog' | 'close-new-content-dialog' | 'selection-cleared'>

@@ -15,3 +15,8 @@ export const ASSET_TYPE_LOCALE_KEY: Record<AssetType, string> = {
 };
 
 export type ProjectActionHandler = (action: string, assetType: AssetType, id: number, data?: unknown) => void | Promise<void>;
+
+export type ReducerAction<T extends string, P = never> = {
+  payload?: P;
+  type: T;
+};

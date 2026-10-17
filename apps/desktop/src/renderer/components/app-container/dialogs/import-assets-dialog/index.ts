@@ -1,1 +1,2 @@
-export { default as ImportAssetsDialog, type ImportAssetsDialogData } from './ImportAssetsDialog';
+export { default as ImportAssetsDialog } from './ImportAssetsDialog';
+export type { ImportAssetsDialogData } from './types';
