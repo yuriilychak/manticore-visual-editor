@@ -1,12 +1,12 @@
 import { AssetType } from '../../../../types';
 
 import { ContentAction, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
-import { NotificationError } from '../constants';
+import { NotificationError, ProjectItemId } from '../constants';
+import { notifyUnavailableDesktopApi } from '../helpers';
 import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { notifyUnavailableDesktopApi } from '../helpers';
 import { createErrorResult } from './helpers';
 
 export class ProjectStrategy extends ContentStrategyBase {
@@ -33,16 +33,11 @@ export class ProjectStrategy extends ContentStrategyBase {
   }
 
   async handle({ action, data, id }: ContentAction) {
-    const rootFolderId = this.projectProxy.project?.content?.find(
-      (item) => item.type === AssetType.ProjectFolder && item.parentId === 0
-    )?.id;
     switch (action) {
       case 'add-folder':
-        if (rootFolderId === undefined) return notifyUnavailableDesktopApi();
-        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentId: rootFolderId }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.ProjectFolder, { parentId: ProjectItemId.RootFolder }));
       case 'add-bundle':
-        if (rootFolderId === undefined) return notifyUnavailableDesktopApi();
-        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentId: rootFolderId }));
+        return new ContentAction(id, 'open-new-content', new OpenNewContent(AssetType.Bundle, { parentId: ProjectItemId.RootFolder }));
       case 'import':
         return new ContentAction(id, 'open-import-assets', new OpenImportAssets());
       case 'rename':

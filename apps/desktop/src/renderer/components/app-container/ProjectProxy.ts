@@ -4,7 +4,7 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { NO_BUNDLE_ID } from './constants';
+import { ProjectItemId } from './constants';
 import type { VisibleProjectItem } from './types';
 
 export class ProjectProxy {
@@ -13,8 +13,6 @@ export class ProjectProxy {
   #contentById: ReadonlyMap<number, ProjectContent> = new Map();
   #currentProject: ProjectInfo | null = null;
   #onProjectChange?: (project: ProjectInfo) => void;
-  #rootItemIds: readonly number[] = [];
-  #rootNodeId: number | undefined;
 
   setOnProjectChange(onProjectChange?: (project: ProjectInfo) => void) {
     this.#onProjectChange = onProjectChange;
@@ -28,15 +26,11 @@ export class ProjectProxy {
     return this.#bundleIds.map((id) => this.getContent(id)!);
   }
 
-  get rootNodeId() {
-    return this.#rootNodeId;
-  }
-
   getChildrenIds(itemId: number) {
-    return itemId === 0 ? this.#rootItemIds : this.#childrenIdsByParentId.get(itemId) ?? [];
+    return this.#childrenIdsByParentId.get(itemId) ?? [];
   }
 
-  getVisibleProjectItems(expandedItemIds: ReadonlySet<number>, parentId = 0, depth = 0): VisibleProjectItem[] {
+  getVisibleProjectItems(expandedItemIds: ReadonlySet<number>, parentId = ProjectItemId.RootFolder, depth = 0): VisibleProjectItem[] {
     const items: VisibleProjectItem[] = [];
 
     for (const id of this.getChildrenIds(parentId)) {
@@ -52,7 +46,7 @@ export class ProjectProxy {
   }
 
   getSelectedBundleId(bundleId: number) {
-    return this.#bundleIds.includes(bundleId) ? bundleId : this.#bundleIds[0] ?? NO_BUNDLE_ID;
+    return this.#bundleIds.includes(bundleId) ? bundleId : this.#bundleIds[0] ?? ProjectItemId.Empty;
   }
 
   getContent(id: number) {
@@ -111,11 +105,6 @@ export class ProjectProxy {
     };
     childrenIdsByParentId.forEach((ids) => ids.sort(compareIds));
     this.#childrenIdsByParentId = childrenIdsByParentId;
-    this.#rootNodeId = uniqueContent.find((item) => item.type === AssetType.ProjectFolder && item.parentId === 0 && !item.name)?.id;
-    const rootIds = childrenIdsByParentId.get(0) ?? [];
-    this.#rootItemIds = this.#rootNodeId === undefined
-      ? rootIds
-      : (childrenIdsByParentId.get(this.#rootNodeId) ?? []).concat(rootIds.filter((id) => id !== this.#rootNodeId));
     this.#bundleIds = uniqueContent.reduce<number[]>((ids, { id, type }) => {
       if (type === AssetType.Bundle) ids.push(id);
       return ids;

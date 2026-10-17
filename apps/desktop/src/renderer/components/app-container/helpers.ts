@@ -4,7 +4,7 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { LAST_INDEX, PROJECT_ITEM_CONFIG } from './constants';
+import { LAST_INDEX, PROJECT_ITEM_CONFIG,ProjectItemId } from './constants';
 import type { ModalPropsMap } from './modal-types';
 import type { ProjectProxy } from './ProjectProxy';
 import type { AppContainerState } from './types';
@@ -66,14 +66,14 @@ export const getDeletableContent = (state: AppContainerState, assetType: AssetTy
 
   return selectedIds.reduce<typeof selectedItem[]>((items, selectedId) => {
     const item = projectProxy.getContent(selectedId);
-    if (!item || item.type === AssetType.Project || (item.type === AssetType.ProjectFolder && item.parentId === 0)) {
+    if (!item || item.id === ProjectItemId.Project || item.id === ProjectItemId.RootFolder) {
       return items;
     }
 
     let parentId = item.parentId;
     while (parentId) {
       if (selectedIdSet.has(parentId)) return items;
-      parentId = projectProxy.getContent(parentId)?.parentId ?? 0;
+      parentId = projectProxy.getContent(parentId)?.parentId ?? ProjectItemId.Project;
     }
 
     items.push(item);

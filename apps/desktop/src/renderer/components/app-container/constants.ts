@@ -56,10 +56,14 @@ export const DEFAULT_DELETE_CONTENT: DeleteContentDialogData = {
   type: 'delete-content'
 };
 
-export const NO_BUNDLE_ID = -1;
+export enum ProjectItemId {
+  Empty = -1,
+  Project = 0,
+  RootFolder = 1
+}
 
 export const getDefaultImportAssetsDialog = (projectProxy: ProjectProxy): ImportAssetsDialogData => ({
-  bundleId: NO_BUNDLE_ID,
+  bundleId: ProjectItemId.Empty,
   errors: [],
   isOpen: false,
   projectProxy,

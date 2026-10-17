@@ -1,9 +1,9 @@
-import { NO_BUNDLE_ID } from '../constants';
+import { ProjectItemId } from '../constants';
 
 export class OpenImportAssets {
   readonly #bundleId: number;
 
-  constructor(bundleId = NO_BUNDLE_ID) {
+  constructor(bundleId = ProjectItemId.Empty) {
     this.#bundleId = bundleId;
   }
 

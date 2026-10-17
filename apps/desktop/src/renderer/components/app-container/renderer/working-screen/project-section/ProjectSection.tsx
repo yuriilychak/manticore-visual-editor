@@ -4,6 +4,7 @@ import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useState } f
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
+import { ProjectItemId } from '../../../constants';
 import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
@@ -18,7 +19,7 @@ const ProjectSection: FC = () => {
   const { expandedItemIds, onAction, onToggleExpanded, project, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
-  const [editingId, setEditingId] = useState(-1);
+  const [editingId, setEditingId] = useState(ProjectItemId.Empty);
   const [contextMenu, setContextMenu] = useState<ProjectContextMenu>(DEFAULT_PROJECT_CONTEXT_MENU);
   const derivedSelectedIdSet = useMemo(() => new Set(selection), [selection]);
   const selectedIds = selectedIdSet ?? derivedSelectedIdSet;
@@ -31,7 +32,7 @@ const ProjectSection: FC = () => {
   const handleListClick = (event: MouseEvent<HTMLDivElement>) => {
     if (event.target instanceof Element && event.target.closest('[data-project-item]')) return;
 
-    void onAction('selection-cleared', AssetType.Project, 0);
+    void onAction('selection-cleared', AssetType.Project, ProjectItemId.Project);
   };
   const handleCloseContextMenu = useCallback(() => setContextMenu(DEFAULT_PROJECT_CONTEXT_MENU), []);
   const handleContextMenuAction = useCallback((action: string, contentType: AssetType, id: number) => {
@@ -62,13 +63,13 @@ const ProjectSection: FC = () => {
     <Box component="header" display="flex" flexDirection="column" height="100%" minHeight={0} p={1}>
       <ProjectItem
         contentType={AssetType.Project}
-        dropTargetId={projectProxy.rootNodeId}
+        dropTargetId={ProjectItemId.RootFolder}
         expanded={false}
         hasChildren={false}
-        id={0}
-        isEditing={editingId === 0}
-        isContextMenuOpen={contextMenu.isOpen && contextMenu.id === 0}
-        isSelected={selectedIds.has(0)}
+        id={ProjectItemId.Project}
+        isEditing={editingId === ProjectItemId.Project}
+        isContextMenuOpen={contextMenu.isOpen && contextMenu.id === ProjectItemId.Project}
+        isSelected={selectedIds.has(ProjectItemId.Project)}
         name={name}
         onAction={onAction}
         onEditingChange={setEditingId}
@@ -85,9 +86,7 @@ const ProjectSection: FC = () => {
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const { depth, id } = visibleProjectItems[virtualItem.index];
             const item = projectProxy.getContent(id);
-            if (!item) return null;
-
-            return (
+            return item ? (
               <ProjectVirtualRow
                 depth={depth}
                 hasChildren={projectProxy.hasChildren(id)}
@@ -103,7 +102,7 @@ const ProjectSection: FC = () => {
                 onToggleExpanded={onToggleExpanded}
                 start={virtualItem.start}
               />
-            );
+            ) : null;
           })}
         </Box>
       </Box>

@@ -1,6 +1,6 @@
 import { AssetType } from '../../../types';
 
-import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NO_BUNDLE_ID, NotificationError } from './constants';
+import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
 import {
   getDeletableContent,
   getNewContentState,
@@ -93,7 +93,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     const { projectProxy } = state;
     const selectedBundleId = projectProxy.getSelectedBundleId(bundleId);
 
-    return selectedBundleId !== NO_BUNDLE_ID
+    return selectedBundleId !== ProjectItemId.Empty
       ? {
           ...state,
           activeModalType: 'import-asset',
@@ -154,7 +154,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'select': {
     const { id, isExtended, isRange } = action.payload.data;
     const rangeIds = isRange
-      ? [0, ...state.visibleProjectItems.map(({ id }) => id)]
+      ? [ProjectItemId.Project, ...state.visibleProjectItems.map(({ id }) => id)]
       : [];
     const isRangeSelection = rangeIds.includes(id);
     const anchor = state.selectionAnchor === LAST_INDEX ? state.selection.at(LAST_INDEX) ?? id : state.selectionAnchor;

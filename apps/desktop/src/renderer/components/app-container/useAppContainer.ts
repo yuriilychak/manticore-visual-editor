@@ -8,14 +8,14 @@ import type { ApplicationAction, ProjectInfo } from '../../types';
 
 import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
 import { ContentAction } from './common';
-import { NotificationError, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
+import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
 
 const getSelectedProjectItem = (project: ProjectInfo, selection: readonly number[]) => {
-  const selectedId = selection.at(-1) ?? 0;
+  const selectedId = selection.at(-1) ?? ProjectItemId.Project;
 
-  return selectedId === 0
-    ? { id: 0, type: AssetType.Project }
+  return selectedId === ProjectItemId.Project
+    ? { id: ProjectItemId.Project, type: AssetType.Project }
     : project.content?.find((item) => item.id === selectedId);
 };
 

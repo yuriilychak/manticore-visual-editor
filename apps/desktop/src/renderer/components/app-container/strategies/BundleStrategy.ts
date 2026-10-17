@@ -1,12 +1,12 @@
 import { AssetType } from '../../../../types';
 
 import { ContentAction, type ImportAssetResult, ImportAssets, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
-import { NotificationError } from '../constants';
+import { NotificationError, ProjectItemId } from '../constants';
+import { notifyUnavailableDesktopApi } from '../helpers';
 import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
-import { notifyUnavailableDesktopApi } from '../helpers';
 import { createErrorResult } from './helpers';
 
 export class BundleStrategy extends ContentStrategyBase {
@@ -21,7 +21,7 @@ export class BundleStrategy extends ContentStrategyBase {
     if (!project || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
 
     this.projectProxy.addBundle(
-      await window.manticore.createProjectBundle(project.path, this.getField('parentId', 0), name.trim())
+      await window.manticore.createProjectBundle(project.path, this.getField('parentId', ProjectItemId.Project), name.trim())
     );
   }
 
@@ -111,7 +111,7 @@ export class BundleStrategy extends ContentStrategyBase {
 
   async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {
     const trimmedName = name.trim();
-    const hasDuplicateName = this.getNamesAtParentId(this.getField('parentId', 0)).includes(trimmedName);
+    const hasDuplicateName = this.getNamesAtParentId(this.getField('parentId', ProjectItemId.Project)).includes(trimmedName);
 
     return new NewContentValidation(
       hasDuplicateName ? 'name' : '',
