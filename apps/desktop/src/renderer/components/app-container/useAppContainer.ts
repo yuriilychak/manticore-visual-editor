@@ -10,14 +10,15 @@ import { appContainerReducer, createInitialAppContainerState } from './appContai
 import { ContentAction } from './common';
 import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
+import type { ProjectProxy } from './ProjectProxy';
 import { CONTENT_STRATEGIES } from './strategies';
 
-const getSelectedProjectItem = (project: ProjectInfo, selection: readonly number[]) => {
+const getSelectedProjectItem = (projectProxy: ProjectProxy, selection: readonly number[]) => {
   const selectedId = selection.at(-1) ?? ProjectItemId.Project;
 
   return selectedId === ProjectItemId.Project
     ? { id: ProjectItemId.Project, type: AssetType.Project }
-    : project.content?.find((item) => item.id === selectedId);
+    : projectProxy.getItemById(selectedId);
 };
 
 const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
@@ -130,16 +131,16 @@ export const useAppContainer = () => {
     [project?.path]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
-    if (!project) return;
+    if (!projectProxy.hasProject()) return;
 
-    const selectedItem = getSelectedProjectItem(project, selection);
+    const selectedItem = getSelectedProjectItem(projectProxy, selection);
     if (!selectedItem) return;
 
     const action = keyboardShortcuts.getAction(shortcutId, selectedItem.type);
     if (!action) return;
 
     void handleWorkingScreenAction(action, selectedItem.type, selectedItem.id);
-  }, [handleWorkingScreenAction, project, selection]);
+  }, [handleWorkingScreenAction, projectProxy, selection]);
   useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
 
   const projectStructure = useMemo(() => ({

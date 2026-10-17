@@ -23,7 +23,7 @@ export const updateModalData = <Key extends keyof ModalPropsMap>(
 ): ModalPropsMap => ({ ...prevData, [value.type]: value });
 
 const isExpandableItem = (id: number, projectProxy: ProjectProxy) => {
-  const item = projectProxy.getContent(id);
+  const item = projectProxy.getItemById(id);
   return !!item && PROJECT_ITEM_CONFIG[item.type].expandable && projectProxy.hasChildren(id);
 };
 
@@ -63,11 +63,11 @@ export const getDeletableContent = (state: AppContainerState, assetType: AssetTy
   const selectedIds = state.selection.includes(id) ? state.selection : [id];
   const { projectProxy } = state;
   const selectedIdSet = new Set(selectedIds);
-  const selectedItem = projectProxy.getContent(id);
+  const selectedItem = projectProxy.getItemById(id);
   if (!selectedItem || selectedItem.type !== assetType) return [];
 
   return selectedIds.reduce<typeof selectedItem[]>((items, selectedId) => {
-    const item = projectProxy.getContent(selectedId);
+    const item = projectProxy.getItemById(selectedId);
     if (!item || item.id === ProjectItemId.Project || item.id === ProjectItemId.RootFolder) {
       return items;
     }
@@ -75,7 +75,7 @@ export const getDeletableContent = (state: AppContainerState, assetType: AssetTy
     let parentId = item.parentId;
     while (parentId) {
       if (selectedIdSet.has(parentId)) return items;
-      parentId = projectProxy.getContent(parentId)?.parentId ?? ProjectItemId.Project;
+      parentId = projectProxy.getItemById(parentId)?.parentId ?? ProjectItemId.Project;
     }
 
     items.push(item);

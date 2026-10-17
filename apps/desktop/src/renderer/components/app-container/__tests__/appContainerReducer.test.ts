@@ -79,6 +79,6 @@ describe('appContainerReducer project proxy', () => {
     expect(state.projectProxy.bundles.map(({ id }) => id)).toEqual([1]);
     expect(state.projectProxy.getChildrenIds(0)).toEqual([1]);
     expect(state.projectProxy.getSelectedBundleId(-1)).toBe(1);
-    expect(state.projectProxy.getContent(2)?.name).toBe('Image');
+    expect(state.projectProxy.getItemById(2)?.name).toBe('Image');
   });
 });

@@ -27,7 +27,7 @@ export class ProjectProxy {
   }
 
   get bundles() {
-    return this.#bundleIds.map((id) => this.getContent(id)!);
+    return this.#bundleIds.map((id) => this.getItemById(id)!);
   }
 
   getChildrenIds(itemId: number) {
@@ -57,7 +57,7 @@ export class ProjectProxy {
     return this.#currentProject?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
   }
 
-  getContent(id: number) {
+  getItemById(id: number) {
     return this.#contentById.get(id);
   }
 
@@ -106,8 +106,8 @@ export class ProjectProxy {
     }
     const isFolder = (item: ProjectContent) => item.type === AssetType.ProjectFolder || item.type === AssetType.BundleFolder;
     const compareIds = (leftId: number, rightId: number) => {
-      const left = this.getContent(leftId)!;
-      const right = this.getContent(rightId)!;
+      const left = this.getItemById(leftId)!;
+      const right = this.getItemById(rightId)!;
       const folderOrder = Number(isFolder(right)) - Number(isFolder(left));
       return folderOrder || left.name.localeCompare(right.name, undefined, { numeric: true, sensitivity: 'base' }) || left.id - right.id;
     };
