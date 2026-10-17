@@ -3,37 +3,26 @@ import { AssetType } from '../../../../types';
 import { ContentAction } from '../common';
 import { NotificationError } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import { ProjectProxy } from '../ProjectProxy';
-import type { NewContentField, NewContentValidation, NewContentValues } from '../types';
+import type { CreateContentResult, NewContentField, NewContentValidation, NewContentValues } from '../types';
 
 import type { ContentStrategy, ContentStrategyResult } from './types';
 
 export abstract class ContentStrategyBase implements ContentStrategy {
   abstract readonly fields: readonly NewContentField[];
 
-  abstract create(values: NewContentValues): Promise<void>;
+  abstract create(values: NewContentValues, projectPath: string): Promise<CreateContentResult | void>;
   abstract handle(contentAction: ContentAction, projectPath: string): void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
-  abstract validate(values: NewContentValues): Promise<NewContentValidation>;
+  abstract validate(values: NewContentValues, siblingNames: readonly string[]): Promise<NewContentValidation>;
 
   readonly #contentType: AssetType;
   readonly #fieldValues = new Map<string, unknown>();
-  readonly #proxy: ProjectProxy;
 
-  constructor(proxy: ProjectProxy, contentType: AssetType) {
+  constructor(contentType: AssetType) {
     this.#contentType = contentType;
-    this.#proxy = proxy;
   }
 
   get contentType() {
     return this.#contentType;
-  }
-
-  protected get projectProxy() {
-    return this.#proxy;
-  }
-
-  protected getNamesAtParentId(parentId: number) {
-    return this.#proxy.project?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
   }
 
   protected async deleteContent(id: number, projectPath: string, data?: unknown) {
@@ -44,8 +33,7 @@ export abstract class ContentStrategyBase implements ContentStrategy {
     }
 
     try {
-      this.#proxy.replaceProject(await window.manticore.deleteProjectContent(projectPath, ids));
-      return new ContentAction(id, 'delete-completed', {});
+      return new ContentAction(id, 'delete-completed', { project: await window.manticore.deleteProjectContent(projectPath, ids) });
     } catch {
       return new ContentAction(id, 'delete-completed', { error: NotificationError.DeleteContent });
     }

@@ -3,7 +3,6 @@ import { AssetType } from '../../../../types';
 import { ContentAction, type ImportAssetResult, ImportAssets, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError, ProjectItemId } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
@@ -12,17 +11,15 @@ import { createErrorResult } from './helpers';
 export class BundleStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [{ key: 'name' }];
 
-  constructor(projectProxy: ProjectProxy) {
-    super(projectProxy, AssetType.Bundle);
+  constructor() {
+    super(AssetType.Bundle);
   }
 
-  async create({ name = '' }: NewContentValues) {
-    if (!this.projectProxy.hasProject() || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
+  async create({ name = '' }: NewContentValues, projectPath: string) {
+    if (!projectPath || !window.manticore?.createProjectBundle) return notifyUnavailableDesktopApi();
 
-    const project = this.projectProxy.project!;
-    this.projectProxy.addBundle(
-      await window.manticore.createProjectBundle(project.path, this.getField('parentId', ProjectItemId.Project), name.trim())
-    );
+    const content = await window.manticore.createProjectBundle(projectPath, this.getField('parentId', ProjectItemId.Project), name.trim());
+    return new ContentAction(content.id, 'content-created', content);
   }
 
   async handle({ action, data, id }: ContentAction, projectPath: string) {
@@ -51,7 +48,7 @@ export class BundleStrategy extends ContentStrategyBase {
         if (!window.manticore?.renameProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.renameBundle(id, await window.manticore.renameProjectBundle(projectPath, id, data));
+          return new ContentAction(id, 'content-updated', await window.manticore.renameProjectBundle(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.RenameBundle);
         }
@@ -62,7 +59,7 @@ export class BundleStrategy extends ContentStrategyBase {
         if (!window.manticore?.moveProjectBundle) return notifyUnavailableDesktopApi();
 
         try {
-          this.projectProxy.moveBundle(id, await window.manticore.moveProjectBundle(projectPath, id, data));
+          return new ContentAction(id, 'content-updated', await window.manticore.moveProjectBundle(projectPath, id, data));
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }
@@ -91,11 +88,7 @@ export class BundleStrategy extends ContentStrategyBase {
       data.onProgress(Math.min(++current, total), total);
     });
     try {
-      const results = await window.manticore.importAssets(projectPath, bundleId, [...data.assets], jobId);
-      results.forEach(({ asset }) => {
-        if (asset) this.projectProxy.addContent(asset);
-      });
-      return results;
+      return window.manticore.importAssets(projectPath, bundleId, [...data.assets], jobId);
     } catch (error) {
       return data.assets.map(({ filePath }) => ({
         asset: null,
@@ -107,9 +100,9 @@ export class BundleStrategy extends ContentStrategyBase {
     }
   }
 
-  async validate({ name = '' }: NewContentValues): Promise<NewContentValidation> {
+  async validate({ name = '' }: NewContentValues, siblingNames: readonly string[]): Promise<NewContentValidation> {
     const trimmedName = name.trim();
-    const hasDuplicateName = this.getNamesAtParentId(this.getField('parentId', ProjectItemId.Project)).includes(trimmedName);
+    const hasDuplicateName = siblingNames.includes(trimmedName);
 
     return new NewContentValidation(
       hasDuplicateName ? 'name' : '',

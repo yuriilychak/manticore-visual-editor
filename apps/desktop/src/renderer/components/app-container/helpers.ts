@@ -12,10 +12,10 @@ import type { AppContainerState } from './types';
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
 export const getNewContentState = (
-  strategies: AppContainerState['contentStrategies'],
   assetType: AssetType,
-  isOpen: boolean
-): ModalPropsMap['new-content'] => ({ isOpen, strategy: strategies.get(assetType)!, type: 'new-content' });
+  isOpen: boolean,
+  siblingNames: readonly string[] = []
+): ModalPropsMap['new-content'] => ({ assetType, isOpen, siblingNames, type: 'new-content' });
 
 export const updateModalData = <Key extends keyof ModalPropsMap>(
   prevData: ModalPropsMap,

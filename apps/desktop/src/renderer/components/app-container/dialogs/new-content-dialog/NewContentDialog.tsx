@@ -6,17 +6,19 @@ import { Alert, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconB
 import { ASSET_TYPE_LOCALE_KEY } from '../../../../../types';
 
 import type { ModalComponent, ModalPropsMap } from '../../modal-types';
+import { CONTENT_STRATEGIES } from '../../strategies';
 
 import { useNewContentDialog } from './useNewContentDialog';
 
 export type NewContentDialogData = ModalPropsMap['new-content'];
 
-const NewContentDialog: ModalComponent<'new-content'> = ({ isOpen, onAction, strategy }) => {
+const NewContentDialog: ModalComponent<'new-content'> = ({ assetType, isOpen, onAction, projectPath = '', siblingNames }) => {
+  const strategy = CONTENT_STRATEGIES.get(assetType)!;
   const handleClose = () => {
     strategy.setField('parentPath', '');
     void onAction('close-new-content-dialog', strategy.contentType, 0);
   };
-  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, handleClose);
+  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, projectPath, siblingNames, onAction, handleClose);
   const contentTypeLocaleKey = ASSET_TYPE_LOCALE_KEY[strategy.contentType];
 
   return (

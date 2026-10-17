@@ -3,7 +3,6 @@ import { AssetType } from '../../../../types';
 import { ContentAction, NewContentValidation, OpenImportAssets, OpenNewContent } from '../common';
 import { NotificationError, ProjectItemId } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import { ProjectProxy } from '../ProjectProxy';
 import type { NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
@@ -12,8 +11,8 @@ import { createErrorResult } from './helpers';
 export class ProjectStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[];
 
-  constructor(projectProxy: ProjectProxy) {
-    super(projectProxy, AssetType.Project);
+  constructor() {
+    super(AssetType.Project);
     this.fields = [{ key: 'name' }, { key: 'location', selectValue: this.#selectLocation }];
   }
 
@@ -29,7 +28,7 @@ export class ProjectStrategy extends ContentStrategyBase {
   async create({ location = '', name = '' }: NewContentValues) {
     if (!window.manticore?.createProject) return notifyUnavailableDesktopApi();
 
-    this.projectProxy.replaceProject(await window.manticore.createProject({ name: name.trim(), parentPath: location }));
+    return new ContentAction(ProjectItemId.Project, 'project-created', await window.manticore.createProject({ name: name.trim(), parentPath: location }));
   }
 
   async handle({ action, data, id }: ContentAction, projectPath: string) {
@@ -47,7 +46,7 @@ export class ProjectStrategy extends ContentStrategyBase {
           if (!projectPath || !window.manticore?.renameProject) return notifyUnavailableDesktopApi();
 
           try {
-            this.projectProxy.renameProject(await window.manticore.renameProject(projectPath, data));
+            return new ContentAction(id, 'project-renamed', await window.manticore.renameProject(projectPath, data));
           } catch {
             return createErrorResult(id, NotificationError.RenameProject);
           }

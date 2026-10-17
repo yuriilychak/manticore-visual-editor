@@ -10,6 +10,7 @@ import { appContainerReducer, createInitialAppContainerState } from './appContai
 import { ContentAction } from './common';
 import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
+import { CONTENT_STRATEGIES } from './strategies';
 
 const getSelectedProjectItem = (project: ProjectInfo, selection: readonly number[]) => {
   const selectedId = selection.at(-1) ?? ProjectItemId.Project;
@@ -30,7 +31,6 @@ export const useAppContainer = () => {
   const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
   const {
     activeModalType,
-    contentStrategies,
     disabledItemIds,
     expandedItemIds,
     modalData,
@@ -98,6 +98,10 @@ export const useAppContainer = () => {
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
       switch (action) {
+        case 'content-created':
+          return dispatch({ type: action, payload: data as import('@manticore/project/types').ProjectContent });
+        case 'project-created':
+          return dispatch({ type: action, payload: data as ProjectInfo });
         case 'select':
           if (!isSelectionData(data)) return;
           return dispatch({ type: action, payload: { assetType, data, id } });
@@ -110,7 +114,7 @@ export const useAppContainer = () => {
           return dispatch({ type: action });
       }
 
-      const result = await contentStrategies.get(assetType)?.handle(new ContentAction(id, action, data), project?.path ?? '');
+      const result = await CONTENT_STRATEGIES.get(assetType)?.handle(new ContentAction(id, action, data), project?.path ?? '');
 
       if (!result) {
         return;
@@ -118,12 +122,12 @@ export const useAppContainer = () => {
 
       if (result.action === 'open-new-content') {
         const { assetType, fields } = result.data;
-        contentStrategies.get(assetType)!.setFields(fields);
+        CONTENT_STRATEGIES.get(assetType)!.setFields(fields);
       }
 
       return dispatch(result.getResult());
     },
-    [contentStrategies, project?.path]
+    [project?.path]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
     if (!project) return;

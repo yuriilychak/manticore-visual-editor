@@ -1,11 +1,10 @@
 import type { ProjectContent } from '@manticore/project/types';
 import type { ComponentType } from 'react';
 
-import type { ProjectActionHandler } from '../../../types';
+import type { AssetType, ProjectActionHandler } from '../../../types';
 
 import type { ImportAssetResult } from './common';
 import type { ProjectProxy } from './ProjectProxy';
-import type { ContentStrategy } from './strategies';
 
 export type ModalPropsMap = {
   'delete-content': {
@@ -21,11 +20,12 @@ export type ModalPropsMap = {
     type: 'import-asset';
   };
   'new-content': {
+    assetType: AssetType;
     isOpen: boolean;
-    strategy: ContentStrategy;
+    siblingNames: readonly string[];
     type: 'new-content';
   };
 };
 
 export type ModalType = keyof ModalPropsMap;
-export type ModalComponent<Type extends ModalType> = ComponentType<{ onAction: ProjectActionHandler } & ModalPropsMap[Type]>;
+export type ModalComponent<Type extends ModalType> = ComponentType<{ onAction: ProjectActionHandler; projectPath?: string } & ModalPropsMap[Type]>;

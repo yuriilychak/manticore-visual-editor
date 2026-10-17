@@ -8,24 +8,18 @@ import {
   updateModalData
 } from './helpers';
 import { ProjectProxy } from './ProjectProxy';
-import { CONTENT_STRATEGY_CONSTRUCTORS, type ContentStrategy } from './strategies';
 import type { AppContainerAction, AppContainerState } from './types';
 
 export const createInitialAppContainerState = (): AppContainerState => {
   const projectProxy = new ProjectProxy();
-  const contentStrategies = CONTENT_STRATEGY_CONSTRUCTORS.reduce<Map<AssetType, ContentStrategy>>(
-    (strategies, [assetType, Strategy]) => strategies.set(assetType, new Strategy(projectProxy)),
-    new Map()
-  );
   return {
     activeModalType: '',
-    contentStrategies,
     disabledItemIds: [],
     expandedItemIds: new Set(),
     modalData: {
       'delete-content': DEFAULT_DELETE_CONTENT,
       'import-asset': getDefaultImportAssetsDialog(projectProxy),
-      'new-content': getNewContentState(contentStrategies, AssetType.ProjectFolder, false)
+      'new-content': getNewContentState(AssetType.ProjectFolder, false)
     },
     notificationError: NotificationError.None,
     projectProxy,
@@ -41,16 +35,23 @@ const assertUnreachable = (action: never): never => {
 
 export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState => {
   switch (action.type) {
+  case 'content-created':
+    state.projectProxy.addContent(action.payload);
+    return state;
+  case 'content-updated':
+    state.projectProxy.moveContent(action.payload.id, action.payload);
+    return state;
   case 'create-project':
     return {
     ...state,
     activeModalType: 'new-content',
-    modalData: updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.Project, true))
+    modalData: updateModalData(state.modalData, getNewContentState(AssetType.Project, true))
     };
   case 'delete-completed': {
-    const { error } = action.payload;
+    const { error, project } = action.payload;
+    const nextState = project ? projectChanged(state, project) : state;
     return {
-    ...state,
+    ...nextState,
     activeModalType: '',
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notificationError: error ?? state.notificationError,
@@ -116,6 +117,9 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'import-assets-completed': {
     const results = action.payload;
     const errors = results.filter(({ error }) => error);
+    results.forEach(({ asset }) => {
+      if (asset) state.projectProxy.addContent(asset);
+    });
 
     return {
       ...state,
@@ -127,11 +131,12 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   }
   case 'open-new-content': {
     const data = action.payload;
-    const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, data.assetType, true));
+    const siblingNames = state.projectProxy.getNamesAtParentId(data.fields.parentId);
+    const modalData = updateModalData(state.modalData, getNewContentState(data.assetType, true, siblingNames));
     return { ...state, activeModalType: 'new-content', modalData };
   }
   case 'close-new-content-dialog': {
-    const modalData = updateModalData(state.modalData, getNewContentState(state.contentStrategies, AssetType.ProjectFolder, false));
+    const modalData = updateModalData(state.modalData, getNewContentState(AssetType.ProjectFolder, false));
     return { ...state, activeModalType: '', modalData };
   }
   case 'show-notification': {
@@ -143,6 +148,12 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   }
   case 'project-changed':
     return projectChanged(state, action.payload);
+  case 'project-created':
+    state.projectProxy.replaceProject(action.payload);
+    return state;
+  case 'project-renamed':
+    state.projectProxy.renameProject(action.payload);
+    return state;
   case 'restore-project-completed': {
     const { error, project } = action.payload;
     return project

@@ -3,8 +3,7 @@ import { AssetType } from '../../../../types';
 import { ContentAction, NewContentValidation } from '../common';
 import { NotificationError } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import { ProjectProxy } from '../ProjectProxy';
-import type { NewContentField, NewContentValues } from '../types';
+import type { NewContentField } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
 import { createErrorResult } from './helpers';
@@ -12,11 +11,11 @@ import { createErrorResult } from './helpers';
 export class ImageStrategy extends ContentStrategyBase {
   readonly fields: readonly NewContentField[] = [];
 
-  constructor(projectProxy: ProjectProxy) {
-    super(projectProxy, AssetType.Image);
+  constructor() {
+    super(AssetType.Image);
   }
 
-  create(_values: NewContentValues): Promise<void> {
+  create(): Promise<void> {
     return Promise.resolve();
   }
 
@@ -27,13 +26,13 @@ export class ImageStrategy extends ContentStrategyBase {
     if (!projectPath || !window.manticore?.moveProjectContent) return notifyUnavailableDesktopApi();
 
     try {
-      this.projectProxy.moveContent(id, await window.manticore.moveProjectContent(projectPath, id, data));
+      return new ContentAction(id, 'content-updated', await window.manticore.moveProjectContent(projectPath, id, data));
     } catch {
       return createErrorResult(id, NotificationError.MoveBundle);
     }
   }
 
-  validate(_values: NewContentValues): Promise<NewContentValidation> {
+  validate(): Promise<NewContentValidation> {
     return Promise.resolve(new NewContentValidation());
   }
 }

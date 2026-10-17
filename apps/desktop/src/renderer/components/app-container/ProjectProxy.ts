@@ -53,6 +53,10 @@ export class ProjectProxy {
     return this.#bundleIds.includes(bundleId) ? bundleId : this.#bundleIds[0] ?? ProjectItemId.Empty;
   }
 
+  getNamesAtParentId(parentId: number) {
+    return this.#currentProject?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
+  }
+
   getContent(id: number) {
     return this.#contentById.get(id);
   }

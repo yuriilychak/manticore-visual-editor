@@ -9,13 +9,15 @@ import type { ApplicationAction, ProjectInfo, RestoredProject } from '../../type
 
 import type { MenubarItemId } from './app-shell/title-bar/menubar';
 import type { ImportAssetResult } from './common';
+import type { ContentAction } from './common';
 import type { NotificationError } from './constants';
 import type { ModalPropsMap, ModalType } from './modal-types';
 import type { ProjectProxy } from './ProjectProxy';
-import type { ContentStrategy, OpenNewContentData } from './strategies';
+import type { OpenNewContentData } from './strategies';
 
 export type NewContentValues = Record<string, string>;
 export type ApplicationActionHandler = (action: ApplicationAction) => void;
+export type CreateContentResult = ContentAction<'content-created', ProjectContent> | ContentAction<'project-created', ProjectInfo>;
 
 export type VisibleProjectItem = {
   depth: number;
@@ -50,14 +52,13 @@ export type ActionButtonConfig = {
 
 export interface NewContentStrategy {
   contentType: AssetType;
-  create: (values: NewContentValues) => Promise<void>;
+  create: (values: NewContentValues, projectPath: string) => Promise<CreateContentResult | void>;
   fields: readonly NewContentField[];
-  validate: (values: NewContentValues) => Promise<NewContentValidation>;
+  validate: (values: NewContentValues, siblingNames: readonly string[]) => Promise<NewContentValidation>;
 }
 
 export type AppContainerState = {
   activeModalType: ModalType | '';
-  contentStrategies: ReadonlyMap<AssetType, ContentStrategy>;
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
@@ -79,13 +80,17 @@ type EmptyAction<TType extends string> = ReducerAction<TType>;
 
 export type AppContainerAction =
   | EmptyAction<'create-project' | 'close-delete-modal' | 'close-import-assets-dialog' | 'close-new-content-dialog' | 'selection-cleared'>
-  | PayloadAction<'delete-completed', { error?: NotificationError }>
+  | PayloadAction<'content-created', ProjectContent>
+  | PayloadAction<'content-updated', ProjectContent>
+  | PayloadAction<'delete-completed', { error?: NotificationError; project?: ProjectInfo }>
   | PayloadAction<'expanded-item-toggled', number>
   | PayloadAction<'import-assets-completed', readonly ImportAssetResult[]>
   | PayloadAction<'open-delete-modal', WorkingScreenActionPayload>
   | PayloadAction<'open-import-assets', { bundleId: number }>
   | PayloadAction<'open-new-content', OpenNewContentData>
   | PayloadAction<'project-changed', ProjectInfo>
+  | PayloadAction<'project-created', ProjectInfo>
+  | PayloadAction<'project-renamed', string>
   | PayloadAction<'restore-project-completed', RestoredProject>
   | PayloadAction<'select', SelectionPayload>
   | PayloadAction<'show-notification', { error: NotificationError }>;
