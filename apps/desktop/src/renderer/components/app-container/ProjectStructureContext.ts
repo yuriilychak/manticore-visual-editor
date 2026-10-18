@@ -7,6 +7,7 @@ import type { VisibleProjectItem } from './types';
 
 type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
+  projectName: string;
   projectPath: string;
   projectProxy: ProjectProxy;
   selection: readonly number[];

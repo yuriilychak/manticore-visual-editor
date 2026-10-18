@@ -68,6 +68,7 @@ describe('appContainerReducer selection', () => {
 describe('appContainerReducer project proxy', () => {
   test('indexes content and bundle IDs in the project proxy', () => {
     const initialState = createInitialAppContainerState();
+    expect(initialState.projectName).toBe('');
     expect(initialState.projectPath).toBe('');
 
     const state = appContainerReducer(initialState, { type: 'project-changed', payload: {
@@ -83,6 +84,10 @@ describe('appContainerReducer project proxy', () => {
     expect(state.projectProxy.getChildrenIds(0)).toEqual([1]);
     expect(state.projectProxy.getSelectedBundleId(-1)).toBe(1);
     expect(state.projectProxy.getItemById(2)?.name).toBe('Image');
+    expect(state.projectName).toBe('Project');
     expect(state.projectPath).toBe('/tmp/project');
+
+    const renamedState = appContainerReducer(state, { type: 'project-renamed', payload: 'Renamed project' });
+    expect(renamedState.projectName).toBe('Renamed project');
   });
 });

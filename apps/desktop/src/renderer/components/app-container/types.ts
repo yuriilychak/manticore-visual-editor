@@ -63,6 +63,7 @@ export type AppContainerState = {
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
   notificationError: NotificationError;
+  projectName: string;
   projectPath: string;
   projectProxy: ProjectProxy;
   selectionAnchor: number;

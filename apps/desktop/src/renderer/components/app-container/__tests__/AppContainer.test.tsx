@@ -37,7 +37,7 @@ jest.mock('../renderer', () => ({
           {(projectStructure) => (
             <>
               <div
-                data-bundle-count={projectStructure?.projectProxy.project?.content?.length}
+                data-bundle-count={projectStructure?.visibleProjectItems.length}
                 data-project-path={projectStructure?.projectPath}
                 data-testid="renderer"
               />

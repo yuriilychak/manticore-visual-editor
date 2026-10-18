@@ -16,8 +16,7 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
-  const project = projectProxy.project;
+  const { expandedItemIds, onAction, projectName, projectPath, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(ProjectItemId.Empty);
@@ -56,9 +55,7 @@ const ProjectSection: FC = () => {
     window.addEventListener('contextmenu', handleContextMenu, true);
     return () => window.removeEventListener('contextmenu', handleContextMenu, true);
   }, [contextMenu.isOpen, handleCloseContextMenu]);
-  if (!project) return null;
-
-  const { name } = project;
+  if (!projectPath) return null;
 
   return (
     <Box component="header" display="flex" flexDirection="column" height="100%" minHeight={0} p={1}>
@@ -71,7 +68,7 @@ const ProjectSection: FC = () => {
         isEditing={editingId === ProjectItemId.Project}
         isContextMenuOpen={contextMenu.isOpen && contextMenu.id === ProjectItemId.Project}
         isSelected={selectedIds.has(ProjectItemId.Project)}
-        name={name}
+        name={projectName}
         onAction={onAction}
         onEditingChange={setEditingId}
         setContextMenu={setContextMenu}

@@ -38,6 +38,7 @@ export const useAppContainer = () => {
     expandedItemIds,
     modalData,
     notificationError,
+    projectName,
     projectPath,
     projectProxy,
     selection,
@@ -148,12 +149,13 @@ export const useAppContainer = () => {
   const projectStructure = useMemo(() => ({
     expandedItemIds,
     onAction: handleWorkingScreenAction,
+    projectName,
     projectPath,
     projectProxy,
     selection,
     selectedIdSet,
     visibleProjectItems
-  }), [expandedItemIds, handleWorkingScreenAction, projectPath, projectProxy, selectedIdSet, selection, visibleProjectItems]);
+  }), [expandedItemIds, handleWorkingScreenAction, projectName, projectPath, projectProxy, selectedIdSet, selection, visibleProjectItems]);
 
   const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
   return {

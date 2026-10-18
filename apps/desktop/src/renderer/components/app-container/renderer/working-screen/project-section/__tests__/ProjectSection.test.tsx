@@ -78,6 +78,7 @@ describe('ProjectSection', () => {
         value={{
           expandedItemIds,
           onAction: handleAction,
+          projectName: project.name,
           projectPath: project.path,
           projectProxy,
           selection,
@@ -260,6 +261,7 @@ describe('ProjectSection', () => {
         value={{
           expandedItemIds: new Set(),
           onAction,
+          projectName: 'Initial project',
           projectPath: '/tmp/project',
           projectProxy: (() => {
             const projectProxy = new ProjectProxy();

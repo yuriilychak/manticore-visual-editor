@@ -18,14 +18,6 @@ export class ProjectProxy {
     this.#onProjectChange = onProjectChange;
   }
 
-  get project() {
-    return this.#currentProject;
-  }
-
-  hasProject() {
-    return this.#currentProject !== null;
-  }
-
   get bundles() {
     return this.#bundleIds.map((id) => this.getItemById(id)!);
   }
@@ -54,7 +46,7 @@ export class ProjectProxy {
   }
 
   getNamesAtParentId(parentId: number) {
-    return this.#currentProject?.content?.filter((item) => item.parentId === parentId).map((item) => item.name) ?? [];
+    return this.getChildrenIds(parentId).map((id) => this.getItemById(id)!.name);
   }
 
   getItemById(id: number) {
@@ -120,7 +112,7 @@ export class ProjectProxy {
   }
 
   #update(updater: (project: ProjectInfo) => ProjectInfo) {
-    if (!this.hasProject()) return;
+    if (!this.#currentProject) return;
 
     const project = updater(this.#currentProject!);
     this.setProject(project);
