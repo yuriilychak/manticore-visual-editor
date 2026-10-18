@@ -9,16 +9,14 @@ import {
   projectChanged,
   updateModalData
 } from './helpers';
-import { ProjectProxy } from './ProjectProxy';
 import type { AppContainerAction, AppContainerState } from './types';
 
-export const createInitialAppContainerState = (): AppContainerState => {
-  const projectProxy = new ProjectProxy();
-  return {
+export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     activeModalType: '',
     bundles: [],
     childrenIdsByParentId: new Map(),
     contentById: new Map(),
+    currentProject: null,
     disabledItemIds: [],
     expandedItemIds: new Set(),
     modalData: {
@@ -29,11 +27,9 @@ export const createInitialAppContainerState = (): AppContainerState => {
     notificationError: NotificationError.None,
     projectName: '',
     projectPath: '',
-    projectProxy,
     selectionAnchor: ProjectItemId.Empty,
     selection: [],
     visibleProjectItems: []
-  };
 };
 
 const assertUnreachable = (action: never): never => {
@@ -43,11 +39,13 @@ const assertUnreachable = (action: never): never => {
 export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState => {
   switch (action.type) {
   case 'content-created':
-    state.projectProxy.addContent(action.payload);
-    return state;
+    return state.currentProject
+      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.concat(action.payload) })
+      : state;
   case 'content-updated':
-    state.projectProxy.updateContent(action.payload.id, action.payload);
-    return state;
+    return state.currentProject
+      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.map((item) => item.id === action.payload.id ? action.payload : item) })
+      : state;
   case 'create-project':
     return {
     ...state,
@@ -123,15 +121,16 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'import-assets-completed': {
     const results = action.payload;
     const errors = results.filter(({ error }) => error);
-    results.forEach(({ asset }) => {
-      if (asset) state.projectProxy.addContent(asset);
-    });
+    const assets = results.flatMap(({ asset }) => asset ? [asset] : []);
+    const nextState = state.currentProject && assets.length
+      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.concat(assets) })
+      : state;
 
     return {
-      ...state,
+      ...nextState,
       modalData: updateModalData(
-        state.modalData,
-        errors.length ? { ...state.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(state.bundles)
+        nextState.modalData,
+        errors.length ? { ...nextState.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(nextState.bundles)
       )
     };
   }
@@ -155,11 +154,9 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'project-changed':
     return projectChanged(state, action.payload);
   case 'project-created':
-    state.projectProxy.replaceProject(action.payload);
-    return { ...state, projectName: action.payload.name, projectPath: action.payload.path };
+    return projectChanged(state, action.payload);
   case 'project-renamed':
-    state.projectProxy.updateProjectName(action.payload);
-    return { ...state, projectName: action.payload };
+    return state.currentProject ? projectChanged(state, { ...state.currentProject, name: action.payload }) : state;
   case 'restore-project-completed': {
     const { error, project } = action.payload;
     return project

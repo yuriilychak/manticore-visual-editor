@@ -2,11 +2,11 @@ import { describe, expect, test } from '@jest/globals';
 
 import { AssetType } from '../../../../types';
 
-import { appContainerReducer, createInitialAppContainerState } from '../appContainerReducer';
+import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from '../appContainerReducer';
 
 describe('appContainerReducer selection', () => {
   const createState = () => {
-    const state = createInitialAppContainerState();
+    const state = INITIAL_APP_CONTAINER_STATE;
     return appContainerReducer(state, { type: 'project-changed', payload: {
       content: [
         { id: 1, name: '01', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
@@ -67,7 +67,7 @@ describe('appContainerReducer selection', () => {
 
 describe('appContainerReducer project proxy', () => {
   test('indexes content and bundle IDs in the project proxy', () => {
-    const initialState = createInitialAppContainerState();
+    const initialState = INITIAL_APP_CONTAINER_STATE;
     expect(initialState.projectName).toBe('');
     expect(initialState.projectPath).toBe('');
 

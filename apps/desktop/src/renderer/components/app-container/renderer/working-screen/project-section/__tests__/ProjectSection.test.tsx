@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
-import { appContainerReducer, createInitialAppContainerState } from '../../../../appContainerReducer';
+import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from '../../../../appContainerReducer';
 import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
@@ -58,7 +58,7 @@ describe('ProjectSection', () => {
     const ProjectSectionWithContext = () => {
       const [expandedItemIds, setExpandedItemIds] = useState<ReadonlySet<number>>(new Set());
       const project = { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' };
-      const state = appContainerReducer(createInitialAppContainerState(), { type: 'project-changed', payload: project });
+      const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-changed', payload: project });
       const handleAction: ProjectActionHandler = (action, assetType, id, data) => {
         if (action === 'expanded-item-toggled') {
           setExpandedItemIds((current) => {

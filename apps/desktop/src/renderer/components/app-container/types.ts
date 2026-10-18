@@ -12,7 +12,6 @@ import type { ImportAssetResult } from './common';
 import type { ContentAction } from './common';
 import type { NotificationError } from './constants';
 import type { ModalPropsMap, ModalType } from './modal-types';
-import type { ProjectProxy } from './ProjectProxy';
 import type { OpenNewContentData } from './strategies';
 
 export type NewContentValues = Record<string, string>;
@@ -66,9 +65,9 @@ export type AppContainerState = {
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
   notificationError: NotificationError;
+  currentProject: ProjectInfo | null;
   projectName: string;
   projectPath: string;
-  projectProxy: ProjectProxy;
   selectionAnchor: number;
   selection: readonly number[];
   visibleProjectItems: readonly VisibleProjectItem[];

@@ -67,6 +67,7 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
     bundles: [...contentById.values()].filter(({ type }) => type === AssetType.Bundle),
     childrenIdsByParentId,
     contentById,
+    currentProject: project,
     expandedItemIds,
     projectName: project.name,
     projectPath: project.path,

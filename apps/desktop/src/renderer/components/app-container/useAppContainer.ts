@@ -8,7 +8,7 @@ import { AssetType, type ProjectActionHandler } from '../../../types';
 import { type KeyboardShortcutId, keyboardShortcuts } from '../../keyboard-shortcuts';
 import type { ApplicationAction, ProjectInfo } from '../../types';
 
-import { appContainerReducer, createInitialAppContainerState } from './appContainerReducer';
+import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from './appContainerReducer';
 import { ContentAction } from './common';
 import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
@@ -30,7 +30,7 @@ const isSelectionData = (data: unknown): data is { id: number; isExtended: boole
 
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
-  const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
+  const [state, dispatch] = useReducer(appContainerReducer, INITIAL_APP_CONTAINER_STATE);
   const {
     activeModalType,
     childrenIdsByParentId,
@@ -41,7 +41,6 @@ export const useAppContainer = () => {
     notificationError,
     projectName,
     projectPath,
-    projectProxy,
     selection,
     visibleProjectItems
   } = state;
@@ -50,11 +49,6 @@ export const useAppContainer = () => {
     (error: NotificationError) => dispatch({ type: 'show-notification', payload: { error } }),
     []
   );
-  useEffect(() => {
-    projectProxy.setOnProjectChange((project) => dispatch({ type: 'project-changed', payload: project }));
-
-    return () => projectProxy.setOnProjectChange();
-  }, [projectProxy]);
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
 
   useEffect(() => {
@@ -82,7 +76,7 @@ export const useAppContainer = () => {
           }
           void window.manticore
             .openProject()
-            .then(projectProxy.replaceProject.bind(projectProxy))
+            .then((project) => dispatch({ type: 'project-changed', payload: project }))
             .catch(() => showNotification(NotificationError.OpenProject));
           break;
         case 'set-language-en':
@@ -95,7 +89,7 @@ export const useAppContainer = () => {
           void action;
       }
     },
-    [i18n, projectProxy, showNotification]
+    [i18n, showNotification]
   );
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
