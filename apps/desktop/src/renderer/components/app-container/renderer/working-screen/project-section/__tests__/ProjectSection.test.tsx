@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import { useState } from 'react';
 
 import { AssetType, type ProjectActionHandler } from '../../../../../../../types';
-import { ProjectProxy } from '../../../../ProjectProxy';
+import { appContainerReducer, createInitialAppContainerState } from '../../../../appContainerReducer';
 import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 
 import ProjectSection from '../ProjectSection';
@@ -58,8 +58,7 @@ describe('ProjectSection', () => {
     const ProjectSectionWithContext = () => {
       const [expandedItemIds, setExpandedItemIds] = useState<ReadonlySet<number>>(new Set());
       const project = { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' };
-      const projectProxy = new ProjectProxy();
-      projectProxy.setProject(project);
+      const state = appContainerReducer(createInitialAppContainerState(), { type: 'project-changed', payload: project });
       const handleAction: ProjectActionHandler = (action, assetType, id, data) => {
         if (action === 'expanded-item-toggled') {
           setExpandedItemIds((current) => {
@@ -77,12 +76,13 @@ describe('ProjectSection', () => {
       <ProjectStructureContext.Provider
         value={{
           expandedItemIds,
+          childrenIdsByParentId: state.childrenIdsByParentId,
+          contentById: state.contentById,
           onAction: handleAction,
           projectName: project.name,
           projectPath: project.path,
-          projectProxy,
           selection,
-          visibleProjectItems: projectProxy.getVisibleProjectItems(expandedItemIds)
+          visibleProjectItems: state.visibleProjectItems
         }}
       >
         <ProjectSection />
@@ -260,18 +260,11 @@ describe('ProjectSection', () => {
       <ProjectStructureContext.Provider
         value={{
           expandedItemIds: new Set(),
+          childrenIdsByParentId: new Map(),
+          contentById: new Map(),
           onAction,
           projectName: 'Initial project',
           projectPath: '/tmp/project',
-          projectProxy: (() => {
-            const projectProxy = new ProjectProxy();
-            projectProxy.setProject({
-              content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
-              name: 'Initial project',
-              path: '/tmp/project'
-            });
-            return projectProxy;
-          })(),
           selection: [],
           visibleProjectItems: []
         }}

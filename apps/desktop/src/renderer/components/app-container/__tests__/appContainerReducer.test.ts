@@ -80,10 +80,10 @@ describe('appContainerReducer project proxy', () => {
       path: '/tmp/project'
     } });
 
-    expect(state.projectProxy.bundles.map(({ id }) => id)).toEqual([1]);
-    expect(state.projectProxy.getChildrenIds(0)).toEqual([1]);
-    expect(state.projectProxy.getSelectedBundleId(-1)).toBe(1);
-    expect(state.projectProxy.getItemById(2)?.name).toBe('Image');
+    expect(state.bundles.map(({ id }) => id)).toEqual([1]);
+    expect(state.childrenIdsByParentId.get(0)).toEqual([1]);
+    expect(state.bundles[0]?.id).toBe(1);
+    expect(state.contentById.get(2)?.name).toBe('Image');
     expect(state.projectName).toBe('Project');
     expect(state.projectPath).toBe('/tmp/project');
 

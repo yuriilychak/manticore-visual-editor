@@ -2,14 +2,15 @@ import { createContext, useContext } from 'react';
 
 import type { ProjectActionHandler } from '../../../types';
 
-import type { ProjectProxy } from './ProjectProxy';
+import type { ProjectContent } from '@manticore/project/types';
 import type { VisibleProjectItem } from './types';
 
 type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
+  childrenIdsByParentId: ReadonlyMap<number, readonly number[]>;
+  contentById: ReadonlyMap<number, ProjectContent>;
   projectName: string;
   projectPath: string;
-  projectProxy: ProjectProxy;
   selection: readonly number[];
   selectedIdSet?: ReadonlySet<number>;
   visibleProjectItems: readonly VisibleProjectItem[];

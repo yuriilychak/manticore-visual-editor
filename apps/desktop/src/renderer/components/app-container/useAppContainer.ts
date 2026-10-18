@@ -12,15 +12,14 @@ import { appContainerReducer, createInitialAppContainerState } from './appContai
 import { ContentAction } from './common';
 import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
-import type { ProjectProxy } from './ProjectProxy';
 import { CONTENT_STRATEGIES } from './strategies';
 
-const getSelectedProjectItem = (projectProxy: ProjectProxy, selection: readonly number[]) => {
+const getSelectedProjectItem = (contentById: ReadonlyMap<number, ProjectContent>, selection: readonly number[]) => {
   const selectedId = selection.at(-1) ?? ProjectItemId.Project;
 
   return selectedId === ProjectItemId.Project
     ? { id: ProjectItemId.Project, type: AssetType.Project }
-    : projectProxy.getItemById(selectedId);
+    : contentById.get(selectedId);
 };
 
 const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
@@ -34,6 +33,8 @@ export const useAppContainer = () => {
   const [state, dispatch] = useReducer(appContainerReducer, undefined, createInitialAppContainerState);
   const {
     activeModalType,
+    childrenIdsByParentId,
+    contentById,
     disabledItemIds,
     expandedItemIds,
     modalData,
@@ -136,26 +137,27 @@ export const useAppContainer = () => {
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
     if (!projectPath) return;
 
-    const selectedItem = getSelectedProjectItem(projectProxy, selection);
+    const selectedItem = getSelectedProjectItem(contentById, selection);
     if (!selectedItem) return;
 
     const action = keyboardShortcuts.getAction(shortcutId, selectedItem.type);
     if (!action) return;
 
     void handleWorkingScreenAction(action, selectedItem.type, selectedItem.id);
-  }, [handleWorkingScreenAction, projectPath, projectProxy, selection]);
+  }, [contentById, handleWorkingScreenAction, projectPath, selection]);
   useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
 
   const projectStructure = useMemo(() => ({
+    childrenIdsByParentId,
+    contentById,
     expandedItemIds,
     onAction: handleWorkingScreenAction,
     projectName,
     projectPath,
-    projectProxy,
     selection,
     selectedIdSet,
     visibleProjectItems
-  }), [expandedItemIds, handleWorkingScreenAction, projectName, projectPath, projectProxy, selectedIdSet, selection, visibleProjectItems]);
+  }), [childrenIdsByParentId, contentById, expandedItemIds, handleWorkingScreenAction, projectName, projectPath, selectedIdSet, selection, visibleProjectItems]);
 
   const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
   return {

@@ -16,9 +16,8 @@ import { estimateTableRowSize, getFileName, getVisibleFilePaths, isImage } from 
 import { ImportAssetsSession } from './ImportAssetsSession';
 import { createInitialState, importDialogReducer } from './reducer';
 
-const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, errors, isOpen, onAction, projectProxy }) => {
+const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles, errors, isOpen, onAction }) => {
   const { t } = useTranslation();
-  const bundles = projectProxy.bundles;
   const [state, dispatch] = useReducer(importDialogReducer, bundleId, createInitialState);
   const { filePaths, imagePreviewUrls, importProgress, isSelectingFiles, isSubmitting, processingImagePaths, query, selectedBundleId } = state;
   const tableContainerRef = useRef<HTMLDivElement>(null);

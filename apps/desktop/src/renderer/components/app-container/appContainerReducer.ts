@@ -3,6 +3,8 @@ import { AssetType } from '../../../types';
 import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
 import {
   getDeletableContent,
+  getChildrenIds,
+  getVisibleProjectItems,
   getNewContentState,
   projectChanged,
   updateModalData
@@ -14,11 +16,14 @@ export const createInitialAppContainerState = (): AppContainerState => {
   const projectProxy = new ProjectProxy();
   return {
     activeModalType: '',
+    bundles: [],
+    childrenIdsByParentId: new Map(),
+    contentById: new Map(),
     disabledItemIds: [],
     expandedItemIds: new Set(),
     modalData: {
       'delete-content': DEFAULT_DELETE_CONTENT,
-      'import-asset': getDefaultImportAssetsDialog(projectProxy),
+      'import-asset': getDefaultImportAssetsDialog([]),
       'new-content': getNewContentState(AssetType.ProjectFolder, false)
     },
     notificationError: NotificationError.None,
@@ -41,7 +46,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     state.projectProxy.addContent(action.payload);
     return state;
   case 'content-updated':
-    state.projectProxy.moveContent(action.payload.id, action.payload);
+    state.projectProxy.updateContent(action.payload.id, action.payload);
     return state;
   case 'create-project':
     return {
@@ -88,13 +93,12 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return {
     ...state,
     expandedItemIds,
-    visibleProjectItems: state.projectProxy.getVisibleProjectItems(expandedItemIds)
+    visibleProjectItems: getVisibleProjectItems(state.childrenIdsByParentId, expandedItemIds)
     };
   }
   case 'open-import-assets': {
     const { bundleId } = action.payload;
-    const { projectProxy } = state;
-    const selectedBundleId = projectProxy.getSelectedBundleId(bundleId);
+    const selectedBundleId = state.bundles.some(({ id }) => id === bundleId) ? bundleId : state.bundles[0]?.id ?? ProjectItemId.Empty;
 
     return selectedBundleId !== ProjectItemId.Empty
       ? {
@@ -104,7 +108,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
             bundleId: selectedBundleId,
             errors: [],
             isOpen: true,
-            projectProxy,
+            bundles: state.bundles,
             type: 'import-asset'
           })
         }
@@ -114,7 +118,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return {
     ...state,
     activeModalType: '',
-    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(state.projectProxy))
+    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(state.bundles))
     };
   case 'import-assets-completed': {
     const results = action.payload;
@@ -127,13 +131,13 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       ...state,
       modalData: updateModalData(
         state.modalData,
-        errors.length ? { ...state.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(state.projectProxy)
+        errors.length ? { ...state.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(state.bundles)
       )
     };
   }
   case 'open-new-content': {
     const data = action.payload;
-    const siblingNames = state.projectProxy.getNamesAtParentId(data.fields.parentId);
+    const siblingNames = getChildrenIds(state.childrenIdsByParentId, data.fields.parentId).map((id) => state.contentById.get(id)!.name);
     const modalData = updateModalData(state.modalData, getNewContentState(data.assetType, true, siblingNames));
     return { ...state, activeModalType: 'new-content', modalData };
   }
@@ -154,7 +158,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     state.projectProxy.replaceProject(action.payload);
     return { ...state, projectName: action.payload.name, projectPath: action.payload.path };
   case 'project-renamed':
-    state.projectProxy.renameProject(action.payload);
+    state.projectProxy.updateProjectName(action.payload);
     return { ...state, projectName: action.payload };
   case 'restore-project-completed': {
     const { error, project } = action.payload;

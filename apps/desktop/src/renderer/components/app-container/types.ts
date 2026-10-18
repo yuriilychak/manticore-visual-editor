@@ -59,6 +59,9 @@ export interface NewContentStrategy {
 
 export type AppContainerState = {
   activeModalType: ModalType | '';
+  bundles: readonly ProjectContent[];
+  childrenIdsByParentId: ReadonlyMap<number, readonly number[]>;
+  contentById: ReadonlyMap<number, ProjectContent>;
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;

@@ -4,7 +4,6 @@ import type { ComponentType } from 'react';
 import type { AssetType, ProjectActionHandler } from '../../../types';
 
 import type { ImportAssetResult } from './common';
-import type { ProjectProxy } from './ProjectProxy';
 
 export type ModalPropsMap = {
   'delete-content': {
@@ -16,7 +15,7 @@ export type ModalPropsMap = {
     bundleId: number;
     errors: readonly ImportAssetResult[];
     isOpen: boolean;
-    projectProxy: ProjectProxy;
+    bundles: readonly ProjectContent[];
     type: 'import-asset';
   };
   'new-content': {

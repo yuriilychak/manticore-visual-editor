@@ -5,6 +5,7 @@ import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
 import { ProjectItemId } from '../../../constants';
+import { getChildrenIds } from '../../../helpers';
 import { useProjectStructure } from '../../../ProjectStructureContext';
 
 import { ITEM_HEIGHT } from '../renameable-item/constants';
@@ -16,7 +17,7 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, projectName, projectPath, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
+  const { childrenIdsByParentId, contentById, expandedItemIds, onAction, projectName, projectPath, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(ProjectItemId.Empty);
@@ -83,11 +84,11 @@ const ProjectSection: FC = () => {
         <Box height={virtualizer.getTotalSize()} position="relative">
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const { depth, id } = visibleProjectItems[virtualItem.index];
-            const item = projectProxy.getItemById(id);
+            const item = contentById.get(id);
             return item ? (
               <ProjectVirtualRow
                 depth={depth}
-                hasChildren={projectProxy.hasChildren(id)}
+                hasChildren={getChildrenIds(childrenIdsByParentId, id).length > 0}
                 isExpanded={expandedItemIds.has(item.id)}
                 isEditing={editingId === item.id}
                 isContextMenuOpen={contextMenu.isOpen && contextMenu.id === item.id}

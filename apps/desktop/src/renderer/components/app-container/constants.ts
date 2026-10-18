@@ -16,7 +16,7 @@ import type { DeleteContentDialogData } from './dialogs/delete-content-dialog';
 import type { ImportAssetsDialogData } from './dialogs/import-assets-dialog';
 import { notifyUnavailableDesktopApi } from './helpers';
 import type { ModalType } from './modal-types';
-import type { ProjectProxy } from './ProjectProxy';
+import type { ProjectContent } from '@manticore/project/types';
 import { type ActionButtonConfig, ProjectContentDragType } from './types';
 
 export enum NotificationError {
@@ -62,11 +62,11 @@ export enum ProjectItemId {
   RootFolder = 1
 }
 
-export const getDefaultImportAssetsDialog = (projectProxy: ProjectProxy): ImportAssetsDialogData => ({
+export const getDefaultImportAssetsDialog = (bundles: readonly ProjectContent[]): ImportAssetsDialogData => ({
   bundleId: ProjectItemId.Empty,
   errors: [],
   isOpen: false,
-  projectProxy,
+  bundles,
   type: 'import-asset'
 });
 
