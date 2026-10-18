@@ -4,6 +4,7 @@ import type { ComponentType } from 'react';
 import type { AssetType, ProjectActionHandler } from '../../../types';
 
 import type { ImportAssetResult } from './common';
+import type { NewContentContext } from './types';
 
 export type ModalPropsMap = {
   'delete-content': {
@@ -20,6 +21,7 @@ export type ModalPropsMap = {
   };
   'new-content': {
     assetType: AssetType;
+    context: NewContentContext;
     isOpen: boolean;
     siblingNames: readonly string[];
     type: 'new-content';

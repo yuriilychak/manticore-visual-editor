@@ -3,7 +3,7 @@ import { AssetType } from '../../../../types';
 import { ContentAction, NewContentValidation } from '../common';
 import { NotificationError, ProjectItemId } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import type { NewContentField, NewContentValues } from '../types';
+import type { NewContentContext, NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
 import { createErrorResult } from './helpers';
@@ -15,10 +15,10 @@ export class TextureAtlasStrategy extends ContentStrategyBase {
     super(AssetType.TextureAtlas);
   }
 
-  async create({ name = '' }: NewContentValues, projectPath: string) {
+  async create({ name = '' }: NewContentValues, projectPath: string, { parentId = ProjectItemId.Project }: NewContentContext) {
     if (!projectPath || !window.manticore?.createProjectTextureAtlas) return notifyUnavailableDesktopApi();
 
-    const content = await window.manticore.createProjectTextureAtlas(projectPath, this.getField('parentId', ProjectItemId.Project), name.trim());
+    const content = await window.manticore.createProjectTextureAtlas(projectPath, typeof parentId === 'number' ? parentId : ProjectItemId.Project, name.trim());
     return new ContentAction(content.id, 'content-created', content);
   }
 

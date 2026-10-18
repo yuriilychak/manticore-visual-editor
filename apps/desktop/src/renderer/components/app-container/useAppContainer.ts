@@ -70,7 +70,10 @@ export const useAppContainer = () => {
           }
           void window.manticore
             .openProject()
-            .then((project) => dispatch({ type: 'project-changed', payload: project }))
+            .then((data) => dispatch({
+              type: 'project-opened',
+              payload: { assetType: AssetType.Project, data, id: ProjectItemId.Project }
+            }))
             .catch(() => showNotification(NotificationError.OpenProject));
           break;
         case 'set-language-en':
@@ -96,11 +99,6 @@ export const useAppContainer = () => {
 
       if (!result) {
         return;
-      }
-
-      if (result.action === 'open-new-content') {
-        const { assetType, fields } = result.data;
-        CONTENT_STRATEGIES.get(assetType)!.setFields(fields);
       }
 
       return dispatch(result.getResult());

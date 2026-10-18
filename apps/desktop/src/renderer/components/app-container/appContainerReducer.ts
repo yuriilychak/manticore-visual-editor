@@ -6,13 +6,16 @@ import type { ProjectInfo } from '../../types';
 
 import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
 import {
+  assertUnreachable,
   contentAdded,
   contentDeleted,
   contentRelocated,
+  getBundles,
   getChildrenIds,
   getDeletableContent,
   getNewContentState,
   getVisibleProjectItems,
+  isSelectionData,
   projectLoaded,
   updateModalData
 } from './helpers';
@@ -36,19 +39,6 @@ export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     selectionAnchor: ProjectItemId.Empty,
     selection: [],
     visibleProjectItems: []
-};
-
-const getBundles = (state: Pick<AppContainerState, 'bundleIds' | 'contentById'>) =>
-  state.bundleIds.flatMap((id) => state.contentById[id] ? [state.contentById[id]] : []);
-
-const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
-  typeof data === 'object' && data !== null
-  && typeof (data as { id?: unknown }).id === 'number'
-  && typeof (data as { isExtended?: unknown }).isExtended === 'boolean'
-  && typeof (data as { isRange?: unknown }).isRange === 'boolean';
-
-const assertUnreachable = (action: never): never => {
-  throw new Error(`Unknown app-container action: ${JSON.stringify(action)}`);
 };
 
 export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState => {
@@ -97,12 +87,6 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
         }
       : state;
   }
-  case 'close-delete-modal':
-    return {
-    ...state,
-    activeModalType: '',
-    modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT)
-    };
   case 'expanded-item-toggled': {
     const { id } = action.payload;
     const expandedItemIds = new Set(state.expandedItemIds);
@@ -132,12 +116,6 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
         }
       : { ...state, notificationError: NotificationError.ContentTypeUnavailable };
   }
-  case 'close-import-assets-dialog':
-    return {
-    ...state,
-    activeModalType: '',
-    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(getBundles(state)))
-    };
   case 'import-assets-completed': {
     const results = action.payload;
     const errors = results.filter(({ error }) => error);
@@ -157,12 +135,25 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   case 'open-new-content': {
     const data = action.payload;
     const siblingNames = getChildrenIds(state.childrenIdsByParentId, data.fields.parentId).map((id) => state.contentById[id]!.name);
-    const modalData = updateModalData(state.modalData, getNewContentState(data.assetType, true, siblingNames));
+    const modalData = updateModalData(state.modalData, getNewContentState(data.assetType, true, siblingNames, data.fields));
     return { ...state, activeModalType: 'new-content', modalData };
   }
-  case 'close-new-content-dialog': {
-    const modalData = updateModalData(state.modalData, getNewContentState(AssetType.ProjectFolder, false));
-    return { ...state, activeModalType: '', modalData };
+  case 'close-modal': {
+    let modalData;
+    switch (action.payload.data) {
+      case 'delete-content':
+        modalData = DEFAULT_DELETE_CONTENT;
+        break;
+      case 'import-asset':
+        modalData = getDefaultImportAssetsDialog(getBundles(state));
+        break;
+      case 'new-content':
+        modalData = getNewContentState(AssetType.ProjectFolder, false);
+        break;
+      default:
+        return state;
+    }
+    return { ...state, activeModalType: '', modalData: updateModalData(state.modalData, modalData) };
   }
   case 'show-notification': {
     const { error: notificationError } = action.payload;
@@ -171,9 +162,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     notificationError
     };
   }
-  case 'project-changed':
-    return projectLoaded(state, action.payload);
-  case 'project-created':
+  case 'project-opened':
     return projectLoaded(state, action.payload.data as ProjectInfo);
   case 'project-renamed':
     return { ...state, projectName: action.payload };

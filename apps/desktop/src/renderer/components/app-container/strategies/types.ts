@@ -23,9 +23,6 @@ export interface WorkingScreenActionStrategy {
   handle: (contentAction: ContentAction, projectPath: string) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;
 }
 
-export interface ContentStrategy extends NewContentStrategy, WorkingScreenActionStrategy {
-  setField: (key: string, value: unknown) => void;
-  setFields: (fields: Record<string, unknown>) => void;
-}
+export interface ContentStrategy extends NewContentStrategy, WorkingScreenActionStrategy {}
 
 export type ContentStrategyAssetType = AssetType.Bundle | AssetType.BundleFolder | AssetType.Image | AssetType.Project | AssetType.ProjectFolder | AssetType.TextureAtlas;

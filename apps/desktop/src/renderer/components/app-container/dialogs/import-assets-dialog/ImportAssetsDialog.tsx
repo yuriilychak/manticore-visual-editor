@@ -90,7 +90,7 @@ const ImportAssetsDialog: ModalComponent<'import-asset'> = ({ bundleId, bundles,
     }
   };
   const handleClose = () => {
-    void onAction('close-import-assets-dialog', AssetType.Bundle, selectedBundleId);
+    void onAction('close-modal', AssetType.Bundle, selectedBundleId, 'import-asset');
   };
 
   return (

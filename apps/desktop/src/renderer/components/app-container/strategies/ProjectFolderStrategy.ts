@@ -3,7 +3,7 @@ import { AssetType } from '../../../../types';
 import { ContentAction, NewContentValidation, OpenNewContent } from '../common';
 import { NotificationError, ProjectItemId } from '../constants';
 import { notifyUnavailableDesktopApi } from '../helpers';
-import type { NewContentField, NewContentValues } from '../types';
+import type { NewContentContext, NewContentField, NewContentValues } from '../types';
 
 import { ContentStrategyBase } from './ContentStrategyBase';
 import { createErrorResult } from './helpers';
@@ -15,10 +15,10 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
     super(AssetType.ProjectFolder);
   }
 
-  async create({ name = '' }: NewContentValues, projectPath: string) {
+  async create({ name = '' }: NewContentValues, projectPath: string, { parentId = ProjectItemId.Project }: NewContentContext) {
     if (!projectPath || !window.manticore?.createProjectFolder) return notifyUnavailableDesktopApi();
 
-    const content = await window.manticore.createProjectFolder(projectPath, this.getField('parentId', ProjectItemId.Project), name.trim());
+    const content = await window.manticore.createProjectFolder(projectPath, typeof parentId === 'number' ? parentId : ProjectItemId.Project, name.trim());
     return new ContentAction(content.id, 'content-created', content);
   }
 

@@ -28,7 +28,7 @@ export class ProjectStrategy extends ContentStrategyBase {
   async create({ location = '', name = '' }: NewContentValues) {
     if (!window.manticore?.createProject) return notifyUnavailableDesktopApi();
 
-    return new ContentAction(ProjectItemId.Project, 'project-created', await window.manticore.createProject({ name: name.trim(), parentPath: location }));
+    return new ContentAction(ProjectItemId.Project, 'project-opened', await window.manticore.createProject({ name: name.trim(), parentPath: location }));
   }
 
   async handle({ action, data, id }: ContentAction, projectPath: string) {

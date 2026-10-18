@@ -7,7 +7,7 @@ import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from '../appContaine
 describe('appContainerReducer selection', () => {
   const createState = () => {
     const state = INITIAL_APP_CONTAINER_STATE;
-    return appContainerReducer(state, { type: 'project-changed', payload: {
+    return appContainerReducer(state, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
       content: [
         { id: 1, name: '01', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
         { id: 2, name: '02', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
@@ -15,7 +15,7 @@ describe('appContainerReducer selection', () => {
       ],
       name: 'Project',
       path: '/tmp/project'
-    } });
+    } } });
   };
 
   test('selects an inclusive Shift range from the selection anchor', () => {
@@ -71,14 +71,14 @@ describe('appContainerReducer project proxy', () => {
     expect(initialState.projectName).toBe('');
     expect(initialState.projectPath).toBe('');
 
-    const state = appContainerReducer(initialState, { type: 'project-changed', payload: {
+    const state = appContainerReducer(initialState, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
       content: [
         { id: 1, name: 'Bundle', parentId: 0, type: AssetType.Bundle, version: 0 },
         { id: 2, name: 'Image', parentId: 1, type: AssetType.Image, version: 0 }
       ],
       name: 'Project',
       path: '/tmp/project'
-    } });
+    } } });
 
     expect(state.bundleIds).toEqual([1]);
     expect(state.childrenIdsByParentId[0]).toEqual([1]);

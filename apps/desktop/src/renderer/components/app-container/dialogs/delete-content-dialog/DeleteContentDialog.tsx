@@ -19,7 +19,7 @@ const DeleteContentDialogContent: ModalComponent<'delete-content'> = ({ items, o
     await onAction('delete', item.type, item.id, items.map(({ id }) => id));
   };
   const handleClose = () => {
-    void onAction('close-delete-modal', items[0]?.type ?? 0, items[0]?.id ?? 0);
+    void onAction('close-modal', items[0]?.type ?? 0, items[0]?.id ?? 0, 'delete-content');
   };
   const name = items.map((item) => item.name).join(', ');
 

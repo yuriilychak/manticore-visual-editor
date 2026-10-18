@@ -6,20 +6,38 @@ import type { ProjectInfo } from '../../types';
 
 import { FOLDER_TYPES, PROJECT_ITEM_CONFIG, ProjectItemId } from './constants';
 import type { ModalPropsMap } from './modal-types';
-import type { AppContainerState, VisibleProjectItem } from './types';
+import type { AppContainerState, NewContentContext, VisibleProjectItem } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
 export const getNewContentState = (
   assetType: AssetType,
   isOpen: boolean,
-  siblingNames: readonly string[] = []
-): ModalPropsMap['new-content'] => ({ assetType, isOpen, siblingNames, type: 'new-content' });
+  siblingNames: readonly string[] = [],
+  context: NewContentContext = {}
+): ModalPropsMap['new-content'] => ({ assetType, context, isOpen, siblingNames, type: 'new-content' });
 
 export const updateModalData = <Key extends keyof ModalPropsMap>(
   prevData: ModalPropsMap,
   value: ModalPropsMap[Key]
 ): ModalPropsMap => ({ ...prevData, [value.type]: value });
+
+export const getBundles = (state: Pick<AppContainerState, 'bundleIds' | 'contentById'>) =>
+  state.bundleIds.reduce<ProjectContent[]>((bundles, id) => {
+    const bundle = state.contentById[id];
+    if (bundle) bundles.push(bundle);
+    return bundles;
+  }, []);
+
+export const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
+  typeof data === 'object' && data !== null
+  && typeof (data as { id?: unknown }).id === 'number'
+  && typeof (data as { isExtended?: unknown }).isExtended === 'boolean'
+  && typeof (data as { isRange?: unknown }).isRange === 'boolean';
+
+export const assertUnreachable = (action: never): never => {
+  throw new Error(`Unknown app-container action: ${JSON.stringify(action)}`);
+};
 
 export const getChildrenIds = (childrenIdsByParentId: Readonly<Record<number, readonly number[]>>, id: number) => {
   const childIds = childrenIdsByParentId[id];

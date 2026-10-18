@@ -12,13 +12,12 @@ import { useNewContentDialog } from './useNewContentDialog';
 
 export type NewContentDialogData = ModalPropsMap['new-content'];
 
-const NewContentDialog: ModalComponent<'new-content'> = ({ assetType, isOpen, onAction, projectPath = '', siblingNames }) => {
+const NewContentDialog: ModalComponent<'new-content'> = ({ assetType, context, isOpen, onAction, projectPath = '', siblingNames }) => {
   const strategy = CONTENT_STRATEGIES.get(assetType)!;
   const handleClose = () => {
-    strategy.setField('parentPath', '');
-    void onAction('close-new-content-dialog', strategy.contentType, 0);
+    void onAction('close-modal', strategy.contentType, 0, 'new-content');
   };
-  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, projectPath, siblingNames, onAction, handleClose);
+  const { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values } = useNewContentDialog(strategy, projectPath, siblingNames, context, onAction, handleClose);
   const contentTypeLocaleKey = ASSET_TYPE_LOCALE_KEY[strategy.contentType];
 
   return (

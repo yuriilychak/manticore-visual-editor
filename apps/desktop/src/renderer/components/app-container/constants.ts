@@ -44,13 +44,11 @@ export const SELECTED_ACTION_IDS_BY_LANGUAGE: Readonly<Record<string, readonly A
 
 export const WORKING_SCREEN_REDUCER_ACTIONS = new Set([
   'content-created',
-  'project-created',
+  'project-opened',
   'select',
   'selection-cleared',
   'open-delete-modal',
-  'close-delete-modal',
-  'close-new-content-dialog',
-  'close-import-assets-dialog',
+  'close-modal',
   'expanded-item-toggled'
 ]);
 

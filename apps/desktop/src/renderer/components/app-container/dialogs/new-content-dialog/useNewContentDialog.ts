@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { ASSET_TYPE_LOCALE_KEY, type ProjectActionHandler } from '../../../../../types';
 
 import { NewContentValidation } from '../../common';
-import type { NewContentStrategy, NewContentValues } from '../../types';
+import type { NewContentContext, NewContentStrategy, NewContentValues } from '../../types';
 
 const INITIAL_VALIDATION = new NewContentValidation();
 
@@ -12,6 +12,7 @@ export const useNewContentDialog = (
   strategy: NewContentStrategy,
   projectPath: string,
   siblingNames: readonly string[],
+  context: NewContentContext,
   onAction: ProjectActionHandler,
   onClose: () => void
 ) => {
@@ -46,7 +47,7 @@ export const useNewContentDialog = (
     if (!validation.isValid) return;
 
     try {
-      const result = await strategy.create(values, projectPath);
+      const result = await strategy.create(values, projectPath, context);
       if (result) await onAction(result.action, strategy.contentType, result.id, result.data);
       setError('');
       setValues({});
@@ -54,7 +55,7 @@ export const useNewContentDialog = (
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : t(`${ASSET_TYPE_LOCALE_KEY[strategy.contentType]}.error`));
     }
-  }, [onAction, onClose, projectPath, strategy, t, validation.isValid, values]);
+  }, [context, onAction, onClose, projectPath, strategy, t, validation.isValid, values]);
 
   return { error, handleCreate, handleFieldSelect, onFieldChange, t, validation, values };
 };
