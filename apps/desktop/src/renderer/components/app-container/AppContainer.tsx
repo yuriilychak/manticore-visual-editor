@@ -36,7 +36,7 @@ const AppContainer: FC = () => {
           </ProjectStructureContext.Provider>
         </ApplicationActionContext.Provider>
       </AppShell>
-      <AppModal modalData={modalData} onAction={handleWorkingScreenAction} projectPath={projectStructure.project?.path ?? ''} type={activeModalType} />
+      <AppModal modalData={modalData} onAction={handleWorkingScreenAction} projectPath={projectStructure.projectPath} type={activeModalType} />
       <NotificationSnackbar error={notificationError} onClose={handleCloseNotification} />
     </>
   );

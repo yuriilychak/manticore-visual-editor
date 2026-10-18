@@ -37,8 +37,8 @@ jest.mock('../renderer', () => ({
           {(projectStructure) => (
             <>
               <div
-                data-bundle-count={projectStructure?.project?.content?.length}
-                data-project-path={projectStructure?.project?.path}
+                data-bundle-count={projectStructure?.projectProxy.project?.content?.length}
+                data-project-path={projectStructure?.projectPath}
                 data-testid="renderer"
               />
               <button onClick={() => void projectStructure?.onAction('add-folder', AssetType.Project, 0)}>Add folder</button>

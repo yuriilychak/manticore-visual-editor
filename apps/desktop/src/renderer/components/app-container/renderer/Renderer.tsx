@@ -11,7 +11,7 @@ import { SPLASH_TRANSITION_DURATION } from './constants';
 import { SplashScreen } from './splash-screen';
 
 const Renderer: FC = () => {
-  const { project } = useProjectStructure();
+  const { projectPath } = useProjectStructure();
   const [isReady, setReady] = useState(false);
   const [hasLocalizationError, setHasLocalizationError] = useState(false);
   const [showApp, setShowApp] = useState(false);
@@ -35,7 +35,7 @@ const Renderer: FC = () => {
   return showApp ? (
     <Fade appear in timeout={SPLASH_TRANSITION_DURATION}>
       <Box display="flex" flexDirection="column" flexGrow={1}>
-        {project?.path ? <WorkingScreen /> : <WelcomeScreen />}
+        {projectPath ? <WorkingScreen /> : <WelcomeScreen />}
       </Box>
     </Fade>
   ) : (

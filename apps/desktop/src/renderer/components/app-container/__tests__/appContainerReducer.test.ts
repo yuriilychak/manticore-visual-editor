@@ -67,7 +67,10 @@ describe('appContainerReducer selection', () => {
 
 describe('appContainerReducer project proxy', () => {
   test('indexes content and bundle IDs in the project proxy', () => {
-    const state = appContainerReducer(createInitialAppContainerState(), { type: 'project-changed', payload: {
+    const initialState = createInitialAppContainerState();
+    expect(initialState.projectPath).toBe('');
+
+    const state = appContainerReducer(initialState, { type: 'project-changed', payload: {
       content: [
         { id: 1, name: 'Bundle', parentId: 0, type: AssetType.Bundle, version: 0 },
         { id: 2, name: 'Image', parentId: 1, type: AssetType.Image, version: 0 }
@@ -80,5 +83,6 @@ describe('appContainerReducer project proxy', () => {
     expect(state.projectProxy.getChildrenIds(0)).toEqual([1]);
     expect(state.projectProxy.getSelectedBundleId(-1)).toBe(1);
     expect(state.projectProxy.getItemById(2)?.name).toBe('Image');
+    expect(state.projectPath).toBe('/tmp/project');
   });
 });

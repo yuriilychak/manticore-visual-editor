@@ -22,6 +22,7 @@ export const createInitialAppContainerState = (): AppContainerState => {
       'new-content': getNewContentState(AssetType.ProjectFolder, false)
     },
     notificationError: NotificationError.None,
+    projectPath: '',
     projectProxy,
     selectionAnchor: ProjectItemId.Empty,
     selection: [],
@@ -150,7 +151,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return projectChanged(state, action.payload);
   case 'project-created':
     state.projectProxy.replaceProject(action.payload);
-    return state;
+    return { ...state, projectPath: action.payload.path };
   case 'project-renamed':
     state.projectProxy.renameProject(action.payload);
     return state;

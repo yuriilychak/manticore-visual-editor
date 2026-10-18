@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 const mockInitializeI18n = jest.fn<() => Promise<void>>();
 
 jest.mock('../../../../localization', () => ({ initializeI18n: mockInitializeI18n }));
-jest.mock('../../ProjectStructureContext', () => ({ useProjectStructure: () => ({ project: null }) }));
+jest.mock('../../ProjectStructureContext', () => ({ useProjectStructure: () => ({ projectPath: '' }) }));
 jest.mock('../welcome-screen', () => ({ WelcomeScreen: () => <div>Application ready</div> }));
 jest.mock('../working-screen', () => ({ WorkingScreen: () => <div>Working project</div> }));
 jest.mock('../splash-screen', () => ({

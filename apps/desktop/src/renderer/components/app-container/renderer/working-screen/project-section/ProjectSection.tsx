@@ -16,7 +16,8 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { expandedItemIds, onAction, onToggleExpanded, project, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
+  const { expandedItemIds, onAction, projectProxy, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
+  const project = projectProxy.project;
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(ProjectItemId.Empty);
@@ -99,7 +100,6 @@ const ProjectSection: FC = () => {
                 onAction={onAction}
                 onEditingChange={setEditingId}
                 setContextMenu={setContextMenu}
-                onToggleExpanded={onToggleExpanded}
                 start={virtualItem.start}
               />
             ) : null;

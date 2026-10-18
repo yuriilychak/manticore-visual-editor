@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import type { ProjectContent } from '@manticore/project/types';
+
 import { AssetType, type ProjectActionHandler } from '../../../types';
 
 import { type KeyboardShortcutId, keyboardShortcuts } from '../../keyboard-shortcuts';
@@ -36,11 +38,11 @@ export const useAppContainer = () => {
     expandedItemIds,
     modalData,
     notificationError,
+    projectPath,
     projectProxy,
     selection,
     visibleProjectItems
   } = state;
-  const project = projectProxy.project;
   const selectedIdSet = useMemo(() => new Set(selection), [selection]);
   const showNotification = useCallback(
     (error: NotificationError) => dispatch({ type: 'show-notification', payload: { error } }),
@@ -61,8 +63,6 @@ export const useAppContainer = () => {
       .then((payload) => dispatch({ type: 'restore-project-completed', payload }))
       .catch(() => showNotification(NotificationError.RestoreProject));
   }, [showNotification]);
-  const onToggleExpanded = useCallback((id: number) => dispatch({ type: 'expanded-item-toggled', payload: id }), []);
-
   const handleAction = useCallback(
     (action: ApplicationAction) => {
       switch (action) {
@@ -100,7 +100,7 @@ export const useAppContainer = () => {
     async (action, assetType, id, data) => {
       switch (action) {
         case 'content-created':
-          return dispatch({ type: action, payload: data as import('@manticore/project/types').ProjectContent });
+          return dispatch({ type: action, payload: data as ProjectContent });
         case 'project-created':
           return dispatch({ type: action, payload: data as ProjectInfo });
         case 'select':
@@ -113,9 +113,11 @@ export const useAppContainer = () => {
         case 'close-new-content-dialog':
         case 'close-import-assets-dialog':
           return dispatch({ type: action });
+        case 'expanded-item-toggled':
+          return dispatch({ type: action, payload: id });
       }
 
-      const result = await CONTENT_STRATEGIES.get(assetType)?.handle(new ContentAction(id, action, data), project?.path ?? '');
+      const result = await CONTENT_STRATEGIES.get(assetType)?.handle(new ContentAction(id, action, data), projectPath);
 
       if (!result) {
         return;
@@ -128,10 +130,10 @@ export const useAppContainer = () => {
 
       return dispatch(result.getResult());
     },
-    [project?.path]
+    [projectPath]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
-    if (!projectProxy.hasProject()) return;
+    if (!projectPath) return;
 
     const selectedItem = getSelectedProjectItem(projectProxy, selection);
     if (!selectedItem) return;
@@ -140,19 +142,18 @@ export const useAppContainer = () => {
     if (!action) return;
 
     void handleWorkingScreenAction(action, selectedItem.type, selectedItem.id);
-  }, [handleWorkingScreenAction, projectProxy, selection]);
+  }, [handleWorkingScreenAction, projectPath, projectProxy, selection]);
   useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
 
   const projectStructure = useMemo(() => ({
     expandedItemIds,
     onAction: handleWorkingScreenAction,
-    onToggleExpanded,
-    project,
+    projectPath,
     projectProxy,
     selection,
     selectedIdSet,
     visibleProjectItems
-  }), [expandedItemIds, handleWorkingScreenAction, onToggleExpanded, project, selectedIdSet, selection, visibleProjectItems]);
+  }), [expandedItemIds, handleWorkingScreenAction, projectPath, projectProxy, selectedIdSet, selection, visibleProjectItems]);
 
   const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
   return {

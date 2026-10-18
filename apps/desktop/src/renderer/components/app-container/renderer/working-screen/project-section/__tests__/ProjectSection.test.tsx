@@ -60,22 +60,28 @@ describe('ProjectSection', () => {
       const project = { content: getProjectContent(folders, content), name: 'Initial project', path: '/tmp/project' };
       const projectProxy = new ProjectProxy();
       projectProxy.setProject(project);
+      const handleAction: ProjectActionHandler = (action, assetType, id, data) => {
+        if (action === 'expanded-item-toggled') {
+          setExpandedItemIds((current) => {
+            const next = new Set(current);
+            if (next.has(id)) next.delete(id);
+            else next.add(id);
+            return next;
+          });
+        }
+
+        return onAction(action, assetType, id, data);
+      };
 
       return (
       <ProjectStructureContext.Provider
         value={{
           expandedItemIds,
-          onAction,
-          project,
+          onAction: handleAction,
+          projectPath: project.path,
           projectProxy,
           selection,
-          visibleProjectItems: projectProxy.getVisibleProjectItems(expandedItemIds),
-          onToggleExpanded: (id) => setExpandedItemIds((current) => {
-            const next = new Set(current);
-            if (next.has(id)) next.delete(id);
-            else next.add(id);
-            return next;
-          })
+          visibleProjectItems: projectProxy.getVisibleProjectItems(expandedItemIds)
         }}
       >
         <ProjectSection />
@@ -254,11 +260,7 @@ describe('ProjectSection', () => {
         value={{
           expandedItemIds: new Set(),
           onAction,
-          project: {
-            content: [{ data: null, id: 1, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 }],
-            name: 'Initial project',
-            path: '/tmp/project'
-          },
+          projectPath: '/tmp/project',
           projectProxy: (() => {
             const projectProxy = new ProjectProxy();
             projectProxy.setProject({
@@ -269,8 +271,7 @@ describe('ProjectSection', () => {
             return projectProxy;
           })(),
           selection: [],
-          visibleProjectItems: [],
-          onToggleExpanded: jest.fn()
+          visibleProjectItems: []
         }}
       >
         <ProjectSection />

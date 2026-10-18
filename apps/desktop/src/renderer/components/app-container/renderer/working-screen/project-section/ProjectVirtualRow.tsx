@@ -16,7 +16,6 @@ type ProjectVirtualRowProps = {
   onEditingChange: (id: number) => void;
   isContextMenuOpen: boolean;
   setContextMenu: Dispatch<SetStateAction<ProjectContextMenu>>;
-  onToggleExpanded: (id: number) => void;
   item: ProjectContent;
   start: number;
 };
@@ -31,14 +30,13 @@ const ProjectVirtualRow: FC<ProjectVirtualRowProps> = ({
   onEditingChange,
   isContextMenuOpen,
   setContextMenu,
-  onToggleExpanded,
   item,
   start
 }) => {
   const handleClick = (event: MouseEvent<HTMLDivElement>) => {
     if (!hasChildren || event.ctrlKey || event.metaKey || event.shiftKey || (event.target instanceof Element && event.target.closest('button, input'))) return;
 
-    onToggleExpanded(item.id);
+    void onAction('expanded-item-toggled', item.type, item.id);
   };
 
   return (

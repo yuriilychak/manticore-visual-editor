@@ -40,10 +40,10 @@ const getProjectSelectionState = (
 
 export const projectChanged = (state: AppContainerState, project: ProjectInfo): AppContainerState => {
   const previousProject = state.projectProxy.project;
-  const isCurrentProject = previousProject?.path === project.path;
+  const isCurrentProject = state.projectPath === project.path;
   const content = project.content ?? [];
   const createdItems = isCurrentProject
-    ? content.filter((item) => !previousProject.content?.some(({ id }) => id === item.id))
+    ? content.filter((item) => !previousProject?.content?.some(({ id }) => id === item.id))
     : [];
   const createdItem = createdItems[0];
   const createdParentIds = createdItems.map(({ parentId }) => parentId);
@@ -54,6 +54,7 @@ export const projectChanged = (state: AppContainerState, project: ProjectInfo): 
   return {
     ...state,
     expandedItemIds,
+    projectPath: project.path,
     visibleProjectItems,
     ...getProjectSelectionState(state, isCurrentProject, createdItem)
   };
