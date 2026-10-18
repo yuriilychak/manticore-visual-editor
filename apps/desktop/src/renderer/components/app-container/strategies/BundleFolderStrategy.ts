@@ -45,7 +45,6 @@ export class BundleFolderStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }
-        return;
       case 'rename':
         if (typeof data !== 'string') return;
         if (!window.manticore?.renameProjectBundleFolder) return notifyUnavailableDesktopApi();
@@ -55,7 +54,6 @@ export class BundleFolderStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.RenameBundleFolder);
         }
-        return;
       default:
         return;
     }

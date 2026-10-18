@@ -39,7 +39,6 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.MoveFolder);
         }
-        return;
       }
       case 'rename': {
         if (typeof data !== 'string') return;
@@ -50,7 +49,6 @@ export class ProjectFolderStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.RenameFolder);
         }
-        return;
       }
       default:
         return;

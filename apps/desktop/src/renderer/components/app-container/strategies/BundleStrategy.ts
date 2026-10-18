@@ -52,7 +52,6 @@ export class BundleStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.RenameBundle);
         }
-        return;
       }
       case 'move': {
         if (typeof data !== 'number') return;
@@ -63,7 +62,6 @@ export class BundleStrategy extends ContentStrategyBase {
         } catch {
           return createErrorResult(id, NotificationError.MoveBundle);
         }
-        return;
       }
       default:
         return;

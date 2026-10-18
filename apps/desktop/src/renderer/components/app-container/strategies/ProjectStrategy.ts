@@ -50,7 +50,6 @@ export class ProjectStrategy extends ContentStrategyBase {
           } catch {
             return createErrorResult(id, NotificationError.RenameProject);
           }
-          return;
         }
       default:
         return;
