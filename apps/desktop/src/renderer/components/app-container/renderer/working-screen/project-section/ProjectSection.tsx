@@ -84,7 +84,7 @@ const ProjectSection: FC = () => {
         <Box height={virtualizer.getTotalSize()} position="relative">
           {virtualizer.getVirtualItems().map((virtualItem) => {
             const { depth, id } = visibleProjectItems[virtualItem.index];
-            const item = contentById.get(id);
+            const item = contentById[id];
             return item ? (
               <ProjectVirtualRow
                 depth={depth}

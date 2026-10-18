@@ -7,8 +7,8 @@ import type { VisibleProjectItem } from './types';
 
 type ProjectStructureContextValue = {
   onAction: ProjectActionHandler;
-  childrenIdsByParentId: ReadonlyMap<number, readonly number[]>;
-  contentById: ReadonlyMap<number, ProjectContent>;
+  childrenIdsByParentId: Readonly<Record<number, readonly number[]>>;
+  contentById: Readonly<Record<number, ProjectContent>>;
   projectName: string;
   projectPath: string;
   selection: readonly number[];

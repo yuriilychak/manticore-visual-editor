@@ -1,22 +1,28 @@
+import type { ProjectContent } from '@manticore/project/types';
+
 import { AssetType } from '../../../types';
+
+import type { ProjectInfo } from '../../types';
 
 import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
 import {
-  getDeletableContent,
+  contentAdded,
+  contentDeleted,
+  contentRelocated,
   getChildrenIds,
-  getVisibleProjectItems,
+  getDeletableContent,
   getNewContentState,
-  projectChanged,
+  getVisibleProjectItems,
+  projectLoaded,
   updateModalData
 } from './helpers';
 import type { AppContainerAction, AppContainerState } from './types';
 
 export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     activeModalType: '',
-    bundles: [],
-    childrenIdsByParentId: new Map(),
-    contentById: new Map(),
-    currentProject: null,
+    bundleIds: [],
+    childrenIdsByParentId: { [ProjectItemId.Project]: [], [ProjectItemId.RootFolder]: [] },
+    contentById: {},
     disabledItemIds: [],
     expandedItemIds: new Set(),
     modalData: {
@@ -32,6 +38,15 @@ export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     visibleProjectItems: []
 };
 
+const getBundles = (state: Pick<AppContainerState, 'bundleIds' | 'contentById'>) =>
+  state.bundleIds.flatMap((id) => state.contentById[id] ? [state.contentById[id]] : []);
+
+const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
+  typeof data === 'object' && data !== null
+  && typeof (data as { id?: unknown }).id === 'number'
+  && typeof (data as { isExtended?: unknown }).isExtended === 'boolean'
+  && typeof (data as { isRange?: unknown }).isRange === 'boolean';
+
 const assertUnreachable = (action: never): never => {
   throw new Error(`Unknown app-container action: ${JSON.stringify(action)}`);
 };
@@ -39,13 +54,18 @@ const assertUnreachable = (action: never): never => {
 export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState => {
   switch (action.type) {
   case 'content-created':
-    return state.currentProject
-      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.concat(action.payload) })
-      : state;
+    return contentAdded(state, [action.payload.data as ProjectContent]);
   case 'content-updated':
-    return state.currentProject
-      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.map((item) => item.id === action.payload.id ? action.payload : item) })
-      : state;
+    {
+      const previousContent = state.contentById[action.payload.id];
+      if (previousContent?.parentId !== action.payload.parentId) return contentRelocated(state, action.payload);
+
+      const contentById = { ...state.contentById, [action.payload.id]: action.payload };
+      return {
+        ...state,
+        contentById
+      };
+    }
   case 'create-project':
     return {
     ...state,
@@ -53,8 +73,8 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     modalData: updateModalData(state.modalData, getNewContentState(AssetType.Project, true))
     };
   case 'delete-completed': {
-    const { error, project } = action.payload;
-    const nextState = project ? projectChanged(state, project) : state;
+    const { deletedIds, error } = action.payload;
+    const nextState = deletedIds ? contentDeleted(state, deletedIds) : state;
     return {
     ...nextState,
     activeModalType: '',
@@ -84,7 +104,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT)
     };
   case 'expanded-item-toggled': {
-    const id = action.payload;
+    const { id } = action.payload;
     const expandedItemIds = new Set(state.expandedItemIds);
     if (expandedItemIds.has(id)) expandedItemIds.delete(id);
     else expandedItemIds.add(id);
@@ -96,7 +116,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
   }
   case 'open-import-assets': {
     const { bundleId } = action.payload;
-    const selectedBundleId = state.bundles.some(({ id }) => id === bundleId) ? bundleId : state.bundles[0]?.id ?? ProjectItemId.Empty;
+    const selectedBundleId = state.bundleIds.includes(bundleId) ? bundleId : state.bundleIds[0] ?? ProjectItemId.Empty;
 
     return selectedBundleId !== ProjectItemId.Empty
       ? {
@@ -106,7 +126,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
             bundleId: selectedBundleId,
             errors: [],
             isOpen: true,
-            bundles: state.bundles,
+            bundles: getBundles(state),
             type: 'import-asset'
           })
         }
@@ -116,27 +136,27 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     return {
     ...state,
     activeModalType: '',
-    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(state.bundles))
+    modalData: updateModalData(state.modalData, getDefaultImportAssetsDialog(getBundles(state)))
     };
   case 'import-assets-completed': {
     const results = action.payload;
     const errors = results.filter(({ error }) => error);
     const assets = results.flatMap(({ asset }) => asset ? [asset] : []);
-    const nextState = state.currentProject && assets.length
-      ? projectChanged(state, { ...state.currentProject, content: state.currentProject.content?.concat(assets) })
+    const nextState = assets.length
+      ? contentAdded(state, assets)
       : state;
 
     return {
       ...nextState,
       modalData: updateModalData(
         nextState.modalData,
-        errors.length ? { ...nextState.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(nextState.bundles)
+        errors.length ? { ...nextState.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(getBundles(nextState))
       )
     };
   }
   case 'open-new-content': {
     const data = action.payload;
-    const siblingNames = getChildrenIds(state.childrenIdsByParentId, data.fields.parentId).map((id) => state.contentById.get(id)!.name);
+    const siblingNames = getChildrenIds(state.childrenIdsByParentId, data.fields.parentId).map((id) => state.contentById[id]!.name);
     const modalData = updateModalData(state.modalData, getNewContentState(data.assetType, true, siblingNames));
     return { ...state, activeModalType: 'new-content', modalData };
   }
@@ -152,20 +172,22 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     };
   }
   case 'project-changed':
-    return projectChanged(state, action.payload);
+    return projectLoaded(state, action.payload);
   case 'project-created':
-    return projectChanged(state, action.payload);
+    return projectLoaded(state, action.payload.data as ProjectInfo);
   case 'project-renamed':
-    return state.currentProject ? projectChanged(state, { ...state.currentProject, name: action.payload }) : state;
+    return { ...state, projectName: action.payload };
   case 'restore-project-completed': {
     const { error, project } = action.payload;
     return project
-      ? projectChanged(state, project)
+      ? projectLoaded(state, project)
       : { ...state, notificationError: error ? NotificationError.RestoreProject : NotificationError.None };
   }
   case 'selection-cleared':
     return { ...state, selection: [], selectionAnchor: ProjectItemId.Empty };
   case 'select': {
+    if (!isSelectionData(action.payload.data)) return state;
+
     const { id, isExtended, isRange } = action.payload.data;
     const rangeIds = isRange
       ? [ProjectItemId.Project, ...state.visibleProjectItems.map(({ id }) => id)]

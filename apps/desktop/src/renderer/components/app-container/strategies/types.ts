@@ -1,7 +1,6 @@
 import type { ProjectContent } from '@manticore/project/types';
 
 import type { AssetType } from '../../../../types';
-import type { ProjectInfo } from '../../../types';
 
 import { ContentAction, type ImportAssetResult, OpenImportAssets, OpenNewContent } from '../common';
 import type { NotificationError } from '../constants';
@@ -14,7 +13,7 @@ export type OpenNewContentData =
 export type OpenNewContentResult = ContentAction<'open-new-content', OpenNewContentData>;
 export type OpenImportAssetsResult = ContentAction<'open-import-assets', OpenImportAssets>;
 export type ImportAssetsCompletedResult = ContentAction<'import-assets-completed', readonly ImportAssetResult[]>;
-export type DeleteCompletedResult = ContentAction<'delete-completed', { error?: NotificationError; project?: ProjectInfo }>;
+export type DeleteCompletedResult = ContentAction<'delete-completed', { deletedIds?: readonly number[]; error?: NotificationError }>;
 export type ContentUpdatedResult = ContentAction<'content-updated', ProjectContent>;
 export type ProjectRenamedResult = ContentAction<'project-renamed', string>;
 

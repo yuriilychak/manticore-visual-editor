@@ -158,7 +158,7 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
   return results;
 }
 
-export async function deleteProjectContent(projectPath: string, ids: readonly number[]): Promise<ProjectInfo> {
+export async function deleteProjectContent(projectPath: string, ids: readonly number[]): Promise<number[]> {
   const config = await ProjectConfigProxy.load(projectPath);
   const deletedIds = new Set(ids);
   const targets = config.content.filter((item) => deletedIds.has(item.id));
@@ -182,7 +182,7 @@ export async function deleteProjectContent(projectPath: string, ids: readonly nu
   await deleteImportAssetFiles(assetPaths);
   await config.deleteContent(deletedIds);
 
-  return getProjectInfo(projectPath);
+  return [...deletedIds];
 }
 
 export async function renameProjectBundleFolder(projectPath: string, id: number, name: string): Promise<ProjectContent> {

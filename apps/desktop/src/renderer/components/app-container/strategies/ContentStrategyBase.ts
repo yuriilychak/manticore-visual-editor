@@ -33,7 +33,7 @@ export abstract class ContentStrategyBase implements ContentStrategy {
     }
 
     try {
-      return new ContentAction(id, 'delete-completed', { project: await window.manticore.deleteProjectContent(projectPath, ids) });
+      return new ContentAction(id, 'delete-completed', { deletedIds: await window.manticore.deleteProjectContent(projectPath, ids) });
     } catch {
       return new ContentAction(id, 'delete-completed', { error: NotificationError.DeleteContent });
     }

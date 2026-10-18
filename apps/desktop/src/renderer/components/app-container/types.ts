@@ -58,14 +58,13 @@ export interface NewContentStrategy {
 
 export type AppContainerState = {
   activeModalType: ModalType | '';
-  bundles: readonly ProjectContent[];
-  childrenIdsByParentId: ReadonlyMap<number, readonly number[]>;
-  contentById: ReadonlyMap<number, ProjectContent>;
+  bundleIds: readonly number[];
+  childrenIdsByParentId: Readonly<Record<number, readonly number[]>>;
+  contentById: Readonly<Record<number, ProjectContent>>;
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
   notificationError: NotificationError;
-  currentProject: ProjectInfo | null;
   projectName: string;
   projectPath: string;
   selectionAnchor: number;
@@ -75,26 +74,29 @@ export type AppContainerState = {
 
 export type WorkingScreenActionPayload = { assetType: AssetType; data?: unknown; id: number };
 
-type SelectionPayload = Omit<WorkingScreenActionPayload, 'data'> & {
-  data: { id: number; isExtended: boolean; isRange: boolean };
-};
-
 type PayloadAction<TType extends string, TPayload> = Required<ReducerAction<TType, TPayload>>;
 type EmptyAction<TType extends string> = ReducerAction<TType>;
 
 export type AppContainerAction =
-  | EmptyAction<'create-project' | 'close-delete-modal' | 'close-import-assets-dialog' | 'close-new-content-dialog' | 'selection-cleared'>
-  | PayloadAction<'content-created', ProjectContent>
+  | EmptyAction<'create-project'>
+  | PayloadAction<
+    | 'content-created'
+    | 'project-created'
+    | 'select'
+    | 'selection-cleared'
+    | 'open-delete-modal'
+    | 'close-delete-modal'
+    | 'close-new-content-dialog'
+    | 'close-import-assets-dialog'
+    | 'expanded-item-toggled',
+    WorkingScreenActionPayload
+  >
   | PayloadAction<'content-updated', ProjectContent>
-  | PayloadAction<'delete-completed', { error?: NotificationError; project?: ProjectInfo }>
-  | PayloadAction<'expanded-item-toggled', number>
+  | PayloadAction<'delete-completed', { deletedIds?: readonly number[]; error?: NotificationError }>
   | PayloadAction<'import-assets-completed', readonly ImportAssetResult[]>
-  | PayloadAction<'open-delete-modal', WorkingScreenActionPayload>
   | PayloadAction<'open-import-assets', { bundleId: number }>
   | PayloadAction<'open-new-content', OpenNewContentData>
   | PayloadAction<'project-changed', ProjectInfo>
-  | PayloadAction<'project-created', ProjectInfo>
   | PayloadAction<'project-renamed', string>
   | PayloadAction<'restore-project-completed', RestoredProject>
-  | PayloadAction<'select', SelectionPayload>
   | PayloadAction<'show-notification', { error: NotificationError }>;

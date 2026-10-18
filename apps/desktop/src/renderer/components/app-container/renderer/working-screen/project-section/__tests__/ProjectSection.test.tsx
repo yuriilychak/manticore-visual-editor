@@ -260,8 +260,8 @@ describe('ProjectSection', () => {
       <ProjectStructureContext.Provider
         value={{
           expandedItemIds: new Set(),
-          childrenIdsByParentId: new Map(),
-          contentById: new Map(),
+          childrenIdsByParentId: {},
+          contentById: {},
           onAction,
           projectName: 'Initial project',
           projectPath: '/tmp/project',

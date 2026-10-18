@@ -1,3 +1,5 @@
+import type { ProjectContent } from '@manticore/project/types';
+
 import type { SvgIconComponent } from '@mui/icons-material';
 import CreateNewFolderIcon from '@mui/icons-material/CreateNewFolder';
 import FolderIcon from '@mui/icons-material/Folder';
@@ -16,7 +18,6 @@ import type { DeleteContentDialogData } from './dialogs/delete-content-dialog';
 import type { ImportAssetsDialogData } from './dialogs/import-assets-dialog';
 import { notifyUnavailableDesktopApi } from './helpers';
 import type { ModalType } from './modal-types';
-import type { ProjectContent } from '@manticore/project/types';
 import { type ActionButtonConfig, ProjectContentDragType } from './types';
 
 export enum NotificationError {
@@ -41,14 +42,17 @@ export const SELECTED_ACTION_IDS_BY_LANGUAGE: Readonly<Record<string, readonly A
   es: ['set-language-es']
 };
 
-export const WORKING_SCREEN_REDUCER_ACTIONS: readonly string[] = [
+export const WORKING_SCREEN_REDUCER_ACTIONS = new Set([
+  'content-created',
+  'project-created',
   'select',
   'selection-cleared',
   'open-delete-modal',
   'close-delete-modal',
   'close-new-content-dialog',
-  'close-import-assets-dialog'
-];
+  'close-import-assets-dialog',
+  'expanded-item-toggled'
+]);
 
 export const DEFAULT_DELETE_CONTENT: DeleteContentDialogData = {
   isOpen: false,
@@ -61,6 +65,8 @@ export enum ProjectItemId {
   Project = 0,
   RootFolder = 1
 }
+
+export const FOLDER_TYPES = new Set([AssetType.ProjectFolder, AssetType.BundleFolder]);
 
 export const getDefaultImportAssetsDialog = (bundles: readonly ProjectContent[]): ImportAssetsDialogData => ({
   bundleId: ProjectItemId.Empty,

@@ -1,32 +1,26 @@
+import type { ProjectContent } from '@manticore/project/types';
 import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import { useTranslation } from 'react-i18next';
-
-import type { ProjectContent } from '@manticore/project/types';
 
 import { AssetType, type ProjectActionHandler } from '../../../types';
 
 import { type KeyboardShortcutId, keyboardShortcuts } from '../../keyboard-shortcuts';
-import type { ApplicationAction, ProjectInfo } from '../../types';
+import type { ApplicationAction } from '../../types';
 
 import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from './appContainerReducer';
 import { ContentAction } from './common';
-import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE } from './constants';
+import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE, WORKING_SCREEN_REDUCER_ACTIONS } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
 import { CONTENT_STRATEGIES } from './strategies';
+import type { AppContainerAction } from './types';
 
-const getSelectedProjectItem = (contentById: ReadonlyMap<number, ProjectContent>, selection: readonly number[]) => {
+const getSelectedProjectItem = (contentById: Readonly<Record<number, ProjectContent>>, selection: readonly number[]) => {
   const selectedId = selection.at(-1) ?? ProjectItemId.Project;
 
   return selectedId === ProjectItemId.Project
     ? { id: ProjectItemId.Project, type: AssetType.Project }
-    : contentById.get(selectedId);
+    : contentById[selectedId];
 };
-
-const isSelectionData = (data: unknown): data is { id: number; isExtended: boolean; isRange: boolean } =>
-  typeof data === 'object' && data !== null
-  && typeof (data as { id?: unknown }).id === 'number'
-  && typeof (data as { isExtended?: unknown }).isExtended === 'boolean'
-  && typeof (data as { isRange?: unknown }).isRange === 'boolean';
 
 export const useAppContainer = () => {
   const { i18n } = useTranslation();
@@ -94,23 +88,8 @@ export const useAppContainer = () => {
 
   const handleWorkingScreenAction = useCallback<ProjectActionHandler>(
     async (action, assetType, id, data) => {
-      switch (action) {
-        case 'content-created':
-          return dispatch({ type: action, payload: data as ProjectContent });
-        case 'project-created':
-          return dispatch({ type: action, payload: data as ProjectInfo });
-        case 'select':
-          if (!isSelectionData(data)) return;
-          return dispatch({ type: action, payload: { assetType, data, id } });
-        case 'open-delete-modal':
-          return dispatch({ type: action, payload: { assetType, data, id } });
-        case 'selection-cleared':
-        case 'close-delete-modal':
-        case 'close-new-content-dialog':
-        case 'close-import-assets-dialog':
-          return dispatch({ type: action });
-        case 'expanded-item-toggled':
-          return dispatch({ type: action, payload: id });
+      if (WORKING_SCREEN_REDUCER_ACTIONS.has(action)) {
+        return dispatch({ type: action, payload: { assetType, data, id } } as AppContainerAction);
       }
 
       const result = await CONTENT_STRATEGIES.get(assetType)?.handle(new ContentAction(id, action, data), projectPath);
