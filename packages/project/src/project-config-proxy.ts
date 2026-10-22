@@ -160,10 +160,7 @@ export class ProjectConfigProxy {
       if (ancestorId === id) throw new Error('A folder cannot be moved into itself.');
       ancestorId = this.config.content.find((item) => item.id === ancestorId)?.parentId ?? 0;
     }
-    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === folder.name)) {
-      throw new Error('A sibling with this name already exists.');
-    }
-    const moved = { ...folder, parentId };
+    const moved = { ...folder, name: this.getAvailableMovedName(id, parentId, folder.name), parentId };
     this.config.content[this.config.content.indexOf(folder)] = moved;
     await this.save();
     return moved;
@@ -174,11 +171,7 @@ export class ProjectConfigProxy {
     if (!bundle || !this.config.content.some((item) => item.id === parentId && item.type === AssetType.ProjectFolder)) {
       throw new Error('Bundle or target folder not found.');
     }
-    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === bundle.name)) {
-      throw new Error('A sibling with this name already exists.');
-    }
-
-    const moved = { ...bundle, parentId };
+    const moved = { ...bundle, name: this.getAvailableMovedName(id, parentId, bundle.name), parentId };
     this.config.content[this.config.content.indexOf(bundle)] = moved;
     await this.save();
     return moved;
@@ -200,11 +193,7 @@ export class ProjectConfigProxy {
       if (ancestorId === id) throw new Error('Content cannot be moved into itself.');
       ancestorId = this.config.content.find((item) => item.id === ancestorId)?.parentId ?? 0;
     }
-    if (this.config.content.some((item) => item.id !== id && item.parentId === parentId && item.name === content.name)) {
-      throw new Error('A sibling with this name already exists.');
-    }
-
-    const moved = { ...content, parentId };
+    const moved = { ...content, name: this.getAvailableMovedName(id, parentId, content.name), parentId };
     this.config.content[this.config.content.indexOf(content)] = moved;
     await this.save();
     return moved;
@@ -234,6 +223,21 @@ export class ProjectConfigProxy {
     this.config.content.push(content);
     await this.save();
     return content;
+  }
+
+  private getAvailableMovedName(id: number, parentId: number, name: string): string {
+    const siblingNames = new Set(
+      this.config.content
+        .filter((item) => item.id !== id && item.parentId === parentId)
+        .map((item) => item.name)
+    );
+    if (!siblingNames.has(name)) return name;
+
+    for (let suffixIndex = 1;; suffixIndex++) {
+      const suffix = ` (${suffixIndex})`;
+      const candidate = `${name.slice(0, 32 - suffix.length)}${suffix}`;
+      if (!siblingNames.has(candidate)) return candidate;
+    }
   }
 
   private async renameBundleContent(

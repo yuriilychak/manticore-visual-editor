@@ -188,6 +188,35 @@ describe('ProjectConfigProxy', () => {
     });
   });
 
+  test('renames moved content when its target already has a sibling with the same name', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    await mkdir(path.join(projectPath, 'src'));
+    await writeFile(
+      path.join(projectPath, 'src', 'config.json'),
+      JSON.stringify({
+        content: [
+          { data: null, id: 1, name: '', parentId: 0, type: 1, version: 0 },
+          { data: null, id: 2, name: 'Source', parentId: 1, type: 1, version: 0 },
+          { data: null, id: 3, name: 'Target', parentId: 1, type: 1, version: 0 },
+          { data: null, id: 4, name: 'Item', parentId: 2, type: 1, version: 0 },
+          { data: null, id: 5, name: 'Item', parentId: 3, type: 1, version: 0 },
+          { data: null, id: 6, name: 'Item', parentId: 2, type: 2, version: 0 },
+          { data: null, id: 7, name: 'Source bundle', parentId: 2, type: 2, version: 0 },
+          { data: null, id: 8, name: 'Target bundle', parentId: 2, type: 2, version: 0 },
+          { data: null, id: 9, name: 'Item', parentId: 7, type: 3, version: 0 },
+          { data: null, id: 10, name: 'Item', parentId: 8, type: 3, version: 0 }
+        ],
+        name: 'Project',
+        version: 0
+      })
+    );
+    const projectConfig = await ProjectConfigProxy.load(projectPath);
+
+    await expect(projectConfig.moveFolder(4, 3)).resolves.toMatchObject({ id: 4, name: 'Item (1)', parentId: 3 });
+    await expect(projectConfig.moveBundle(6, 3)).resolves.toMatchObject({ id: 6, name: 'Item (2)', parentId: 3 });
+    await expect(projectConfig.moveContent(9, 8)).resolves.toMatchObject({ id: 9, name: 'Item (1)', parentId: 8 });
+  });
+
   test('adds a bundle to a project folder with a new ID', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     await mkdir(path.join(projectPath, 'src'));

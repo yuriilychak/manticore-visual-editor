@@ -104,9 +104,25 @@ export const useAppContainer = () => {
         return;
       }
 
-      return dispatch(result.getResult());
+      dispatch(result.getResult());
+      if (action === 'move' && result.action === 'content-updated') {
+        const previousName = contentById[id]?.name;
+        const { name } = result.data as ProjectContent;
+        if (previousName && name !== previousName) {
+          dispatch({
+            type: 'show-notification',
+            payload: {
+              notification: {
+                data: { name, previousName },
+                message: 'common.moveRenamedWarning',
+                type: 'warning'
+              }
+            }
+          });
+        }
+      }
     },
-    [projectPath]
+    [contentById, projectPath]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
     if (!projectPath) return;
@@ -115,7 +131,7 @@ export const useAppContainer = () => {
     if (!selectedItem) return;
 
     const action = keyboardShortcuts.getAction(shortcutId, selectedItem.type);
-    if (!action) return;
+    if (!action || action === 'rename') return;
 
     void handleWorkingScreenAction(action, selectedItem.type, selectedItem.id);
   }, [contentById, handleWorkingScreenAction, projectPath, selection]);

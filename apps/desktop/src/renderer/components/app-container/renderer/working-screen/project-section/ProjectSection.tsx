@@ -4,6 +4,7 @@ import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useState } f
 import { Box } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
+import { keyboardShortcuts, type KeyboardShortcutId } from '../../../../../keyboard-shortcuts';
 import { ProjectItemId } from '../../../constants';
 import { getChildrenIds } from '../../../helpers';
 import { useProjectStructure } from '../../../ProjectStructureContext';
@@ -44,6 +45,12 @@ const ProjectSection: FC = () => {
 
     void onAction(action, contentType, id);
   }, [onAction]);
+  const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
+    if (shortcutId !== 'rename') return;
+
+    setEditingId(selection.at(-1) ?? ProjectItemId.Project);
+  }, [selection]);
+  useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
   useEffect(() => {
     if (!contextMenu.isOpen) return;
 

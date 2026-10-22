@@ -4,7 +4,7 @@ import DeleteRounded from '@mui/icons-material/DeleteRounded';
 import EditRounded from '@mui/icons-material/EditRounded';
 import type { SxProps, Theme } from '@mui/material';
 
-import { DELETE_SHORTCUT } from '../../../../../keyboard-shortcuts';
+import { DELETE_SHORTCUT, RENAME_SHORTCUT } from '../../../../../keyboard-shortcuts';
 
 import type { ActionButtonConfig } from './types';
 
@@ -18,9 +18,9 @@ export const RENAMEABLE_ITEM_ACTIONS: Record<'delete' | 'editing' | 'viewContent
     { action: 'save', tooltipLocale: 'common.saveRename', Icon: CheckRounded },
     { action: 'cancel', tooltipLocale: 'common.cancelRename', Icon: CloseRounded }
   ],
-  viewProject: [{ action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded }],
+  viewProject: [{ action: 'rename', shortcut: RENAME_SHORTCUT, tooltipLocale: 'common.rename', Icon: EditRounded }],
   viewContent: [
-    { action: 'rename', tooltipLocale: 'common.rename', Icon: EditRounded },
+    { action: 'rename', shortcut: RENAME_SHORTCUT, tooltipLocale: 'common.rename', Icon: EditRounded },
     { action: 'open-delete-modal', shortcut: DELETE_SHORTCUT, tooltipLocale: 'common.delete', Icon: DeleteRounded }
   ],
   empty: []

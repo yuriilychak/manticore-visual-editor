@@ -47,6 +47,7 @@
     "importAssetsError": "Could not import the selected assets.",
     "moveBundleError": "Could not move the bundle.",
     "moveFolderError": "Could not move the folder.",
+    "moveRenamedWarning": "During the move, \"{{previousName}}\" was renamed to \"{{name}}\".",
     "openProjectError": "Could not open the project.",
     "renameBundleError": "Could not rename the bundle.",
     "renameBundleFolderError": "Could not rename the bundle folder.",

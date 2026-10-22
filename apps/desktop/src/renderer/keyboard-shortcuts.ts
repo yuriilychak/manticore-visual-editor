@@ -36,6 +36,24 @@ export const KEYBOARD_SHORTCUTS = {
       win32: 'Delete'
     },
     modifier: 'none' as ShortcutModifier
+  },
+  rename: {
+    action: 'rename',
+    allowedContentTypes: [
+      AssetType.Project,
+      AssetType.ProjectFolder,
+      AssetType.Bundle,
+      AssetType.BundleFolder,
+      AssetType.Font,
+      AssetType.Image,
+      AssetType.TextureAtlas
+    ],
+    labels: {
+      darwin: 'Enter',
+      linux: 'F2',
+      win32: 'F2'
+    },
+    modifier: 'none' as ShortcutModifier
   }
 };
 
@@ -43,6 +61,7 @@ export type KeyboardShortcutId = keyof typeof KEYBOARD_SHORTCUTS;
 
 export const ADD_FOLDER_SHORTCUT = KEYBOARD_SHORTCUTS['add-folder'].labels;
 export const DELETE_SHORTCUT = KEYBOARD_SHORTCUTS.delete.labels;
+export const RENAME_SHORTCUT = KEYBOARD_SHORTCUTS.rename.labels;
 
 type KeyboardShortcutListener = (shortcutId: KeyboardShortcutId) => void;
 

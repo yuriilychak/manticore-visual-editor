@@ -16,7 +16,7 @@ const NotificationAlert: FC<NotificationAlertProps> = ({ notification, onClose }
   const handleClose = () => onClose(id);
 
   return (
-    <Alert onClose={handleClose} severity={type} sx={{ width: '100%' }} variant="filled">
+    <Alert id="Test" onClose={handleClose} severity={type} sx={{ width: '100%' }} variant="filled">
       {t(message, data)}
     </Alert>
   );

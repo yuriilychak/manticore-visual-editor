@@ -114,6 +114,32 @@ describe('ProjectSection', () => {
     expect(onAction).toHaveBeenNthCalledWith(3, 'select', AssetType.ProjectFolder, 1, { id: 1, isExtended: true, isRange: false });
   });
 
+  test('opens the selected item for renaming with F2', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(onAction, [], [], [ProjectItemId.Project]);
+
+    fireEvent.keyDown(window, { key: 'F2' });
+
+    expect(screen.getByRole('textbox', { name: 'common.renameName' })).toHaveValue('Initial project');
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  test('opens the selected item for renaming with Enter on macOS', () => {
+    const manticore = window.manticore;
+    window.manticore = { platform: 'darwin' } as never;
+    const onAction = jest.fn<ProjectActionHandler>();
+
+    try {
+      renderProjectSection(onAction, [], [], [ProjectItemId.Project]);
+      fireEvent.keyDown(window, { key: 'Enter' });
+
+      expect(screen.getByRole('textbox', { name: 'common.renameName' })).toHaveValue('Initial project');
+      expect(onAction).not.toHaveBeenCalled();
+    } finally {
+      window.manticore = manticore;
+    }
+  });
+
   test('selects the visible inclusive range with Shift click', () => {
     const onAction = jest.fn<ProjectActionHandler>();
     renderProjectSection(
