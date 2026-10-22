@@ -31,6 +31,62 @@ const getErrorNotification = (error: NotificationError): NotificationData => ({
   type: 'error'
 });
 
+const getDescendantIds = (childrenIdsByParentId: AppContainerState['childrenIdsByParentId'], id: number): number[] => {
+  if (id === ProjectItemId.Project || id === ProjectItemId.RootFolder) return [];
+
+  const childIds = getChildrenIds(childrenIdsByParentId, id);
+  return childIds.flatMap((childId) => [childId, ...getDescendantIds(childrenIdsByParentId, childId)]);
+};
+
+const addIds = (selection: readonly number[], ids: readonly number[]) => {
+  const selectedIds = new Set(selection);
+  const nextSelection = [...selection];
+  for (const id of ids) {
+    if (!selectedIds.has(id)) {
+      selectedIds.add(id);
+      nextSelection.push(id);
+    }
+  }
+  return nextSelection;
+};
+
+const addSelectedDescendants = (state: AppContainerState, selection: readonly number[], selectedIds: readonly number[]) =>
+  selectedIds.reduce(
+    (nextSelection, id) => addIds(nextSelection, getDescendantIds(state.childrenIdsByParentId, id)),
+    addIds([], selection)
+  );
+
+const addFullySelectedParents = (state: AppContainerState, selection: readonly number[]) => {
+  let nextSelection = selection;
+  let hasAddedParent = true;
+
+  while (hasAddedParent) {
+    const selectedIds = new Set(nextSelection);
+    const parentIds = Object.values(state.contentById).reduce<number[]>((ids, { id }) => {
+      const childIds = getChildrenIds(state.childrenIdsByParentId, id);
+      if (childIds.length && childIds.every((childId) => selectedIds.has(childId)) && !selectedIds.has(id)) ids.push(id);
+      return ids;
+    }, []);
+    hasAddedParent = parentIds.length > 0;
+    nextSelection = addIds(nextSelection, parentIds);
+  }
+
+  return nextSelection;
+};
+
+const getSelectedAncestorIds = (state: AppContainerState, id: number, selection: readonly number[]) => {
+  const selectedIds = new Set(selection);
+  const ancestorIds: number[] = [];
+  let parentId = state.contentById[id]?.parentId;
+
+  while (parentId !== undefined && state.contentById[parentId]) {
+    if (selectedIds.has(parentId)) ancestorIds.push(parentId);
+    parentId = state.contentById[parentId].parentId;
+  }
+
+  return ancestorIds;
+};
+
 export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     activeModalType: '',
     bundleIds: [],
@@ -205,13 +261,22 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     const range = start === LAST_INDEX || end === LAST_INDEX
       ? [id]
       : rangeIds.slice(Math.min(start, end), Math.max(start, end) + 1);
-    const selection = isRangeSelection
+    const nextSelection = isRangeSelection
       ? Array.from(new Set(state.selection.concat(range)))
       : isExtended
       ? state.selection.includes(id)
-        ? state.selection.filter((item) => item !== id)
+        ? state.selection.length > 1 ? state.selection.filter((item) => item !== id) : state.selection
         : state.selection.concat(id)
       : [id];
+    const usesHierarchicalSelection = isExtended && !isRangeSelection;
+    const isDeselected = usesHierarchicalSelection && state.selection.includes(id) && state.selection.length > 1;
+    const deselectedIds = new Set([id, ...getDescendantIds(state.childrenIdsByParentId, id)]);
+    const selectedAncestorIds = getSelectedAncestorIds(state, id, nextSelection);
+    const selection = !usesHierarchicalSelection
+      ? nextSelection
+      : isDeselected
+        ? nextSelection.filter((selectedId) => !deselectedIds.has(selectedId) && !selectedAncestorIds.includes(selectedId))
+        : addFullySelectedParents(state, addSelectedDescendants(state, nextSelection, [id]));
 
     return { ...state, selection, selectionAnchor: isRangeSelection ? anchor : id };
   }

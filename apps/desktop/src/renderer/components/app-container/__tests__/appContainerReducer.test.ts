@@ -9,9 +9,9 @@ describe('appContainerReducer selection', () => {
     const state = INITIAL_APP_CONTAINER_STATE;
     return appContainerReducer(state, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
       content: [
-        { id: 1, name: '01', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
-        { id: 2, name: '02', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
-        { id: 3, name: '03', parentId: 0, type: AssetType.ProjectFolder, version: 0 }
+        { id: 2, name: '01', parentId: 1, type: AssetType.ProjectFolder, version: 0 },
+        { id: 3, name: '02', parentId: 1, type: AssetType.ProjectFolder, version: 0 },
+        { id: 4, name: '03', parentId: 1, type: AssetType.ProjectFolder, version: 0 }
       ],
       name: 'Project',
       path: '/tmp/project'
@@ -22,15 +22,15 @@ describe('appContainerReducer selection', () => {
     const initialState = createState();
     const selectedState = appContainerReducer(initialState, {
       type: 'select',
-      payload: { assetType: AssetType.ProjectFolder, data: { id: 1, isExtended: false, isRange: false }, id: 1 }
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: false, isRange: false }, id: 2 }
     });
     const rangeSelectedState = appContainerReducer(selectedState, {
       type: 'select',
-      payload: { assetType: AssetType.ProjectFolder, data: { id: 3, isExtended: false, isRange: true }, id: 3 }
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 4, isExtended: false, isRange: true }, id: 4 }
     });
 
-    expect(rangeSelectedState.selection).toEqual([1, 2, 3]);
-    expect(rangeSelectedState.selectionAnchor).toBe(1);
+    expect(rangeSelectedState.selection).toEqual([2, 3, 4]);
+    expect(rangeSelectedState.selectionAnchor).toBe(2);
   });
 
   test('adds a Shift range when Ctrl or Cmd is also held', () => {
@@ -41,27 +41,167 @@ describe('appContainerReducer selection', () => {
     });
     const rangeSelectedState = appContainerReducer(selectedState, {
       type: 'select',
-      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: true, isRange: true }, id: 2 }
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 3, isExtended: true, isRange: true }, id: 3 }
     });
 
-    expect(rangeSelectedState.selection).toEqual([0, 1, 2]);
+    expect(rangeSelectedState.selection).toEqual([0, 2, 3]);
   });
 
   test('preserves existing selections when extending with Shift', () => {
     const selectedState = appContainerReducer(createState(), {
       type: 'select',
-      payload: { assetType: AssetType.ProjectFolder, data: { id: 1, isExtended: false, isRange: false }, id: 1 }
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: false, isRange: false }, id: 2 }
+    });
+    const extendedState = appContainerReducer(selectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 4, isExtended: true, isRange: false }, id: 4 }
+    });
+    const rangeSelectedState = appContainerReducer(extendedState, {
+      type: 'select',
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 3, isExtended: false, isRange: true }, id: 3 }
+    });
+
+    expect(rangeSelectedState.selection).toEqual([2, 4, 3]);
+  });
+
+  test('keeps the final selected item when Ctrl or Cmd clicking it', () => {
+    const selectedState = appContainerReducer(createState(), {
+      type: 'select',
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: false, isRange: false }, id: 2 }
     });
     const extendedState = appContainerReducer(selectedState, {
       type: 'select',
       payload: { assetType: AssetType.ProjectFolder, data: { id: 3, isExtended: true, isRange: false }, id: 3 }
     });
-    const rangeSelectedState = appContainerReducer(extendedState, {
+    const deselectedState = appContainerReducer(extendedState, {
       type: 'select',
-      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: false, isRange: true }, id: 2 }
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 3, isExtended: true, isRange: false }, id: 3 }
+    });
+    const finalSelectionState = appContainerReducer(deselectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.ProjectFolder, data: { id: 2, isExtended: true, isRange: false }, id: 2 }
     });
 
-    expect(rangeSelectedState.selection).toEqual([1, 3, 2]);
+    expect(deselectedState.selection).toEqual([2]);
+    expect(finalSelectionState.selection).toEqual([2]);
+  });
+
+  test('selects every descendant when Ctrl or Cmd selecting an item with children', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Folder', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+        { id: 4, name: 'Image', parentId: 3, type: AssetType.Image, version: 0 },
+        { id: 5, name: 'Other', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+
+    const initiallySelectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 5, isExtended: false, isRange: false }, id: 5 }
+    });
+    const selectedState = appContainerReducer(initiallySelectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: true, isRange: false }, id: 2 }
+    });
+
+    expect(selectedState.selection).toEqual([5, 2, 3, 4]);
+  });
+
+  test('does not select descendants without Ctrl or Cmd', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Image', parentId: 2, type: AssetType.Image, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+
+    const selectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: false, isRange: false }, id: 2 }
+    });
+
+    expect(selectedState.selection).toEqual([2]);
+  });
+
+  test('deselects selected parents when deselecting one of their children', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'First', parentId: 2, type: AssetType.Image, version: 0 },
+        { id: 4, name: 'Second', parentId: 2, type: AssetType.Image, version: 0 },
+        { id: 5, name: 'Other', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const initiallySelectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 5, isExtended: false, isRange: false }, id: 5 }
+    });
+    const selectedState = appContainerReducer(initiallySelectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: true, isRange: false }, id: 2 }
+    });
+    const deselectedState = appContainerReducer(selectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Image, data: { id: 3, isExtended: true, isRange: false }, id: 3 }
+    });
+
+    expect(deselectedState.selection).toEqual([5, 4]);
+  });
+
+  test('deselects descendants when Ctrl or Cmd deselecting a selected parent', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Folder', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+        { id: 4, name: 'Image', parentId: 3, type: AssetType.Image, version: 0 },
+        { id: 5, name: 'Other', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const initiallySelectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 5, isExtended: false, isRange: false }, id: 5 }
+    });
+    const selectedState = appContainerReducer(initiallySelectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: true, isRange: false }, id: 2 }
+    });
+    const deselectedState = appContainerReducer(selectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: true, isRange: false }, id: 2 }
+    });
+
+    expect(deselectedState.selection).toEqual([5]);
+  });
+
+  test('selects a parent after all of its children are selected', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'First', parentId: 2, type: AssetType.Image, version: 0 },
+        { id: 4, name: 'Second', parentId: 2, type: AssetType.Image, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const firstSelectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Image, data: { id: 3, isExtended: false, isRange: false }, id: 3 }
+    });
+    const allSelectedState = appContainerReducer(firstSelectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Image, data: { id: 4, isExtended: true, isRange: false }, id: 4 }
+    });
+
+    expect(allSelectedState.selection).toEqual([3, 4, 2]);
   });
 });
 
