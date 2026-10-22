@@ -1,28 +1,23 @@
-import { memo, type FC } from 'react';
-import { useTranslation } from 'react-i18next';
+import { type FC,memo } from 'react';
 
-import { Alert, Snackbar } from '@mui/material';
+import { Snackbar, Stack } from '@mui/material';
 
-import { NOTIFICATION_LOCALE_KEYS, type NotificationError } from './constants';
+import NotificationAlert from './NotificationAlert';
+import type { Notification } from './types';
 
 type NotificationSnackbarProps = {
-  error: NotificationError;
-  onClose: () => void;
+  notifications: readonly Notification[];
+  onClose: (id: string) => void;
 };
 
-const NotificationSnackbar: FC<NotificationSnackbarProps> = ({ error, onClose }) => {
-  const { t } = useTranslation();
-
+const NotificationSnackbar: FC<NotificationSnackbarProps> = ({ notifications, onClose }) => {
   return (
-    <Snackbar
-      anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
-      autoHideDuration={5000}
-      onClose={onClose}
-      open={Boolean(error)}
-    >
-      <Alert onClose={onClose} severity="error" sx={{ width: '100%' }} variant="filled">
-        {t(NOTIFICATION_LOCALE_KEYS[error])}
-      </Alert>
+    <Snackbar anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }} open={notifications.length > 0}>
+      <Stack spacing={1}>
+        {notifications.map((notification) => (
+          <NotificationAlert key={notification.id} notification={notification} onClose={onClose} />
+        ))}
+      </Stack>
     </Snackbar>
   );
 };

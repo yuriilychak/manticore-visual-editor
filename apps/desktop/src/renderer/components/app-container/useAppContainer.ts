@@ -9,7 +9,7 @@ import type { ApplicationAction } from '../../types';
 
 import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from './appContainerReducer';
 import { ContentAction } from './common';
-import { NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE, WORKING_SCREEN_REDUCER_ACTIONS } from './constants';
+import { NOTIFICATION_LOCALE_KEYS, NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE, WORKING_SCREEN_REDUCER_ACTIONS } from './constants';
 import { notifyUnavailableDesktopApi } from './helpers';
 import { CONTENT_STRATEGIES } from './strategies';
 import type { AppContainerAction } from './types';
@@ -32,7 +32,7 @@ export const useAppContainer = () => {
     disabledItemIds,
     expandedItemIds,
     modalData,
-    notificationError,
+    notifications,
     projectName,
     projectPath,
     selection,
@@ -40,7 +40,10 @@ export const useAppContainer = () => {
   } = state;
   const selectedIdSet = useMemo(() => new Set(selection), [selection]);
   const showNotification = useCallback(
-    (error: NotificationError) => dispatch({ type: 'show-notification', payload: { error } }),
+    (error: NotificationError) => dispatch({
+      type: 'show-notification',
+      payload: { notification: { message: NOTIFICATION_LOCALE_KEYS[error], type: 'error' } }
+    }),
     []
   );
   const selectedActionIds = SELECTED_ACTION_IDS_BY_LANGUAGE[i18n.language] ?? [];
@@ -130,7 +133,9 @@ export const useAppContainer = () => {
     visibleProjectItems
   }), [childrenIdsByParentId, contentById, expandedItemIds, handleWorkingScreenAction, projectName, projectPath, selectedIdSet, selection, visibleProjectItems]);
 
-  const handleCloseNotification = useCallback(() => showNotification(NotificationError.None), [showNotification]);
+  const handleCloseNotification = useCallback((id: string) => {
+    dispatch({ type: 'close-notification', payload: id });
+  }, []);
   return {
     activeModalType,
     disabledItemIds,
@@ -138,7 +143,7 @@ export const useAppContainer = () => {
     handleCloseNotification,
     handleWorkingScreenAction,
     modalData,
-    notificationError,
+    notifications,
     projectStructure,
     selectedActionIds
   };

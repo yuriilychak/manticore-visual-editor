@@ -4,6 +4,7 @@ import type { AssetType } from '../../../../types';
 
 import { ContentAction, type ImportAssetResult, OpenImportAssets, OpenNewContent } from '../common';
 import type { NotificationError } from '../constants';
+import type { NotificationData } from '../types';
 import type { NewContentStrategy } from '../types';
 
 
@@ -17,7 +18,7 @@ export type DeleteCompletedResult = ContentAction<'delete-completed', { deletedI
 export type ContentUpdatedResult = ContentAction<'content-updated', ProjectContent>;
 export type ProjectRenamedResult = ContentAction<'project-renamed', string>;
 
-export type ContentStrategyResult = ContentUpdatedResult | DeleteCompletedResult | ImportAssetsCompletedResult | OpenImportAssetsResult | OpenNewContentResult | ProjectRenamedResult | ContentAction<'show-notification', { error: NotificationError }>;
+export type ContentStrategyResult = ContentUpdatedResult | DeleteCompletedResult | ImportAssetsCompletedResult | OpenImportAssetsResult | OpenNewContentResult | ProjectRenamedResult | ContentAction<'show-notification', { notification: NotificationData }>;
 
 export interface WorkingScreenActionStrategy {
   handle: (contentAction: ContentAction, projectPath: string) => void | ContentStrategyResult | Promise<void | ContentStrategyResult | undefined>;

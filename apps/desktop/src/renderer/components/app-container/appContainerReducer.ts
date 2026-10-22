@@ -4,7 +4,7 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
+import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NOTIFICATION_LOCALE_KEYS, NotificationError, ProjectItemId } from './constants';
 import {
   assertUnreachable,
   contentAdded,
@@ -19,7 +19,17 @@ import {
   projectLoaded,
   updateModalData
 } from './helpers';
-import type { AppContainerAction, AppContainerState } from './types';
+import type { AppContainerAction, AppContainerState, Notification, NotificationData } from './types';
+
+const createNotification = (notification: NotificationData): Notification => ({
+  ...notification,
+  id: crypto.randomUUID()
+});
+
+const getErrorNotification = (error: NotificationError): NotificationData => ({
+  message: NOTIFICATION_LOCALE_KEYS[error],
+  type: 'error'
+});
 
 export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     activeModalType: '',
@@ -33,7 +43,7 @@ export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
       'import-asset': getDefaultImportAssetsDialog([]),
       'new-content': getNewContentState(AssetType.ProjectFolder, false)
     },
-    notificationError: NotificationError.None,
+    notifications: [],
     projectName: '',
     projectPath: '',
     selectionAnchor: ProjectItemId.Empty,
@@ -69,7 +79,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     ...nextState,
     activeModalType: '',
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
-    notificationError: error ?? state.notificationError,
+    notifications: error ? state.notifications.concat(createNotification(getErrorNotification(error))) : state.notifications,
     selection: [],
     selectionAnchor: ProjectItemId.Empty
     };
@@ -114,7 +124,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
             type: 'import-asset'
           })
         }
-      : { ...state, notificationError: NotificationError.ContentTypeUnavailable };
+      : { ...state, notifications: state.notifications.concat(createNotification(getErrorNotification(NotificationError.ContentTypeUnavailable))) };
   }
   case 'import-assets-completed': {
     const results = action.payload;
@@ -155,11 +165,16 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     }
     return { ...state, activeModalType: '', modalData: updateModalData(state.modalData, modalData) };
   }
+  case 'close-notification':
+    return {
+      ...state,
+      notifications: state.notifications.filter((notification) => notification.id !== action.payload)
+    };
   case 'show-notification': {
-    const { error: notificationError } = action.payload;
+    const { notification } = action.payload;
     return {
     ...state,
-    notificationError
+    notifications: state.notifications.concat(createNotification(notification))
     };
   }
   case 'project-opened':
@@ -170,7 +185,9 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     const { error, project } = action.payload;
     return project
       ? projectLoaded(state, project)
-      : { ...state, notificationError: error ? NotificationError.RestoreProject : NotificationError.None };
+      : error
+        ? { ...state, notifications: state.notifications.concat(createNotification(getErrorNotification(NotificationError.RestoreProject))) }
+        : state;
   }
   case 'selection-cleared':
     return { ...state, selection: [], selectionAnchor: ProjectItemId.Empty };

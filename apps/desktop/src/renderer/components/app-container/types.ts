@@ -16,6 +16,12 @@ import type { OpenNewContentData } from './strategies';
 
 export type NewContentValues = Record<string, string>;
 export type NewContentContext = Record<string, unknown>;
+export type NotificationData = {
+  data?: Record<string, unknown>;
+  message: string;
+  type: 'error' | 'warning' | 'success';
+};
+export type Notification = NotificationData & { id: string };
 export type ApplicationActionHandler = (action: ApplicationAction) => void;
 export type CreateContentResult = ContentAction<'content-created', ProjectContent> | ContentAction<'project-opened', ProjectInfo>;
 
@@ -65,7 +71,7 @@ export type AppContainerState = {
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: ReadonlySet<number>;
   modalData: ModalPropsMap;
-  notificationError: NotificationError;
+  notifications: readonly Notification[];
   projectName: string;
   projectPath: string;
   selectionAnchor: number;
@@ -93,8 +99,9 @@ export type AppContainerAction =
   | PayloadAction<'content-updated', ProjectContent>
   | PayloadAction<'delete-completed', { deletedIds?: readonly number[]; error?: NotificationError }>
   | PayloadAction<'import-assets-completed', readonly ImportAssetResult[]>
+  | PayloadAction<'close-notification', string>
   | PayloadAction<'open-import-assets', { bundleId: number }>
   | PayloadAction<'open-new-content', OpenNewContentData>
   | PayloadAction<'project-renamed', string>
   | PayloadAction<'restore-project-completed', RestoredProject>
-  | PayloadAction<'show-notification', { error: NotificationError }>;
+  | PayloadAction<'show-notification', { notification: NotificationData }>;
