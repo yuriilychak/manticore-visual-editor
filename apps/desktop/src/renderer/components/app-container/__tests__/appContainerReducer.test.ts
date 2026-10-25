@@ -3,6 +3,7 @@ import { describe, expect, test } from '@jest/globals';
 import { AssetType } from '../../../../types';
 
 import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from '../appContainerReducer';
+import { canMoveSelection, getCopySelection, getDraggedSelection } from '../helpers';
 
 describe('appContainerReducer selection', () => {
   const createState = () => {
@@ -31,6 +32,29 @@ describe('appContainerReducer selection', () => {
 
     expect(rangeSelectedState.selection).toEqual([2, 3, 4]);
     expect(rangeSelectedState.selectionAnchor).toBe(2);
+  });
+
+  test('includes visible children when the final Shift-selected item is expanded', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Image', parentId: 2, type: AssetType.Image, version: 0 },
+        { id: 4, name: 'Other', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const expandedState = { ...state, expandedItemIds: new Set([2]) };
+    const selectedState = appContainerReducer(expandedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Project, data: { id: 0, isExtended: false, isRange: false }, id: 0 }
+    });
+    const rangeSelectedState = appContainerReducer(selectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: false, isRange: true }, id: 2 }
+    });
+
+    expect(rangeSelectedState.selection).toEqual([0, 2, 3]);
   });
 
   test('adds a Shift range when Ctrl or Cmd is also held', () => {
@@ -131,6 +155,68 @@ describe('appContainerReducer selection', () => {
     });
 
     expect(extendedState.selection).toEqual([2, 5, 3, 4]);
+  });
+
+  test('keeps only expanded selected parents when their children are dragged with them', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'First', parentId: 2, type: AssetType.Image, version: 0 },
+        { id: 4, name: 'Second', parentId: 2, type: AssetType.Image, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const selectedState = { ...state, expandedItemIds: new Set([2]), selection: [2, 3, 4] };
+
+    expect(getDraggedSelection(selectedState, 3)).toEqual([2]);
+  });
+
+  test('validates every selected item against the drop target type before moving', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Folder', parentId: 1, type: AssetType.ProjectFolder, version: 0 },
+        { id: 3, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+
+    expect(canMoveSelection(state, [2, 3], 1)).toBe(true);
+    expect(canMoveSelection(state, [2, 3], 3)).toBe(false);
+  });
+
+  test('updates the selection after a successful batch move', () => {
+    const state = appContainerReducer(createState(), {
+      type: 'selection-updated',
+      payload: { assetType: AssetType.ProjectFolder, data: [2, 3], id: 2 }
+    });
+
+    expect(state.selection).toEqual([2, 3]);
+    expect(state.selectionAnchor).toBe(3);
+  });
+
+  test('stores only top-level copied items and clears them when content changes', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Image', parentId: 2, type: AssetType.Image, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const selectedState = { ...state, selection: [2, 3] };
+    const copiedState = appContainerReducer(selectedState, {
+      type: 'copy-selection',
+      payload: { assetType: AssetType.Bundle, data: getCopySelection(selectedState, 2), id: 2 }
+    });
+    const updatedState = appContainerReducer(copiedState, {
+      type: 'content-updated',
+      payload: { id: 2, name: 'Renamed bundle', parentId: 1, type: AssetType.Bundle, version: 0 }
+    });
+
+    expect(copiedState.copiedSelection).toEqual([2]);
+    expect(updatedState.copiedSelection).toEqual([]);
   });
 
   test('does not select descendants without Ctrl or Cmd', () => {

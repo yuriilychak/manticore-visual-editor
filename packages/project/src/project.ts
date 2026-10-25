@@ -1,4 +1,4 @@
-import { mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AssetType } from './asset-type';
@@ -54,6 +54,38 @@ export async function moveProjectBundle(projectPath: string, id: number, parentI
 
 export async function moveProjectContent(projectPath: string, id: number, parentId: number): Promise<ProjectContent> {
   return (await ProjectConfigProxy.load(projectPath)).moveContent(id, parentId);
+}
+
+export async function duplicateProjectContent(projectPath: string, ids: readonly number[], targetParentId?: number): Promise<ProjectContent[]> {
+  const config = await ProjectConfigProxy.load(projectPath);
+  const sourceIds = new Set(ids);
+  const selectedContent = config.content.filter(({ id }) => sourceIds.has(id));
+  const roots = selectedContent.filter(({ parentId }) => !sourceIds.has(parentId));
+  const sourceContent: ProjectContent[] = [];
+  const pending = [...roots];
+  for (const source of pending) {
+    sourceContent.push(source);
+    pending.push(...config.content.filter((item) => item.parentId === source.id));
+  }
+  const sourceAssets = sourceContent.filter(({ type }) => type === AssetType.Image || type === AssetType.Font);
+  const copied = await config.duplicateContent(ids, targetParentId, false);
+  const copiedAssets = copied.filter(({ type }) => type === AssetType.Image || type === AssetType.Font);
+  if (sourceAssets.length !== copiedAssets.length) throw new Error('Could not duplicate asset content.');
+
+  try {
+    const results = await Promise.allSettled(sourceAssets.map((source, index) => cp(
+      path.join(projectPath, 'src', 'assets', String(source.id).padStart(5, '0')),
+      path.join(projectPath, 'src', 'assets', String(copiedAssets[index]!.id).padStart(5, '0')),
+      { errorOnExist: true, force: false, recursive: true }
+    )));
+    const failedCopy = results.find((result): result is PromiseRejectedResult => result.status === 'rejected');
+    if (failedCopy) throw failedCopy.reason;
+    await config.save();
+    return copied;
+  } catch (error) {
+    await Promise.all(copiedAssets.map(({ id }) => rm(path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0')), { force: true, recursive: true })));
+    throw error;
+  }
 }
 
 export async function createProjectBundleFolder(projectPath: string, parentId: number, name: string): Promise<ProjectContent> {

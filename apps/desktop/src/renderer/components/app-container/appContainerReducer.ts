@@ -4,96 +4,40 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NOTIFICATION_LOCALE_KEYS, NotificationError, ProjectItemId } from './constants';
+import { DEFAULT_DELETE_CONTENT, getDefaultImportAssetsDialog, LAST_INDEX, NotificationError, ProjectItemId } from './constants';
 import {
+  addFullySelectedParents,
+  addIds,
+  addSelectedDescendants,
   assertUnreachable,
   contentAdded,
   contentDeleted,
   contentRelocated,
+  createNotification,
   getBundles,
   getChildrenIds,
   getDeletableContent,
+  getDescendantIds,
+  getErrorNotification,
   getNewContentState,
+  getSelectedAncestorIds,
+  getVisibleDescendantIds,
   getVisibleProjectItems,
   isSelectionData,
   projectLoaded,
   updateModalData
 } from './helpers';
-import type { AppContainerAction, AppContainerState, Notification, NotificationData } from './types';
-
-const createNotification = (notification: NotificationData): Notification => ({
-  ...notification,
-  id: crypto.randomUUID()
-});
-
-const getErrorNotification = (error: NotificationError): NotificationData => ({
-  message: NOTIFICATION_LOCALE_KEYS[error],
-  type: 'error'
-});
-
-const getDescendantIds = (childrenIdsByParentId: AppContainerState['childrenIdsByParentId'], id: number): number[] => {
-  if (id === ProjectItemId.Project || id === ProjectItemId.RootFolder) return [];
-
-  const childIds = getChildrenIds(childrenIdsByParentId, id);
-  return childIds.flatMap((childId) => [childId, ...getDescendantIds(childrenIdsByParentId, childId)]);
-};
-
-const addIds = (selection: readonly number[], ids: readonly number[]) => {
-  const selectedIds = new Set(selection);
-  const nextSelection = [...selection];
-  for (const id of ids) {
-    if (!selectedIds.has(id)) {
-      selectedIds.add(id);
-      nextSelection.push(id);
-    }
-  }
-  return nextSelection;
-};
-
-const addSelectedDescendants = (state: AppContainerState, selection: readonly number[], selectedIds: readonly number[]) =>
-  selectedIds.reduce(
-    (nextSelection, id) => addIds(nextSelection, getDescendantIds(state.childrenIdsByParentId, id)),
-    addIds([], selection)
-  );
-
-const addFullySelectedParents = (state: AppContainerState, selection: readonly number[]) => {
-  let nextSelection = selection;
-  let hasAddedParent = true;
-
-  while (hasAddedParent) {
-    const selectedIds = new Set(nextSelection);
-    const parentIds = Object.values(state.contentById).reduce<number[]>((ids, { id }) => {
-      const childIds = getChildrenIds(state.childrenIdsByParentId, id);
-      if (childIds.length && childIds.every((childId) => selectedIds.has(childId)) && !selectedIds.has(id)) ids.push(id);
-      return ids;
-    }, []);
-    hasAddedParent = parentIds.length > 0;
-    nextSelection = addIds(nextSelection, parentIds);
-  }
-
-  return nextSelection;
-};
-
-const getSelectedAncestorIds = (state: AppContainerState, id: number, selection: readonly number[]) => {
-  const selectedIds = new Set(selection);
-  const ancestorIds: number[] = [];
-  let parentId = state.contentById[id]?.parentId;
-
-  while (parentId !== undefined && state.contentById[parentId]) {
-    if (selectedIds.has(parentId)) ancestorIds.push(parentId);
-    parentId = state.contentById[parentId].parentId;
-  }
-
-  return ancestorIds;
-};
+import type { AppContainerAction, AppContainerState } from './types';
 
 export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
     activeModalType: '',
     bundleIds: [],
     childrenIdsByParentId: { [ProjectItemId.Project]: [], [ProjectItemId.RootFolder]: [] },
+    copiedSelection: [],
     contentById: {},
     disabledItemIds: [],
     expandedItemIds: new Set(),
+    isPasting: false,
     modalData: {
       'delete-content': DEFAULT_DELETE_CONTENT,
       'import-asset': getDefaultImportAssetsDialog([]),
@@ -110,17 +54,15 @@ export const INITIAL_APP_CONTAINER_STATE: AppContainerState = {
 export const appContainerReducer = (state: AppContainerState, action: AppContainerAction): AppContainerState => {
   switch (action.type) {
   case 'content-created':
-    return contentAdded(state, [action.payload.data as ProjectContent]);
+    return { ...contentAdded(state, [action.payload.data as ProjectContent]), copiedSelection: [] };
   case 'content-updated':
     {
       const previousContent = state.contentById[action.payload.id];
-      if (previousContent?.parentId !== action.payload.parentId) return contentRelocated(state, action.payload);
+      if (previousContent?.parentId !== action.payload.parentId) return { ...contentRelocated(state, action.payload), copiedSelection: [] };
 
       const contentById = { ...state.contentById, [action.payload.id]: action.payload };
-      return {
-        ...state,
-        contentById
-      };
+
+      return { ...state, contentById, copiedSelection: [] };
     }
   case 'create-project':
     return {
@@ -128,6 +70,10 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     activeModalType: 'new-content',
     modalData: updateModalData(state.modalData, getNewContentState(AssetType.Project, true))
     };
+  case 'paste-started':
+    return { ...state, isPasting: true };
+  case 'paste-finished':
+    return { ...state, isPasting: false };
   case 'delete-completed': {
     const { deletedIds, error } = action.payload;
     const nextState = deletedIds ? contentDeleted(state, deletedIds) : state;
@@ -137,7 +83,8 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     modalData: updateModalData(state.modalData, DEFAULT_DELETE_CONTENT),
     notifications: error ? state.notifications.concat(createNotification(getErrorNotification(error))) : state.notifications,
     selection: [],
-    selectionAnchor: ProjectItemId.Empty
+    selectionAnchor: ProjectItemId.Empty,
+    copiedSelection: []
     };
   }
   case 'open-delete-modal': {
@@ -158,6 +105,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     const expandedItemIds = new Set(state.expandedItemIds);
     if (expandedItemIds.has(id)) expandedItemIds.delete(id);
     else expandedItemIds.add(id);
+
     return {
     ...state,
     expandedItemIds,
@@ -192,6 +140,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
 
     return {
       ...nextState,
+      copiedSelection: assets.length ? [] : nextState.copiedSelection,
       modalData: updateModalData(
         nextState.modalData,
         errors.length ? { ...nextState.modalData['import-asset'], errors } : getDefaultImportAssetsDialog(getBundles(nextState))
@@ -234,19 +183,31 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     };
   }
   case 'project-opened':
-    return projectLoaded(state, action.payload.data as ProjectInfo);
+    return { ...projectLoaded(state, action.payload.data as ProjectInfo), copiedSelection: [] };
   case 'project-renamed':
-    return { ...state, projectName: action.payload };
+    return { ...state, copiedSelection: [], projectName: action.payload };
   case 'restore-project-completed': {
     const { error, project } = action.payload;
     return project
-      ? projectLoaded(state, project)
+      ? { ...projectLoaded(state, project), copiedSelection: [] }
       : error
         ? { ...state, notifications: state.notifications.concat(createNotification(getErrorNotification(NotificationError.RestoreProject))) }
         : state;
   }
   case 'selection-cleared':
     return { ...state, selection: [], selectionAnchor: ProjectItemId.Empty };
+  case 'selection-updated': {
+    const selection = Array.isArray(action.payload.data) && action.payload.data.every((id) => typeof id === 'number')
+      ? action.payload.data
+      : state.selection;
+    return { ...state, selection, selectionAnchor: selection.at(LAST_INDEX) ?? ProjectItemId.Empty };
+  }
+  case 'copy-selection': {
+    const copiedSelection = Array.isArray(action.payload.data) && action.payload.data.every((id) => typeof id === 'number')
+      ? action.payload.data
+      : state.copiedSelection;
+    return { ...state, copiedSelection };
+  }
   case 'select': {
     if (!isSelectionData(action.payload.data)) return state;
 
@@ -261,8 +222,12 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
     const range = start === LAST_INDEX || end === LAST_INDEX
       ? [id]
       : rangeIds.slice(Math.min(start, end), Math.max(start, end) + 1);
+    const expandedEndItemIds = isRangeSelection && state.expandedItemIds.has(id)
+      ? getVisibleDescendantIds(state.childrenIdsByParentId, state.expandedItemIds, id)
+      : [];
+    const inclusiveRange = addIds(range, expandedEndItemIds);
     const nextSelection = isRangeSelection
-      ? Array.from(new Set(state.selection.concat(range)))
+      ? Array.from(new Set(state.selection.concat(inclusiveRange)))
       : isExtended
       ? state.selection.includes(id)
         ? state.selection.length > 1 ? state.selection.filter((item) => item !== id) : state.selection

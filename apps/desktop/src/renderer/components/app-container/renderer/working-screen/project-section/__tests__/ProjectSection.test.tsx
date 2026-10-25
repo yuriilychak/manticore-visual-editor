@@ -54,7 +54,8 @@ describe('ProjectSection', () => {
     onAction: ProjectActionHandler,
     folders: FolderFixture[] = [],
     content: ProjectContent[] = [],
-    selection: readonly number[] = []
+    selection: readonly number[] = [],
+    isPasting = false
   ) => {
     const ProjectSectionWithContext = () => {
       const [expandedItemIds, setExpandedItemIds] = useState<ReadonlySet<number>>(new Set());
@@ -82,6 +83,7 @@ describe('ProjectSection', () => {
           expandedItemIds,
           childrenIdsByParentId: state.childrenIdsByParentId,
           contentById: state.contentById,
+          isPasting,
           onAction: handleAction,
           projectName: project.name,
           projectPath: project.path,
@@ -292,6 +294,7 @@ describe('ProjectSection', () => {
           expandedItemIds: new Set(),
           childrenIdsByParentId: {},
           contentById: {},
+          isPasting: false,
           onAction,
           projectName: 'Initial project',
           projectPath: '/tmp/project',
@@ -306,6 +309,12 @@ describe('ProjectSection', () => {
     expect(screen.getByTestId('FolderIcon')).toBeInTheDocument();
     expect(screen.queryByTestId('ExpandMoreIcon')).not.toBeInTheDocument();
     expect(screen.getByTestId('ChevronRightIcon')).toHaveClass('MuiSvgIcon-colorDisabled');
+  });
+
+  test('shows a loading overlay while project content is being pasted', () => {
+    renderProjectSection(jest.fn<ProjectActionHandler>(), [], [], [], true);
+
+    expect(screen.getByLabelText('Pasting project content')).toBeInTheDocument();
   });
 
   test('renders root folder bundles with their configured names', async () => {

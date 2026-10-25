@@ -47,6 +47,8 @@ export const WORKING_SCREEN_REDUCER_ACTIONS = new Set([
   'project-opened',
   'select',
   'selection-cleared',
+  'selection-updated',
+  'copy-selection',
   'open-delete-modal',
   'close-modal',
   'expanded-item-toggled'

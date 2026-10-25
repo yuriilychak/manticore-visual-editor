@@ -20,7 +20,10 @@ export class ProjectConfigProxy {
     }
     // Migrate manifests which stored image bytes in config.json. Asset payloads
     // now live in each asset's directory, so loaded content is normalized too.
-    const content = (config.content as ProjectContent[]).map(({ data: _data, ...item }) => item);
+    const content = (config.content as ProjectContent[]).map(({ data, ...item }) => {
+      void data;
+      return item;
+    });
     if (
       new Set(content.map((item) => item.id)).size !== content.length ||
       content.some((item) => item.parentId !== 0 && !content.some((parent) => parent.id === item.parentId))
@@ -199,6 +202,67 @@ export class ProjectConfigProxy {
     return moved;
   }
 
+  async duplicateContent(ids: readonly number[], targetParentId?: number, save = true): Promise<ProjectContent[]> {
+    const sourceIds = new Set(ids);
+    const sources = this.config.content.filter((item) => sourceIds.has(item.id));
+    if (!sources.length || sources.length !== sourceIds.size || sources.some(({ type }) => type === AssetType.Project)) {
+      throw new Error('Content not found.');
+    }
+
+    const roots = sources.filter(({ parentId }) => !sourceIds.has(parentId));
+    // Items may have been moved after creation, so manifest order is not
+    // necessarily tree order (an image can precede its atlas). Build a
+    // parent-first sequence so every copied parent has an ID before its child.
+    const sourceContent: ProjectContent[] = [];
+    const pending = [...roots];
+    for (const source of pending) {
+      sourceContent.push(source);
+      pending.push(...this.config.content.filter((item) => item.parentId === source.id));
+    }
+    const sourceById = new Map(sourceContent.map((item) => [item.id, item]));
+    const allowedParentTypes: Partial<Record<AssetType, readonly AssetType[]>> = {
+      [AssetType.ProjectFolder]: [AssetType.ProjectFolder],
+      [AssetType.Bundle]: [AssetType.ProjectFolder],
+      [AssetType.BundleFolder]: [AssetType.Bundle, AssetType.BundleFolder],
+      [AssetType.TextureAtlas]: [AssetType.Bundle, AssetType.BundleFolder],
+      [AssetType.Image]: [AssetType.Bundle, AssetType.BundleFolder, AssetType.TextureAtlas],
+      [AssetType.Font]: [AssetType.Bundle, AssetType.BundleFolder]
+    };
+    const existingNamesByParentId = new Map<number, Set<string>>();
+    const getNames = (parentId: number) => existingNamesByParentId.get(parentId) ?? new Set(this.config.content
+      .filter((item) => item.parentId === parentId)
+      .map((item) => item.name));
+    const idBySourceId = new Map<number, number>();
+    let nextId = this.getNextContentId();
+    const copied: ProjectContent[] = [];
+
+    for (const source of sourceContent) {
+      const parentId = sourceById.has(source.parentId)
+        ? idBySourceId.get(source.parentId)!
+        : targetParentId ?? source.parentId;
+      const parent = this.config.content.find((item) => item.id === parentId) ?? copied.find((item) => item.id === parentId);
+      if (!parent || !allowedParentTypes[source.type]?.includes(parent.type)) throw new Error('Content or target is invalid.');
+
+      const names = getNames(parentId);
+      existingNamesByParentId.set(parentId, names);
+      let name = source.name;
+      for (let index = 1; names.has(name); ++index) {
+        const suffix = ` (${index})`;
+        name = `${source.name.slice(0, 32 - suffix.length)}${suffix}`;
+      }
+      names.add(name);
+      if (nextId > MAX_U16) throw new Error('The maximum number of assets has been reached.');
+
+      const copy = { ...source, id: nextId++, name, parentId };
+      idBySourceId.set(source.id, copy.id);
+      copied.push(copy);
+    }
+
+    this.config.content.push(...copied);
+    if (save) await this.save();
+    return copied;
+  }
+
   async renameProject(name: string): Promise<string> {
     const projectName = name.trim();
     if (!isAssetName(projectName)) throw new Error('Project name must be 1 to 32 printable ASCII characters.');
@@ -259,7 +323,7 @@ export class ProjectConfigProxy {
     return renamed;
   }
 
-  private async save(): Promise<void> {
+  async save(): Promise<void> {
     await writeFile(this.configPath, `${JSON.stringify(this.config, null, 2)}\n`, 'utf8');
   }
 }

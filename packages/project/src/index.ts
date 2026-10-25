@@ -9,6 +9,7 @@ export {
   createProjectFolder,
   createProjectTextureAtlas,
   deleteProjectContent,
+  duplicateProjectContent,
   getProjectInfo,
   importProjectAssets,
   moveProjectBundle,

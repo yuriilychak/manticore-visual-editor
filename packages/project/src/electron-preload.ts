@@ -10,6 +10,7 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   createProjectFolder: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-folder', projectPath, parentId, name),
   createProjectTextureAtlas: (projectPath: string, parentId: number, name: string) => ipcRenderer.invoke('project:create-texture-atlas', projectPath, parentId, name),
   deleteProjectContent: (projectPath: string, ids: number[]) => ipcRenderer.invoke('project:delete-content', projectPath, ids),
+  duplicateProjectContent: (projectPath: string, ids: number[], targetParentId?: number) => ipcRenderer.invoke('project:duplicate-content', projectPath, ids, targetParentId),
   importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
   moveProjectBundle: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-bundle', projectPath, id, parentId),

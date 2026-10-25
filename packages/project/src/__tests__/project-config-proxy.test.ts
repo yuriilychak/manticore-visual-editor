@@ -3,7 +3,7 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createProject, deleteProjectContent, importProjectAssets } from '../project';
+import { createProject, deleteProjectContent, duplicateProjectContent, importProjectAssets } from '../project';
 import { ProjectConfigProxy } from '../project-config-proxy';
 
 describe('ProjectConfigProxy', () => {
@@ -55,6 +55,44 @@ describe('ProjectConfigProxy', () => {
     await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([4, 5, 6]));
     const config = JSON.parse(await readFile(path.join(destination, 'src', 'config.json'), 'utf8')) as { content: Array<{ data: unknown; id: number }> };
     expect(config.content.find(({ id }) => id === 3)).not.toHaveProperty('data');
+  });
+
+  test('duplicates a selected subtree with unique names and independent asset files', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    const destination = path.join(projectPath, 'Example');
+    const imagePath = path.join(projectPath, 'hero.png');
+    await writeFile(imagePath, new Uint8Array([1, 2, 3]));
+    await createProject(destination, 'Example');
+    await importProjectAssets(destination, 2, [{ data: [4, 5, 6], filePath: imagePath }]);
+
+    await expect(duplicateProjectContent(destination, [2])).resolves.toEqual([
+      { id: 4, name: 'default_bundle (1)', parentId: 1, type: 2, version: 0 },
+      { id: 5, name: 'hero', parentId: 4, type: 4, version: 0 }
+    ]);
+    await expect(readFile(path.join(destination, 'src', 'assets', '00005', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00005', 'asset'))).resolves.toEqual(Buffer.from([4, 5, 6]));
+  });
+
+  test('duplicates nested folders, atlases, and images that were moved after creation', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    const destination = path.join(projectPath, 'Example');
+    const imagePath = path.join(projectPath, 'hero.png');
+    await writeFile(imagePath, new Uint8Array([1, 2, 3]));
+    await createProject(destination, 'Example');
+    await importProjectAssets(destination, 2, [{ data: [4, 5, 6], filePath: imagePath }]);
+    const config = await ProjectConfigProxy.load(destination);
+    await config.addBundleFolder('Characters', 2);
+    await config.addTextureAtlas('Atlas', 4);
+    await (await ProjectConfigProxy.load(destination)).moveContent(3, 5);
+
+    await expect(duplicateProjectContent(destination, [2])).resolves.toEqual([
+      { id: 6, name: 'default_bundle (1)', parentId: 1, type: 2, version: 0 },
+      { id: 7, name: 'Characters', parentId: 6, type: 3, version: 0 },
+      { id: 8, name: 'Atlas', parentId: 7, type: 5, version: 0 },
+      { id: 9, name: 'hero', parentId: 8, type: 4, version: 0 }
+    ]);
+    await expect(readFile(path.join(destination, 'src', 'assets', '00009', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00009', 'asset'))).resolves.toEqual(Buffer.from([4, 5, 6]));
   });
 
   test('plans unique names and IDs before creating asset files', async () => {

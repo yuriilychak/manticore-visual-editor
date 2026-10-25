@@ -10,7 +10,7 @@ import type { ApplicationAction } from '../../types';
 import { appContainerReducer, INITIAL_APP_CONTAINER_STATE } from './appContainerReducer';
 import { ContentAction } from './common';
 import { NOTIFICATION_LOCALE_KEYS, NotificationError, ProjectItemId, SELECTED_ACTION_IDS_BY_LANGUAGE, WORKING_SCREEN_REDUCER_ACTIONS } from './constants';
-import { notifyUnavailableDesktopApi } from './helpers';
+import { canMoveSelection, getCopySelection, getDraggedSelection, notifyUnavailableDesktopApi } from './helpers';
 import { CONTENT_STRATEGIES } from './strategies';
 import type { AppContainerAction } from './types';
 
@@ -28,9 +28,11 @@ export const useAppContainer = () => {
   const {
     activeModalType,
     childrenIdsByParentId,
+    copiedSelection,
     contentById,
     disabledItemIds,
     expandedItemIds,
+    isPasting,
     modalData,
     notifications,
     projectName,
@@ -98,6 +100,76 @@ export const useAppContainer = () => {
         return dispatch({ type: action, payload: { assetType, data, id } } as AppContainerAction);
       }
 
+      if (action === 'copy') {
+        const ids = getCopySelection(state, id);
+        return dispatch({ type: 'copy-selection', payload: { assetType, data: ids, id } });
+      }
+
+      if (action === 'paste') {
+        // Copying an asset directory can take long enough for a keyboard shortcut
+        // to start another paste while the first one is still in flight.
+        if (isPasting || !copiedSelection.length || !window.manticore?.duplicateProjectContent) return;
+
+        const currentSelection = getCopySelection(state, id);
+        const preservesHierarchy = currentSelection.length === copiedSelection.length
+          && currentSelection.every((selectedId, index) => selectedId === copiedSelection[index]);
+        const targetId = id === ProjectItemId.Project ? ProjectItemId.RootFolder : id;
+        if (!preservesHierarchy && !canMoveSelection(state, copiedSelection, targetId)) {
+          dispatch({
+            type: 'show-notification',
+            payload: { notification: { message: 'common.pasteSelectionWarning', type: 'warning' } }
+          });
+          return;
+        }
+
+        try {
+          dispatch({ type: 'paste-started' });
+          const copied = await window.manticore.duplicateProjectContent(projectPath, [...copiedSelection], preservesHierarchy ? undefined : targetId);
+          dispatch({ type: 'import-assets-completed', payload: copied.map((asset) => ({ asset, error: null, filePath: '' })) });
+        } catch {
+          dispatch({
+            type: 'show-notification',
+            payload: { notification: { message: 'common.contentConfigurationError', type: 'error' } }
+          });
+        } finally {
+          dispatch({ type: 'paste-finished' });
+        }
+        return;
+      }
+
+      if (action === 'move' && typeof data === 'number') {
+        const ids = getDraggedSelection(state, id);
+        if (!canMoveSelection(state, ids, data)) {
+          dispatch({
+            type: 'show-notification',
+            payload: { notification: { message: 'common.moveSelectionWarning', type: 'warning' } }
+          });
+          return;
+        }
+
+        for (const movedId of ids) {
+          const item = contentById[movedId];
+          if (!item || item.parentId === data) continue;
+
+          const result = await CONTENT_STRATEGIES.get(item.type)?.handle(new ContentAction(movedId, action, data), projectPath);
+          if (!result) return;
+
+          dispatch(result.getResult());
+          if (result.action !== 'content-updated') return;
+
+          const previousName = item.name;
+          const { name } = result.data as ProjectContent;
+          if (name !== previousName) {
+            dispatch({
+              type: 'show-notification',
+              payload: { notification: { data: { name, previousName }, message: 'common.moveRenamedWarning', type: 'warning' } }
+            });
+          }
+        }
+
+        return dispatch({ type: 'selection-updated', payload: { assetType, data: ids, id } });
+      }
+
       const result = await CONTENT_STRATEGIES.get(assetType)?.handle(new ContentAction(id, action, data), projectPath);
 
       if (!result) {
@@ -122,7 +194,7 @@ export const useAppContainer = () => {
         }
       }
     },
-    [contentById, projectPath]
+    [contentById, copiedSelection, isPasting, projectPath, state]
   );
   const handleShortcut = useCallback((shortcutId: KeyboardShortcutId) => {
     if (!projectPath) return;
@@ -141,13 +213,14 @@ export const useAppContainer = () => {
     childrenIdsByParentId,
     contentById,
     expandedItemIds,
+    isPasting,
     onAction: handleWorkingScreenAction,
     projectName,
     projectPath,
     selection,
     selectedIdSet,
     visibleProjectItems
-  }), [childrenIdsByParentId, contentById, expandedItemIds, handleWorkingScreenAction, projectName, projectPath, selectedIdSet, selection, visibleProjectItems]);
+  }), [childrenIdsByParentId, contentById, expandedItemIds, handleWorkingScreenAction, isPasting, projectName, projectPath, selectedIdSet, selection, visibleProjectItems]);
 
   const handleCloseNotification = useCallback((id: string) => {
     dispatch({ type: 'close-notification', payload: id });

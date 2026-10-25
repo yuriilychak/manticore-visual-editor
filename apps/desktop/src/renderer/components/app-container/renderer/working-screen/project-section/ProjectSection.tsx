@@ -1,7 +1,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { type FC, type MouseEvent, useCallback, useEffect, useMemo, useState } from 'react';
 
-import { Box } from '@mui/material';
+import { Box, CircularProgress } from '@mui/material';
 
 import { AssetType } from '../../../../../../types';
 import { keyboardShortcuts, type KeyboardShortcutId } from '../../../../../keyboard-shortcuts';
@@ -18,7 +18,7 @@ import ProjectVirtualRow from './ProjectVirtualRow';
 
 const estimateRowSize = () => ITEM_HEIGHT;
 const ProjectSection: FC = () => {
-  const { childrenIdsByParentId, contentById, expandedItemIds, onAction, projectName, projectPath, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
+  const { childrenIdsByParentId, contentById, expandedItemIds, isPasting, onAction, projectName, projectPath, selection, selectedIdSet, visibleProjectItems } = useProjectStructure();
   const [scrollElement, setScrollElement] = useState<HTMLDivElement | null>(null);
   const getScrollElement = useCallback(() => scrollElement, [scrollElement]);
   const [editingId, setEditingId] = useState(ProjectItemId.Empty);
@@ -85,6 +85,7 @@ const ProjectSection: FC = () => {
         flexGrow={1}
         minHeight={0}
         onClick={handleListClick}
+        position="relative"
         ref={setScrollElement}
         sx={{ overflowX: 'hidden', overflowY: 'auto' }}
       >
@@ -110,6 +111,11 @@ const ProjectSection: FC = () => {
             ) : null;
           })}
         </Box>
+        {isPasting && (
+          <Box alignItems="center" bgcolor="action.disabledBackground" display="flex" justifyContent="center" position="absolute" sx={{ inset: 0 }} zIndex={1}>
+            <CircularProgress aria-label="Pasting project content" size={28} />
+          </Box>
+        )}
       </Box>
       <ProjectActionsMenu
         contentType={contextMenu.contentType}

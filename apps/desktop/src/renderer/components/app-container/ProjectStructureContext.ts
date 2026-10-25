@@ -15,6 +15,7 @@ type ProjectStructureContextValue = {
   selectedIdSet?: ReadonlySet<number>;
   visibleProjectItems: readonly VisibleProjectItem[];
   expandedItemIds: ReadonlySet<number>;
+  isPasting: boolean;
 };
 
 export const ProjectStructureContext = createContext<ProjectStructureContextValue | null>(null);

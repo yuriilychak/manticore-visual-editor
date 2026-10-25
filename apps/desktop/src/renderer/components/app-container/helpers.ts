@@ -4,9 +4,9 @@ import { AssetType } from '../../../types';
 
 import type { ProjectInfo } from '../../types';
 
-import { FOLDER_TYPES, PROJECT_ITEM_CONFIG, ProjectItemId } from './constants';
+import { FOLDER_TYPES, NOTIFICATION_LOCALE_KEYS, NotificationError, PROJECT_ITEM_CONFIG, ProjectItemId } from './constants';
 import type { ModalPropsMap } from './modal-types';
-import type { AppContainerState, NewContentContext, VisibleProjectItem } from './types';
+import type { AppContainerState, NewContentContext, Notification, NotificationData, VisibleProjectItem } from './types';
 
 export const notifyUnavailableDesktopApi = () => window.alert('This feature is unavailable outside the desktop app.');
 
@@ -39,6 +39,16 @@ export const assertUnreachable = (action: never): never => {
   throw new Error(`Unknown app-container action: ${JSON.stringify(action)}`);
 };
 
+export const createNotification = (notification: NotificationData): Notification => ({
+  ...notification,
+  id: crypto.randomUUID()
+});
+
+export const getErrorNotification = (error: NotificationError): NotificationData => ({
+  message: NOTIFICATION_LOCALE_KEYS[error],
+  type: 'error'
+});
+
 export const getChildrenIds = (childrenIdsByParentId: Readonly<Record<number, readonly number[]>>, id: number) => {
   const childIds = childrenIdsByParentId[id];
   if (!childIds) throw new Error(`Children for project item ${id} are missing.`);
@@ -68,6 +78,109 @@ export const getVisibleProjectItems = (childrenIdsByParentId: Readonly<Record<nu
     { depth, id },
     ...(expandedItemIds.has(id) ? getVisibleProjectItems(childrenIdsByParentId, expandedItemIds, id, depth + 1) : [])
   ]);
+
+export const getDescendantIds = (childrenIdsByParentId: AppContainerState['childrenIdsByParentId'], id: number): number[] =>
+  getChildrenIds(childrenIdsByParentId, id).flatMap((childId) => [childId, ...getDescendantIds(childrenIdsByParentId, childId)]);
+
+export const getVisibleDescendantIds = (
+  childrenIdsByParentId: AppContainerState['childrenIdsByParentId'],
+  expandedItemIds: AppContainerState['expandedItemIds'],
+  id: number
+): number[] =>
+  getChildrenIds(childrenIdsByParentId, id).flatMap((childId) => [
+    childId,
+    ...(expandedItemIds.has(childId) ? getVisibleDescendantIds(childrenIdsByParentId, expandedItemIds, childId) : [])
+  ]);
+
+export const addIds = (selection: readonly number[], ids: readonly number[]) => {
+  const selectedIds = new Set(selection);
+  const nextSelection = [...selection];
+  for (const id of ids) {
+    if (!selectedIds.has(id)) {
+      selectedIds.add(id);
+      nextSelection.push(id);
+    }
+  }
+  return nextSelection;
+};
+
+export const addSelectedDescendants = (state: AppContainerState, selection: readonly number[], selectedIds: readonly number[]) =>
+  selectedIds.reduce(
+    (nextSelection, id) => addIds(nextSelection, getDescendantIds(state.childrenIdsByParentId, id)),
+    addIds([], selection)
+  );
+
+export const addFullySelectedParents = (state: AppContainerState, selection: readonly number[]) => {
+  let nextSelection = selection;
+  let hasAddedParent = true;
+
+  while (hasAddedParent) {
+    const selectedIds = new Set(nextSelection);
+    const parentIds = Object.values(state.contentById).reduce<number[]>((ids, { id }) => {
+      const childIds = getChildrenIds(state.childrenIdsByParentId, id);
+      if (childIds.length && childIds.every((childId) => selectedIds.has(childId)) && !selectedIds.has(id)) ids.push(id);
+      return ids;
+    }, []);
+    hasAddedParent = parentIds.length > 0;
+    nextSelection = addIds(nextSelection, parentIds);
+  }
+
+  return nextSelection;
+};
+
+export const getSelectedAncestorIds = (state: AppContainerState, id: number, selection: readonly number[]) => {
+  const selectedIds = new Set(selection);
+  const ancestorIds: number[] = [];
+  let parentId = state.contentById[id]?.parentId;
+
+  while (parentId !== undefined && state.contentById[parentId]) {
+    if (selectedIds.has(parentId)) ancestorIds.push(parentId);
+    parentId = state.contentById[parentId].parentId;
+  }
+
+  return ancestorIds;
+};
+
+export const getDraggedSelection = (
+  { childrenIdsByParentId, expandedItemIds, selection }: Pick<AppContainerState, 'childrenIdsByParentId' | 'expandedItemIds' | 'selection'>,
+  draggedId: number
+) => {
+  const selectedIds = selection.includes(draggedId) ? selection : [draggedId];
+  const selectedIdSet = new Set(selectedIds);
+  const selectedParentIds = selectedIds.filter((id) =>
+    expandedItemIds.has(id)
+    && getChildrenIds(childrenIdsByParentId, id).every((childId) => selectedIdSet.has(childId))
+  );
+  const descendantIds = new Set(selectedParentIds.flatMap((id) => getDescendantIds(childrenIdsByParentId, id)));
+
+  return selectedIds.filter((id) => !descendantIds.has(id));
+};
+
+export const getCopySelection = (
+  { contentById, selection }: Pick<AppContainerState, 'contentById' | 'selection'>,
+  id: number
+) => {
+  const selectedIds = selection.includes(id) ? selection : [id];
+  const selectedIdSet = new Set(selectedIds);
+  return selectedIds.filter((selectedId) => {
+    const item = contentById[selectedId];
+    return item && !selectedIdSet.has(item.parentId);
+  });
+};
+
+export const canMoveSelection = (
+  { childrenIdsByParentId, contentById }: Pick<AppContainerState, 'childrenIdsByParentId' | 'contentById'>,
+  ids: readonly number[],
+  parentId: number
+) => {
+  const parentType = parentId === ProjectItemId.RootFolder ? AssetType.ProjectFolder : contentById[parentId]?.type;
+  const acceptedTypes = parentType === undefined ? [] : Object.values(PROJECT_ITEM_CONFIG[parentType].dropTargets ?? {});
+
+  return ids.every((id) => {
+    const item = contentById[id];
+    return !!item && acceptedTypes.includes(item.type) && id !== parentId && !getDescendantIds(childrenIdsByParentId, id).includes(parentId);
+  });
+};
 
 const getProjectSelectionState = (
   state: Pick<AppContainerState, 'selection' | 'selectionAnchor'>,

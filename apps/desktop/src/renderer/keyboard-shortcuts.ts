@@ -20,6 +20,39 @@ export const KEYBOARD_SHORTCUTS = {
     },
     modifier: 'primary' as ShortcutModifier
   },
+  copy: {
+    action: 'copy',
+    allowedContentTypes: [
+      AssetType.ProjectFolder,
+      AssetType.Bundle,
+      AssetType.BundleFolder,
+      AssetType.Font,
+      AssetType.Image,
+      AssetType.TextureAtlas
+    ],
+    labels: {
+      darwin: '⌘+C',
+      linux: 'Ctrl+C',
+      win32: 'Ctrl+C'
+    },
+    modifier: 'primary' as ShortcutModifier
+  },
+  paste: {
+    action: 'paste',
+    allowedContentTypes: [
+      AssetType.Project,
+      AssetType.ProjectFolder,
+      AssetType.Bundle,
+      AssetType.BundleFolder,
+      AssetType.TextureAtlas
+    ],
+    labels: {
+      darwin: '⌘+V',
+      linux: 'Ctrl+V',
+      win32: 'Ctrl+V'
+    },
+    modifier: 'primary' as ShortcutModifier
+  },
   delete: {
     action: 'open-delete-modal',
     allowedContentTypes: [
@@ -60,7 +93,9 @@ export const KEYBOARD_SHORTCUTS = {
 export type KeyboardShortcutId = keyof typeof KEYBOARD_SHORTCUTS;
 
 export const ADD_FOLDER_SHORTCUT = KEYBOARD_SHORTCUTS['add-folder'].labels;
+export const COPY_SHORTCUT = KEYBOARD_SHORTCUTS.copy.labels;
 export const DELETE_SHORTCUT = KEYBOARD_SHORTCUTS.delete.labels;
+export const PASTE_SHORTCUT = KEYBOARD_SHORTCUTS.paste.labels;
 export const RENAME_SHORTCUT = KEYBOARD_SHORTCUTS.rename.labels;
 
 type KeyboardShortcutListener = (shortcutId: KeyboardShortcutId) => void;

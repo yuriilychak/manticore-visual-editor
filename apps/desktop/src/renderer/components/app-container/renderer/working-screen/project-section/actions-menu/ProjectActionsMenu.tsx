@@ -1,14 +1,22 @@
 import { type FC, memo, useCallback } from 'react';
 
+import ContentCopyRounded from '@mui/icons-material/ContentCopyRounded';
+import ContentPasteRounded from '@mui/icons-material/ContentPasteRounded';
 import { Divider, Menu } from '@mui/material';
 
 import { AssetType } from '../../../../../../../types';
+import { COPY_SHORTCUT, PASTE_SHORTCUT } from '../../../../../../keyboard-shortcuts';
 import { MENUBAR_STYLES } from '../../../../app-shell/title-bar/menubar/constants';
+import type { ActionButtonConfig } from '../../../../types';
+
 import { RENAMEABLE_ITEM_ACTIONS, RENAMEABLE_ITEM_STYLES } from '../../renameable-item/constants';
 
 import { PROJECT_ITEM_CONFIG } from '../constants';
 
 import ProjectActionsMenuItem from './ProjectActionsMenuItem';
+
+const COPY_ACTION: ActionButtonConfig = { action: 'copy', shortcut: COPY_SHORTCUT, tooltipLocale: 'common.copy', Icon: ContentCopyRounded };
+const PASTE_ACTION: ActionButtonConfig = { action: 'paste', shortcut: PASTE_SHORTCUT, tooltipLocale: 'common.paste', Icon: ContentPasteRounded };
 
 type ProjectActionsMenuProps = {
   contextMenuPosition: { left: number; top: number };
@@ -32,6 +40,10 @@ const ProjectActionsMenu: FC<ProjectActionsMenuProps> = ({
   const viewActions = contentType === AssetType.Project
     ? RENAMEABLE_ITEM_ACTIONS.viewProject
     : RENAMEABLE_ITEM_ACTIONS.viewContent;
+  const clipboardActions = [
+    ...(contentType === AssetType.Project ? [] : [COPY_ACTION]),
+    ...(PROJECT_ITEM_CONFIG[contentType].dropTargets ? [PASTE_ACTION] : [])
+  ];
   const menuActions = PROJECT_ITEM_CONFIG[contentType].actions ?? [];
   const handleMenuAction = useCallback((action: string) => {
     onClose();
@@ -63,7 +75,16 @@ const ProjectActionsMenu: FC<ProjectActionsMenuProps> = ({
           onAction={handleMenuAction}
         />
       ))}
-      {!!viewActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
+      {!!viewActions.length && !!clipboardActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
+      {clipboardActions.map((action) => (
+        <ProjectActionsMenuItem
+          action={action}
+          disabled={disabledByAction[action.action]}
+          key={action.action}
+          onAction={handleMenuAction}
+        />
+      ))}
+      {!!clipboardActions.length && !!menuActions.length && <Divider sx={RENAMEABLE_ITEM_STYLES.divider} />}
       {menuActions.map((action) => (
         <ProjectActionsMenuItem
           action={action}

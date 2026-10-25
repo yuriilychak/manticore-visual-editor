@@ -67,9 +67,11 @@ export type AppContainerState = {
   activeModalType: ModalType | '';
   bundleIds: readonly number[];
   childrenIdsByParentId: Readonly<Record<number, readonly number[]>>;
+  copiedSelection: readonly number[];
   contentById: Readonly<Record<number, ProjectContent>>;
   disabledItemIds: readonly MenubarItemId[];
   expandedItemIds: ReadonlySet<number>;
+  isPasting: boolean;
   modalData: ModalPropsMap;
   notifications: readonly Notification[];
   projectName: string;
@@ -85,12 +87,14 @@ type PayloadAction<TType extends string, TPayload> = Required<ReducerAction<TTyp
 type EmptyAction<TType extends string> = ReducerAction<TType>;
 
 export type AppContainerAction =
-  | EmptyAction<'create-project'>
+  | EmptyAction<'create-project' | 'paste-started' | 'paste-finished'>
   | PayloadAction<
     | 'content-created'
     | 'project-opened'
     | 'select'
     | 'selection-cleared'
+    | 'selection-updated'
+    | 'copy-selection'
     | 'open-delete-modal'
     | 'close-modal'
     | 'expanded-item-toggled',

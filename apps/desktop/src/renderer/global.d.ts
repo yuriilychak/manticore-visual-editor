@@ -33,6 +33,7 @@ declare global {
       restoreLastOpenedProject: () => Promise<RestoredProject>;
       createProjectTextureAtlas?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       deleteProjectContent?: (projectPath: string, ids: number[]) => Promise<number[]>;
+      duplicateProjectContent?: (projectPath: string, ids: number[], targetParentId?: number) => Promise<ProjectContent[]>;
       createProject: (options: NewProjectOptions) => Promise<ProjectInfo>;
       canCreateProject: (options: NewProjectOptions) => Promise<ProjectCreationValidation>;
       platform: string;
