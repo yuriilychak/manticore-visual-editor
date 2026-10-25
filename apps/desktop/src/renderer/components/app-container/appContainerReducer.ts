@@ -276,7 +276,7 @@ export const appContainerReducer = (state: AppContainerState, action: AppContain
       ? nextSelection
       : isDeselected
         ? nextSelection.filter((selectedId) => !deselectedIds.has(selectedId) && !selectedAncestorIds.includes(selectedId))
-        : addFullySelectedParents(state, addSelectedDescendants(state, nextSelection, [id]));
+        : addFullySelectedParents(state, addSelectedDescendants(state, nextSelection, nextSelection));
 
     return { ...state, selection, selectionAnchor: isRangeSelection ? anchor : id };
   }

@@ -110,6 +110,29 @@ describe('appContainerReducer selection', () => {
     expect(selectedState.selection).toEqual([5, 2, 3, 4]);
   });
 
+  test('selects descendants of a previously selected parent when extending with Ctrl or Cmd', () => {
+    const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
+      content: [
+        { id: 2, name: 'Bundle', parentId: 1, type: AssetType.Bundle, version: 0 },
+        { id: 3, name: 'Folder', parentId: 2, type: AssetType.BundleFolder, version: 0 },
+        { id: 4, name: 'Image', parentId: 3, type: AssetType.Image, version: 0 },
+        { id: 5, name: 'Other', parentId: 1, type: AssetType.Bundle, version: 0 }
+      ],
+      name: 'Project',
+      path: '/tmp/project'
+    } } });
+    const initiallySelectedState = appContainerReducer(state, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 2, isExtended: false, isRange: false }, id: 2 }
+    });
+    const extendedState = appContainerReducer(initiallySelectedState, {
+      type: 'select',
+      payload: { assetType: AssetType.Bundle, data: { id: 5, isExtended: true, isRange: false }, id: 5 }
+    });
+
+    expect(extendedState.selection).toEqual([2, 5, 3, 4]);
+  });
+
   test('does not select descendants without Ctrl or Cmd', () => {
     const state = appContainerReducer(INITIAL_APP_CONTAINER_STATE, { type: 'project-opened', payload: { assetType: AssetType.Project, id: 0, data: {
       content: [
