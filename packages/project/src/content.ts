@@ -1,7 +1,7 @@
 import { AssetType } from './asset-type';
 
 import { MAX_U16 } from './constants';
-import type { ProjectContent } from './types';
+import type { ProjectContent, ProjectContentType } from './types';
 
 const isU16 = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_U16;
@@ -31,6 +31,6 @@ export const createProjectContent = (
   id: number,
   name: string,
   parentId: number,
-  type: AssetType,
+  type: ProjectContentType,
   version = 0
 ): ProjectContent => ({ id, name, parentId, type, version });

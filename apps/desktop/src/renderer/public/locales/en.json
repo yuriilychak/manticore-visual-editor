@@ -35,6 +35,7 @@
   },
   "common": {
     "actions": "Actions",
+    "apply": "Apply",
     "cancel": "Cancel",
     "cancelRename": "Cancel renaming",
     "contentConfigurationError": "Could not configure the requested content.",
@@ -62,6 +63,28 @@
     "renameName": "Name",
     "rename": "Rename",
     "saveRename": "Save project name"
+  },
+  "details": {
+    "title": "Details",
+    "folderEmpty": "Folder is empty",
+    "bundleEmpty": "Bundle is empty",
+    "filesByType": "Files by type",
+    "images": "Images",
+    "textureAtlases": "Texture atlases",
+    "fonts": "Fonts",
+    "imagePreview": "Image preview",
+    "previewUnavailable": "Preview unavailable",
+    "binarySize": "Binary size",
+    "realSize": "Real size",
+    "croppedSize": "Cropped size",
+    "imageFormat": "Image format",
+    "bytes": "bytes",
+    "showTriangles": "Show triangles",
+    "showPolygon": "Show polygon",
+    "usePolygonsInsteadOfQuads": "Use polygon instead of quad",
+    "alphaThreshold": "Alpha threshold",
+    "pointCount": "Point count",
+    "minimalDistance": "Minimal distance"
   },
   "importAssets": {
     "actions": "Actions",

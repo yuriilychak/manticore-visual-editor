@@ -35,6 +35,7 @@
   },
   "common": {
     "actions": "Acciones",
+    "apply": "Aplicar",
     "cancel": "Cancelar",
     "cancelRename": "Cancelar cambio de nombre",
     "contentConfigurationError": "No se pudo configurar el contenido solicitado.",
@@ -62,6 +63,28 @@
     "renameName": "Nombre",
     "rename": "Cambiar nombre",
     "saveRename": "Guardar nombre del proyecto"
+  },
+  "details": {
+    "title": "Detalles",
+    "folderEmpty": "La carpeta está vacía",
+    "bundleEmpty": "El paquete está vacío",
+    "filesByType": "Archivos por tipo",
+    "images": "Imágenes",
+    "textureAtlases": "Atlas de texturas",
+    "fonts": "Fuentes",
+    "imagePreview": "Vista previa de la imagen",
+    "previewUnavailable": "Vista previa no disponible",
+    "binarySize": "Tamaño binario",
+    "realSize": "Tamaño real",
+    "croppedSize": "Tamaño recortado",
+    "imageFormat": "Formato de imagen",
+    "bytes": "bytes",
+    "showTriangles": "Mostrar triángulos",
+    "showPolygon": "Mostrar polígono",
+    "usePolygonsInsteadOfQuads": "Usar polígono en lugar de cuadrilátero",
+    "alphaThreshold": "Umbral alfa",
+    "pointCount": "Cantidad de puntos",
+    "minimalDistance": "Distancia mínima"
   },
   "importAssets": {
     "actions": "Acciones",

@@ -62,7 +62,7 @@ describe('init()', () => {
         const polygonizer = new ImagePolygonizer();
         await polygonizer.init();
 
-        expect(fetch).toHaveBeenCalledWith('image-polygonizer.wasm');
+        expect(fetch).toHaveBeenCalledWith(expect.any(URL));
         expect(mockParallelInstance.start).toHaveBeenCalledTimes(1);
         const [inputs] = mockParallelInstance.start.mock.calls[0];
         expect(inputs).toHaveLength(3); // threadCount

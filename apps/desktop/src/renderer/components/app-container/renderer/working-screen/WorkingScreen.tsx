@@ -3,6 +3,7 @@ import { type FC } from 'react';
 import { Box } from '@mui/material';
 
 import { DIVIDER_SIZE, MIN_PANE_SIZE } from './constants';
+import { DetailSection } from './detail-section';
 import { ProjectSection } from './project-section';
 import Separator from './Separator';
 import { useSectionResize } from './useSectionResize';
@@ -51,7 +52,9 @@ const WorkingScreen: FC = () => {
         onResizeStart={startResize}
         panePercentages={panePercentages}
       />
-      <Box aria-label="Right panel" component="section" minWidth={MIN_PANE_SIZE} />
+      <Box aria-label="Right panel" component="section" minHeight={0} minWidth={MIN_PANE_SIZE} overflow="hidden">
+        <DetailSection />
+      </Box>
     </Box>
   );
 };

@@ -3,7 +3,7 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createProject, deleteProjectContent, duplicateProjectContent, importProjectAssets } from '../project';
+import { createProject, deleteProjectContent, duplicateProjectContent, importProjectAssets, loadProjectImagePreview } from '../project';
 import { ProjectConfigProxy } from '../project-config-proxy';
 
 describe('ProjectConfigProxy', () => {
@@ -52,6 +52,8 @@ describe('ProjectConfigProxy', () => {
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'asset'))).resolves.toEqual(Buffer.from([7, 8, 9]));
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'preview'))).resolves.toEqual(Buffer.from([10, 11, 12]));
+    await expect(loadProjectImagePreview(destination, 3)).resolves.toEqual(new Uint8Array([10, 11, 12]).buffer);
+    await expect(loadProjectImagePreview(destination, 4)).rejects.toThrow('Image is not in the project.');
     await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([4, 5, 6]));
     const config = JSON.parse(await readFile(path.join(destination, 'src', 'config.json'), 'utf8')) as { content: Array<{ data: unknown; id: number }> };
     expect(config.content.find(({ id }) => id === 3)).not.toHaveProperty('data');

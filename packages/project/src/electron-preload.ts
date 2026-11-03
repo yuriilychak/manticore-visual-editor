@@ -1,6 +1,7 @@
 import type { IpcRenderer } from 'electron';
 
 import type { ProjectContent } from './types';
+import type { ProjectImagePolygonSettingsInput } from './image-polygon-settings';
 
 export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
@@ -12,7 +13,11 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   deleteProjectContent: (projectPath: string, ids: number[]) => ipcRenderer.invoke('project:delete-content', projectPath, ids),
   duplicateProjectContent: (projectPath: string, ids: number[], targetParentId?: number) => ipcRenderer.invoke('project:duplicate-content', projectPath, ids, targetParentId),
   importAssets: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => ipcRenderer.invoke('project:import-assets', projectPath, bundleId, assets, jobId),
+  applyImagePolygonSettings: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => ipcRenderer.invoke('project:apply-image-polygon-settings', projectPath, id, settings, image),
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
+  loadImagePreview: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-image-preview', projectPath, id),
+  loadImageSource: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-image-source', projectPath, id),
+  loadImageMetadata: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-image-metadata', projectPath, id),
   moveProjectBundle: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-bundle', projectPath, id, parentId),
   moveProjectContent: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-content', projectPath, id, parentId),
   moveProjectFolder: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-folder', projectPath, id, parentId),

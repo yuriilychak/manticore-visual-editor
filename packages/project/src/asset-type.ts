@@ -1,4 +1,5 @@
 export enum AssetType {
+  None = -1,
   Project = 0,
   ProjectFolder = 1,
   Bundle = 2,

@@ -1,10 +1,12 @@
-import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AssetType } from './asset-type';
 
 import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJECT_VERSION, MAX_U16 } from './constants';
 import { createProjectContent, isAssetName } from './content';
+import { readProjectImageMetadata, type ProjectImageMetadata } from './image-metadata';
+import { createQuadPolygonSettings, DEFAULT_IMAGE_POLYGON_SETTINGS, deserializeProjectImagePolygonSettings, serializeProjectImagePolygonSettings, type ProjectImagePolygonSettingsInput } from './image-polygon-settings';
 import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
 import type { ProjectConfig, ProjectContent, ProjectInfo } from './types';
@@ -34,6 +36,80 @@ export async function getProjectInfo(projectPath: string): Promise<ProjectInfo> 
   const config = await ProjectConfigProxy.load(projectPath);
 
   return toProjectInfo(projectPath, { content: config.content, name: config.name, version: config.version });
+}
+
+export async function loadProjectImagePreview(projectPath: string, id: number): Promise<ArrayBuffer> {
+  if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
+  const config = await ProjectConfigProxy.load(projectPath);
+  if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
+
+  const content = await readFile(path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'), 'preview'));
+  return content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength);
+}
+
+export async function loadProjectImageSource(projectPath: string, id: number): Promise<ArrayBuffer> {
+  if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
+  const config = await ProjectConfigProxy.load(projectPath);
+  if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
+  const content = await readFile(path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'), 'source'));
+  return content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength);
+}
+
+export async function loadProjectImageMetadata(projectPath: string, id: number): Promise<ProjectImageMetadata> {
+  if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
+  const config = await ProjectConfigProxy.load(projectPath);
+  if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
+
+  const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
+  const [content, storedSettings] = await Promise.all([
+    readFile(path.join(assetPath, 'asset')),
+    readFile(path.join(assetPath, 'polygon-settings')).then(deserializeProjectImagePolygonSettings).catch(() => undefined)
+  ]);
+  if (storedSettings) return readProjectImageMetadata(content, storedSettings);
+
+  const metadata = readProjectImageMetadata(content);
+  const settings = createQuadPolygonSettings(DEFAULT_IMAGE_POLYGON_SETTINGS, metadata.croppedX, metadata.croppedY, metadata.croppedWidth, metadata.croppedHeight);
+  await writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(settings));
+  return readProjectImageMetadata(content, settings);
+}
+
+export async function applyProjectImagePolygonSettings(projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }): Promise<ProjectImageMetadata> {
+  if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
+  const config = await ProjectConfigProxy.load(projectPath);
+  if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
+
+  const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
+  if (!Number.isInteger(image.width) || !Number.isInteger(image.height) || image.width < 1 || image.height < 1 || image.pixels.byteLength !== image.width * image.height * 4) throw new Error('Image crop is invalid.');
+  const asset = await readFile(path.join(assetPath, 'asset'));
+  const view = new DataView(asset.buffer, asset.byteOffset, asset.byteLength);
+  let offset = 0;
+  const readString = () => {
+    const length = view.getUint16(offset, true);
+    offset += 2 + length;
+  };
+  readString();
+  readString();
+  readString();
+  offset += 25;
+  const polygonLength = view.getUint32(offset, true);
+  offset += 4 + polygonLength * 2;
+  const pixelOffset = offset + 8;
+  if (pixelOffset > asset.byteLength) throw new Error('Image asset is invalid.');
+  const updatedAsset = new Uint8Array(pixelOffset + image.pixels.byteLength);
+  updatedAsset.set(asset.subarray(0, offset));
+  const updatedView = new DataView(updatedAsset.buffer);
+  updatedView.setUint32(offset, image.width, true);
+  updatedView.setUint32(offset + 4, image.height, true);
+  updatedAsset.set(image.pixels, pixelOffset);
+  const updatedSettings = settings.polygons?.length
+    ? { ...settings, offset: settings.offset ?? 0, polygons: settings.polygons }
+    : createQuadPolygonSettings(settings, 0, 0, image.width, image.height);
+  await Promise.all([
+    writeFile(path.join(assetPath, 'asset'), updatedAsset),
+    writeFile(path.join(assetPath, 'preview'), image.preview),
+    writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(updatedSettings))
+  ]);
+  return readProjectImageMetadata(updatedAsset, updatedSettings);
 }
 
 export async function renameProject(projectPath: string, name: string): Promise<string> {

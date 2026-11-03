@@ -1,3 +1,5 @@
+import type { ProjectImageMetadata } from '@manticore/project';
+import type { ProjectImagePolygonSettingsInput } from '@manticore/project';
 import type { ProjectContent } from '@manticore/project/types';
 
 import type {
@@ -19,6 +21,10 @@ declare global {
       createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
       loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
+      loadImagePreview?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
+      loadImageSource?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
+      loadImageMetadata?: (projectPath: string, id: number) => Promise<ProjectImageMetadata>;
+      applyImagePolygonSettings?: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => Promise<ProjectImageMetadata>;
       selectImportFiles?: () => Promise<string[]>;
       importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;

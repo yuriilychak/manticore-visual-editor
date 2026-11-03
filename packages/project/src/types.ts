@@ -2,6 +2,8 @@ import { AssetType } from './asset-type';
 
 export { AssetType } from './asset-type';
 
+export type ProjectContentType = Exclude<AssetType, AssetType.None>;
+
 export type ProjectInfo = {
   content?: ProjectContent[];
   name: string;
@@ -15,7 +17,7 @@ export type ProjectContent = {
   id: number;
   name: string;
   parentId: number;
-  type: AssetType;
+  type: ProjectContentType;
   version: number;
 };
 

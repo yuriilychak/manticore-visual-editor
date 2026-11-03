@@ -139,7 +139,7 @@ const ATLAS_DROP_TARGETS = {
   [ProjectContentDragType.Image]: AssetType.Image
 };
 
-export const PROJECT_ITEM_CONFIG: Record<AssetType, ProjectItemConfig> = {
+export const PROJECT_ITEM_CONFIG: Record<Exclude<AssetType, AssetType.None>, ProjectItemConfig> = {
   [AssetType.Project]: {
     actions: ROOT_CONTENT_ACTIONS,
     dropTargets: FOLDER_AND_BUNDLE_DROP_TARGETS,

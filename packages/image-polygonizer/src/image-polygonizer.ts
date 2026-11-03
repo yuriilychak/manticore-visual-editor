@@ -23,7 +23,8 @@ export default class ImagePolygonizer implements ImagePolygonizerInstance {
             return;
         }
 
-        const buffer = await fetch('image-polygonizer.wasm').then(r => r.arrayBuffer());
+        const wasmUrl = new URL('../../image-polygonizer-algo/pkg/image_polygonizer_algo_bg.wasm', import.meta.url);
+        const buffer = await fetch(wasmUrl).then(r => r.arrayBuffer());
         const count = this.#parallel.threadCount;
         const inputs: ThreadInput<'init'>[] = Array.from({ length: count }, () => {
             const clone = buffer.slice(0);

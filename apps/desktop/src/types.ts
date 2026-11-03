@@ -1,10 +1,9 @@
-import { AssetType } from '@manticore/project/types';
-import type { ProjectInfo } from '@manticore/project/types';
+import { AssetType, type ProjectInfo } from '@manticore/project/types';
 
 export { AssetType };
 export type { ProjectInfo };
 
-export const ASSET_TYPE_LOCALE_KEY: Record<AssetType, string> = {
+export const ASSET_TYPE_LOCALE_KEY: Record<Exclude<AssetType, AssetType.None>, string> = {
   [AssetType.Project]: 'project',
   [AssetType.ProjectFolder]: 'folder',
   [AssetType.Bundle]: 'bundle',
