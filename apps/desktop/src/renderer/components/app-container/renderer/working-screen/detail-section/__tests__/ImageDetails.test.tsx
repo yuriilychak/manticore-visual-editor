@@ -25,7 +25,6 @@ test('draws a 16px checkerboard and a half-size preview in a full-width 132px fr
   Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, value: class { observe() {} disconnect() {} } });
   const bitmap = { close: jest.fn(), height: 256, width: 256 };
   Object.defineProperty(globalThis, 'createImageBitmap', { configurable: true, value: jest.fn(async () => bitmap) });
-  const loadImagePreview = jest.fn<(projectPath: string, id: number) => Promise<ArrayBuffer>>().mockResolvedValue(new Uint8Array([1, 2, 3]).buffer);
   const loadImageMetadata = jest.fn<(projectPath: string, id: number) => Promise<ProjectImageMetadata>>().mockResolvedValue({
     binarySize: 1234,
     croppedWidth: 120,
@@ -34,15 +33,15 @@ test('draws a 16px checkerboard and a half-size preview in a full-width 132px fr
     croppedY: 2,
     format: 'png',
     hasTransparency: true,
-    polygonSettings: { alphaThreshold: 0, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [{ points: new Uint16Array([4, 2, 124, 2, 124, 62, 4, 62]), triangles: new Uint16Array([34, 67]) }], polygonsApplied: false },
+    polygonSettings: { alphaThreshold: 0, crop: { height: 60, width: 120, x: 4, y: 2 }, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [{ points: new Uint16Array([4, 2, 124, 2, 124, 62, 4, 62]), triangles: new Uint16Array([34, 67]) }], polygonsApplied: false, source: { format: 'png', height: 64, width: 128 } },
     sourceWidth: 128,
     sourceHeight: 64,
     supportsTransparency: true,
     alphaPolygons: [[4, 2, 124, 2, 124, 62, 4, 62]]
   });
-  const applyImagePolygonSettings = jest.fn<(projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => Promise<ProjectImageMetadata>>().mockResolvedValue({} as ProjectImageMetadata);
+  const applyImagePolygonSettings = jest.fn<(projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => Promise<ProjectImageMetadata>>().mockResolvedValue({} as ProjectImageMetadata);
   const loadImageSource = jest.fn<(projectPath: string, id: number) => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(0));
-  Object.defineProperty(window, 'manticore', { configurable: true, value: { applyImagePolygonSettings, loadImageMetadata, loadImagePreview, loadImageSource } });
+  Object.defineProperty(window, 'manticore', { configurable: true, value: { applyImagePolygonSettings, loadImageMetadata, loadImageSource } });
 
   const { unmount } = render(
     <ThemeProvider theme={theme}>
@@ -64,7 +63,7 @@ test('draws a 16px checkerboard and a half-size preview in a full-width 132px fr
 
   const canvas = screen.getByLabelText('details.imagePreview');
   expect(canvas.parentElement).toHaveStyle({ height: '132px', width: '100%' });
-  expect(loadImagePreview).toHaveBeenCalledWith('/test/project', 5);
+  await waitFor(() => expect(loadImageSource).toHaveBeenCalledWith('/test/project', 5));
   expect(loadImageMetadata).toHaveBeenCalledWith('/test/project', 5);
   await waitFor(() => expect(drawImage).toHaveBeenCalledWith(bitmap, 86, 2, 128, 128));
   expect(screen.getByText('details.binarySize').nextElementSibling).toHaveTextContent('1.21 KB');
@@ -105,7 +104,7 @@ test('draws a 16px checkerboard and a half-size preview in a full-width 132px fr
   await waitFor(() => expect(context.lineTo).toHaveBeenCalledWith(210, 36));
   expect(context.strokeStyle).toBe('#ff0000');
   expect(context.lineTo).toHaveBeenCalledWith(210, 96);
-  expect(loadImagePreview).toHaveBeenCalledTimes(1);
+  expect(loadImageSource).toHaveBeenCalledTimes(1);
   fireEvent.click(triangleSwitch);
   expect(triangleSwitch).not.toBeChecked();
 
@@ -119,9 +118,8 @@ test('disables the polygon toggle for opaque images and formats without transpar
   jest.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(context);
   Object.defineProperty(globalThis, 'ResizeObserver', { configurable: true, value: class { observe() {} disconnect() {} } });
   Object.defineProperty(globalThis, 'createImageBitmap', { configurable: true, value: jest.fn(async () => ({ close: jest.fn(), height: 1, width: 1 })) });
-  const loadImageMetadata = jest.fn<(projectPath: string, id: number) => Promise<ProjectImageMetadata>>().mockResolvedValue({ alphaPolygons: [], binarySize: 1, croppedHeight: 1, croppedWidth: 1, croppedX: 0, croppedY: 0, format: 'jpeg', hasTransparency: false, polygonSettings: { alphaThreshold: 0, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [], polygonsApplied: false }, sourceHeight: 1, sourceWidth: 1, supportsTransparency: false });
-  const loadImagePreview = jest.fn<(projectPath: string, id: number) => Promise<ArrayBuffer>>().mockResolvedValue(new ArrayBuffer(0));
-  Object.defineProperty(window, 'manticore', { configurable: true, value: { loadImageMetadata, loadImagePreview } });
+  const loadImageMetadata = jest.fn<(projectPath: string, id: number) => Promise<ProjectImageMetadata>>().mockResolvedValue({ alphaPolygons: [], binarySize: 1, croppedHeight: 1, croppedWidth: 1, croppedX: 0, croppedY: 0, format: 'jpeg', hasTransparency: false, polygonSettings: { alphaThreshold: 0, crop: { height: 1, width: 1, x: 0, y: 0 }, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [], polygonsApplied: false, source: { format: 'jpeg', height: 1, width: 1 } }, sourceHeight: 1, sourceWidth: 1, supportsTransparency: false });
+  Object.defineProperty(window, 'manticore', { configurable: true, value: { loadImageMetadata } });
 
   render(
     <ThemeProvider theme={createTheme()}>

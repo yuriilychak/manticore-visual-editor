@@ -1,4 +1,6 @@
 export type ProjectImagePolygon = { points: Uint16Array; triangles: Uint16Array };
+export type ProjectImageCrop = { height: number; width: number; x: number; y: number };
+export type ProjectImageSource = { format: string; height: number; width: number };
 
 export type ProjectImagePolygonSettings = {
   alphaThreshold: number;
@@ -7,6 +9,8 @@ export type ProjectImagePolygonSettings = {
   offset: number;
   polygons: ProjectImagePolygon[];
   polygonsApplied: boolean;
+  crop: ProjectImageCrop;
+  source: ProjectImageSource;
 };
 
 export type ProjectImagePolygonSettingsInput = Omit<ProjectImagePolygonSettings, 'offset' | 'polygons'> & Partial<Pick<ProjectImagePolygonSettings, 'offset' | 'polygons'>>;
@@ -16,7 +20,8 @@ type SerializedProjectImagePolygonSettings = Omit<ProjectImagePolygonSettings, '
 };
 
 export const DEFAULT_IMAGE_POLYGON_SETTINGS: ProjectImagePolygonSettings = {
-  alphaThreshold: 0, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [], polygonsApplied: false
+  alphaThreshold: 1, maxPointCount: 32, minimalDistance: 8, offset: 0, polygons: [], polygonsApplied: false,
+  crop: { height: 1, width: 1, x: 0, y: 0 }, source: { format: '', height: 1, width: 1 }
 };
 
 export function packTriangleIndices(first: number, second: number, third: number): number {
@@ -24,8 +29,9 @@ export function packTriangleIndices(first: number, second: number, third: number
   return (first << 10) | (second << 5) | third;
 }
 
-export function createQuadPolygonSettings(settings: ProjectImagePolygonSettingsInput, x: number, y: number, width: number, height: number): ProjectImagePolygonSettings {
-  return { ...settings, offset: settings.offset ?? 0, polygons: [{ points: new Uint16Array([x, y, x + width, y, x + width, y + height, x, y + height]), triangles: new Uint16Array([packTriangleIndices(0, 1, 2), packTriangleIndices(0, 2, 3)]) }] };
+export function createQuadPolygonSettings(settings: Omit<ProjectImagePolygonSettingsInput, 'crop' | 'source'> & { crop?: ProjectImageCrop }, source: ProjectImageSource): ProjectImagePolygonSettings {
+  const crop = settings.crop ?? { height: source.height, width: source.width, x: 0, y: 0 };
+  return { ...settings, crop, source, offset: settings.offset ?? 0, polygons: [{ points: new Uint16Array([crop.x, crop.y, crop.x + crop.width, crop.y, crop.x + crop.width, crop.y + crop.height, crop.x, crop.y + crop.height]), triangles: new Uint16Array([packTriangleIndices(0, 1, 2), packTriangleIndices(0, 2, 3)]) }] };
 }
 
 const validatePolygon = ({ points, triangles }: ProjectImagePolygon) => {
@@ -39,6 +45,9 @@ const validateSettings = (settings: ProjectImagePolygonSettings) => {
   if (!Number.isInteger(settings.maxPointCount) || settings.maxPointCount < 5 || settings.maxPointCount > 32) throw new Error('Max point count is invalid.');
   if (!Number.isInteger(settings.minimalDistance) || settings.minimalDistance < 1 || settings.minimalDistance > 256) throw new Error('Minimal distance is invalid.');
   if (!Number.isInteger(settings.offset) || settings.offset < 0 || settings.offset > 255) throw new Error('Polygon offset is invalid.');
+  const { crop, source } = settings;
+  if (!crop || ![crop.x, crop.y, crop.width, crop.height].every(Number.isInteger) || crop.width < 1 || crop.height < 1) throw new Error('Image crop is invalid.');
+  if (!source || !Number.isInteger(source.width) || !Number.isInteger(source.height) || source.width < 1 || source.height < 1 || !source.format) throw new Error('Image source is invalid.');
   if (!settings.polygons.length) throw new Error('Polygon count is invalid.');
   settings.polygons.forEach(validatePolygon);
 };

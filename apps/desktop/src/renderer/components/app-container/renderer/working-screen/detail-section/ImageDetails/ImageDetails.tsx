@@ -7,23 +7,21 @@ import { Box, Button } from '@mui/material';
 
 import { useProjectStructure } from '../../../../ProjectStructureContext';
 
+import { createImageUpdate } from './helpers';
 import { ImageControls } from './ImageControls';
+import type { ControlProps, ControlValueById, SliderControlId, ToggleControlId } from './ImageControls/types';
 import { ImageMetadata } from './ImageMetadata';
 import { ImagePreview } from './ImagePreview';
-import { createImageUpdate } from './helpers';
-import type { ControlProps, ControlValueById, SliderControlId, ToggleControlId } from './ImageControls/types';
 
 type ImageDetailsProps = {
   item: ProjectContent;
 };
 
-const STORED_PREVIEW_SIZE = 256;
-
 const ImageDetails: FC<ImageDetailsProps> = ({ item }) => {
   const { id } = item;
   const { t } = useTranslation();
   const { projectPath } = useProjectStructure();
-  const [alphaThreshold, setAlphaThreshold] = useState(0);
+  const [alphaThreshold, setAlphaThreshold] = useState(1);
   const [applying, setApplying] = useState(false);
   const [generatePolygons, setGeneratePolygons] = useState(false);
   const [maxPointCount, setMaxPointCount] = useState(32);
@@ -90,14 +88,14 @@ const ImageDetails: FC<ImageDetailsProps> = ({ item }) => {
     setApplying(true);
     try {
       const source = await loadSource(projectPath, id);
-      const { image, settings } = await createImageUpdate(source, {
+      const settings = await createImageUpdate(source, {
         alphaThreshold,
         format: metadata.format,
         generatePolygons,
         maxPointCount,
         minimalDistance
       });
-      const value = await apply(projectPath, id, settings, image);
+      const value = await apply(projectPath, id, settings);
       setPreviewVersion((version) => version + 1);
       setMetadataResult({ id, projectPath, value });
     } finally {
@@ -111,7 +109,7 @@ const ImageDetails: FC<ImageDetailsProps> = ({ item }) => {
       {metadata && <ImageMetadata metadata={metadata} />}
       <ImageControls canGeneratePolygons={canGeneratePolygons} generatePolygons={generatePolygons} onChange={handleControlChange} values={controlValues} />
       <Box px={1}>
-        <Button disabled={!window.manticore?.applyImagePolygonSettings || !window.manticore?.loadImageSource || !hasConfigurationChanges || applying} loading={applying} onClick={() => void applyPolygonSettings()} size="small" sx={{ mt: 2 }} variant="contained">
+      <Button disabled={!window.manticore?.applyImagePolygonSettings || !window.manticore?.loadImageSource || !hasConfigurationChanges || applying} loading={applying} onClick={() => void applyPolygonSettings()} size="small" sx={{ mt: 2 }} variant="contained">
           {t('common.apply')}
         </Button>
       </Box>

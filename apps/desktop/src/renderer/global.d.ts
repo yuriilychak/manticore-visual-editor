@@ -21,12 +21,11 @@ declare global {
       createProjectBundleFolder?: (projectPath: string, parentId: number, name: string) => Promise<ProjectContent>;
       openProject: () => Promise<ProjectInfo>;
       loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
-      loadImagePreview?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
       loadImageSource?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
       loadImageMetadata?: (projectPath: string, id: number) => Promise<ProjectImageMetadata>;
-      applyImagePolygonSettings?: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => Promise<ProjectImageMetadata>;
+      applyImagePolygonSettings?: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => Promise<ProjectImageMetadata>;
       selectImportFiles?: () => Promise<string[]>;
-      importAssets?: (projectPath: string, bundleId: number, assets: Array<{ data?: Uint8Array; filePath: string; preview?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
+      importAssets?: (projectPath: string, bundleId: number, assets: Array<{ filePath: string; polygonSettings?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;
       moveProjectFolder?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;
       moveProjectBundle?: (projectPath: string, id: number, parentId: number) => Promise<ProjectContent>;

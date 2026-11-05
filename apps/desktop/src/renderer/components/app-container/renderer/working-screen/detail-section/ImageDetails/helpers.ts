@@ -1,17 +1,5 @@
-import type { ProjectImagePolygonSettingsInput } from '@manticore/project';
+import { createQuadPolygonSettings, type ProjectImageCrop, type ProjectImagePolygonSettingsInput } from '@manticore/project/image-polygon-settings';
 import { type ImageConfig, ImagePolygonizer, PolygonData } from 'image-polygonizer';
-
-const STORED_PREVIEW_SIZE = 256;
-
-export const toPng = (canvas: HTMLCanvasElement) => new Promise<Uint8Array>((resolve, reject) => {
-  canvas.toBlob(async (blob) => {
-    if (!blob) {
-      reject(new Error('Could not encode image preview.'));
-      return;
-    }
-    resolve(new Uint8Array(await blob.arrayBuffer()));
-  }, 'image/png');
-});
 
 const getCropBounds = (pixels: ImageData, alphaThreshold: number) => {
   let minX = pixels.width;
@@ -46,29 +34,30 @@ const createCropCanvas = (sourceBitmap: ImageBitmap, alphaThreshold: number) => 
   const cropContext = cropCanvas.getContext('2d', { willReadFrequently: true });
   if (!cropContext) throw new Error('Could not crop image.');
   cropContext.drawImage(sourceBitmap, x, y, width, height, 0, 0, width, height);
-  return { cropCanvas, cropContext };
+  return { crop: { height, width, x, y }, cropCanvas };
 };
 
-const createPreview = async (cropCanvas: HTMLCanvasElement) => {
-  const previewCanvas = document.createElement('canvas');
-  previewCanvas.width = STORED_PREVIEW_SIZE;
-  previewCanvas.height = STORED_PREVIEW_SIZE;
-  const previewContext = previewCanvas.getContext('2d');
-  if (!previewContext) throw new Error('Could not create image preview.');
-  const scale = Math.min(STORED_PREVIEW_SIZE / cropCanvas.width, STORED_PREVIEW_SIZE / cropCanvas.height);
-  const width = cropCanvas.width * scale;
-  const height = cropCanvas.height * scale;
-  previewContext.drawImage(cropCanvas, (STORED_PREVIEW_SIZE - width) / 2, (STORED_PREVIEW_SIZE - height) / 2, width, height);
-  return toPng(previewCanvas);
+const getPolygonCrop = (polygons: Uint16Array[], offset: number, alphaCrop: ProjectImageCrop): ProjectImageCrop => {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const points of polygons) for (let index = 0; index < points.length; index += 2) {
+    minX = Math.min(minX, alphaCrop.x + points[index] - offset);
+    minY = Math.min(minY, alphaCrop.y + points[index + 1] - offset);
+    maxX = Math.max(maxX, alphaCrop.x + points[index] - offset);
+    maxY = Math.max(maxY, alphaCrop.y + points[index + 1] - offset);
+  }
+  return !Number.isFinite(minX) ? alphaCrop : {
+    x: Math.floor(minX), y: Math.floor(minY), width: Math.ceil(maxX) - Math.floor(minX) + 1, height: Math.ceil(maxY) - Math.floor(minY) + 1
+  };
 };
 
 const createPolygonSettings = async (
   cropCanvas: HTMLCanvasElement,
-  format: string,
+  alphaCrop: ProjectImageCrop,
+  source: { format: string; height: number; width: number },
   { alphaThreshold, generatePolygons, maxPointCount, minimalDistance }: Pick<ImageTransformOptions, 'alphaThreshold' | 'generatePolygons' | 'maxPointCount' | 'minimalDistance'>
 ) => {
-  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, maxPointCount, minimalDistance, polygonsApplied: generatePolygons };
-  if (!generatePolygons) return settings;
+  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, crop: alphaCrop, maxPointCount, minimalDistance, polygonsApplied: generatePolygons, source };
+  if (!generatePolygons) return createQuadPolygonSettings(settings, source);
 
   const polygonBitmap = await createImageBitmap(cropCanvas);
   const polygonizer = new ImagePolygonizer();
@@ -83,17 +72,19 @@ const createPolygonSettings = async (
       polygonInfo: new Uint16Array(0),
       selected: false,
       src: polygonBitmap,
-      type: format
+      type: source.format
     };
     const [result] = await polygonizer.polygonize([polygonConfig]);
     const polygonInfo = result?.data;
-    if (!polygonInfo) return settings;
+    if (!polygonInfo) return createQuadPolygonSettings(settings, source);
 
     const polygonData = PolygonData.getInstance();
     const polygons = polygonData.deserializePolygons(polygonInfo);
     const triangleIndices = polygonData.deserializeTriangles(polygonInfo);
     settings.offset = polygonData.deserializeOffset(polygonInfo);
-    settings.polygons = polygons.flatMap((points, polygonIndex) => {
+    const shiftedPolygons = polygons.map((points) => points.map((point, index) => point + (index % 2 ? alphaCrop.y : alphaCrop.x)));
+    settings.crop = getPolygonCrop(polygons, settings.offset, alphaCrop);
+    settings.polygons = shiftedPolygons.flatMap((points, polygonIndex) => {
       const indices = triangleIndices[polygonIndex];
       if (!points?.length || !indices?.length) return [];
       const triangles = new Uint16Array(indices.length / 3);
@@ -102,7 +93,7 @@ const createPolygonSettings = async (
       }
       return [{ points: new Uint16Array(points), triangles }];
     });
-    return settings;
+    return settings.polygons.length ? settings : createQuadPolygonSettings(settings, source);
   } finally {
     polygonBitmap.close();
     polygonizer.cancel();
@@ -120,20 +111,8 @@ type ImageTransformOptions = {
 export const createImageUpdate = async (source: ArrayBuffer, options: ImageTransformOptions) => {
   const sourceBitmap = await createImageBitmap(new Blob([source], { type: `image/${options.format}` }));
   try {
-    const { cropCanvas, cropContext } = createCropCanvas(sourceBitmap, options.alphaThreshold);
-    const [preview, settings] = await Promise.all([
-      createPreview(cropCanvas),
-      createPolygonSettings(cropCanvas, options.format, options)
-    ]);
-    return {
-      image: {
-        height: cropCanvas.height,
-        pixels: new Uint8Array(cropContext.getImageData(0, 0, cropCanvas.width, cropCanvas.height).data),
-        preview,
-        width: cropCanvas.width
-      },
-      settings
-    };
+    const { crop, cropCanvas } = createCropCanvas(sourceBitmap, options.alphaThreshold);
+    return createPolygonSettings(cropCanvas, crop, { format: options.format, height: sourceBitmap.height, width: sourceBitmap.width }, options);
   } finally {
     sourceBitmap.close();
   }

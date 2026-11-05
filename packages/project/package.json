@@ -17,6 +17,9 @@
     },
     "./electron-preload": {
       "import": "./src/electron-preload.ts"
+    },
+    "./image-polygon-settings": {
+      "import": "./src/image-polygon-settings.ts"
     }
   },
   "scripts": {

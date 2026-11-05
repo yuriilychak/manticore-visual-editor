@@ -14,7 +14,6 @@ export {
   getProjectInfo,
   importProjectAssets,
   loadProjectImageMetadata,
-  loadProjectImagePreview,
   loadProjectImageSource,
   moveProjectBundle,
   moveProjectContent,
@@ -28,4 +27,5 @@ export {
 export type { ImportProjectAsset, ImportProjectAssetResult } from './project';
 export type { ProjectConfig, ProjectContent, ProjectInfo } from './types';
 export type { ProjectImageMetadata } from './image-metadata';
-export type { ProjectImagePolygonSettings, ProjectImagePolygonSettingsInput } from './image-polygon-settings';
+export type { ProjectImageCrop, ProjectImagePolygonSettings, ProjectImagePolygonSettingsInput } from './image-polygon-settings';
+export { createQuadPolygonSettings, serializeProjectImagePolygonSettings } from './image-polygon-settings';

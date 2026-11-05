@@ -16,7 +16,6 @@ import {
   importProjectAssets,
   isAssetName,
   loadProjectImageMetadata,
-  loadProjectImagePreview,
   loadProjectImageSource,
   moveProjectBundle,
   moveProjectContent,
@@ -76,10 +75,9 @@ export const registerProjectIpcHandlers = ({ dialog, getWindow, ipcMain, onProje
     const content = await readFile(filePath);
     return { content: content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength), name: path.basename(filePath), path: filePath, type };
   })));
-  ipcMain.handle('project:load-image-preview', (_event, projectPath: string, id: number) => loadProjectImagePreview(projectPath, id));
   ipcMain.handle('project:load-image-source', (_event, projectPath: string, id: number) => loadProjectImageSource(projectPath, id));
   ipcMain.handle('project:load-image-metadata', (_event, projectPath: string, id: number) => loadProjectImageMetadata(projectPath, id));
-  ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => applyProjectImagePolygonSettings(projectPath, id, settings, image));
+  ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => applyProjectImagePolygonSettings(projectPath, id, settings));
   ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) => importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result)));
   ipcMain.handle('project:delete-content', (_event, projectPath: string, ids: number[]) => deleteProjectContent(projectPath, ids));
   ipcMain.handle('project:duplicate-content', (_event, projectPath: string, ids: number[], targetParentId?: number) => duplicateProjectContent(projectPath, ids, targetParentId));

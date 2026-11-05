@@ -13,7 +13,6 @@ import {
   importProjectAssets,
   isAssetName,
   loadProjectImageMetadata,
-  loadProjectImagePreview,
   loadProjectImageSource,
   moveProjectBundle,
   moveProjectContent,
@@ -177,10 +176,9 @@ ipcMain.handle('project:load-import-images', async (_event, filePaths: string[])
     return { content: content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength), name: path.basename(filePath), path: filePath, type };
   }))
 );
-ipcMain.handle('project:load-image-preview', (_event, projectPath: string, id: number) => loadProjectImagePreview(projectPath, id));
 ipcMain.handle('project:load-image-source', (_event, projectPath: string, id: number) => loadProjectImageSource(projectPath, id));
 ipcMain.handle('project:load-image-metadata', (_event, projectPath: string, id: number) => loadProjectImageMetadata(projectPath, id));
-ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }) => applyProjectImagePolygonSettings(projectPath, id, settings, image));
+ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => applyProjectImagePolygonSettings(projectPath, id, settings));
 ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) =>
   importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result))
 );

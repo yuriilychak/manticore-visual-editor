@@ -9,6 +9,7 @@ export default defineConfig({
     alias: {
       '@manticore/project/types': fileURLToPath(new URL('../../packages/project/src/types.ts', import.meta.url)),
       '@manticore/project/constants': fileURLToPath(new URL('../../packages/project/src/constants.ts', import.meta.url)),
+      '@manticore/project/image-polygon-settings': fileURLToPath(new URL('../../packages/project/src/image-polygon-settings.ts', import.meta.url)),
       '@manticore/project': fileURLToPath(new URL('../../packages/project/src/index.ts', import.meta.url)),
       'image-polygonizer': fileURLToPath(new URL('../../packages/image-polygonizer/src/index.ts', import.meta.url))
     }

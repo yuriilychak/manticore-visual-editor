@@ -24,19 +24,20 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
   const [previewResult, setPreviewResult] = useState<{ id: number; projectPath: string; bitmap: ImageBitmap } | null>(null);
   const [previewError, setPreviewError] = useState<{ id: number; projectPath: string } | null>(null);
   const bitmap = previewResult?.id === id && previewResult.projectPath === projectPath ? previewResult.bitmap : null;
-  const unavailable = !window.manticore?.loadImagePreview || (previewError?.id === id && previewError.projectPath === projectPath);
+  const unavailable = !window.manticore?.loadImageSource || (previewError?.id === id && previewError.projectPath === projectPath);
 
+  const format = metadata?.format;
   useEffect(() => {
-    const loadPreview = window.manticore?.loadImagePreview;
-    if (!loadPreview) return;
+    const loadSource = window.manticore?.loadImageSource;
+    if (!loadSource || !format) return;
 
     let active = true;
-    setPreviewError(null);
-    void loadPreview(projectPath, id)
-      .then((bytes) => createImageBitmap(new Blob([bytes], { type: 'image/png' })))
+    void loadSource(projectPath, id)
+      .then((bytes) => createImageBitmap(new Blob([bytes], { type: `image/${format}` })))
       .then((value) => {
         if (!active) value.close();
         else {
+          setPreviewError(null);
           setPreviewResult({ id, projectPath, bitmap: value });
         }
       })
@@ -45,7 +46,7 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
       });
 
     return () => { active = false; };
-  }, [id, projectPath, refreshVersion]);
+  }, [format, id, projectPath, refreshVersion]);
 
   useEffect(() => () => { previewResult?.bitmap.close(); }, [previewResult]);
 

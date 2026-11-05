@@ -1,4 +1,4 @@
-import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { cp, mkdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AssetType } from './asset-type';
@@ -6,7 +6,7 @@ import { AssetType } from './asset-type';
 import { DEFAULT_BUNDLE_ID, DEFAULT_BUNDLE_NAME, DEFAULT_FOLDER_ID, INITIAL_PROJECT_VERSION, MAX_U16 } from './constants';
 import { createProjectContent, isAssetName } from './content';
 import { readProjectImageMetadata, type ProjectImageMetadata } from './image-metadata';
-import { createQuadPolygonSettings, DEFAULT_IMAGE_POLYGON_SETTINGS, deserializeProjectImagePolygonSettings, serializeProjectImagePolygonSettings, type ProjectImagePolygonSettingsInput } from './image-polygon-settings';
+import { createQuadPolygonSettings, deserializeProjectImagePolygonSettings, serializeProjectImagePolygonSettings, type ProjectImagePolygonSettings, type ProjectImagePolygonSettingsInput } from './image-polygon-settings';
 import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
 import type { ProjectConfig, ProjectContent, ProjectInfo } from './types';
@@ -34,17 +34,65 @@ export async function createProject(projectPath: string, name: string): Promise<
 
 export async function getProjectInfo(projectPath: string): Promise<ProjectInfo> {
   const config = await ProjectConfigProxy.load(projectPath);
+  await migrateProjectImageAssets(projectPath, config.content);
 
   return toProjectInfo(projectPath, { content: config.content, name: config.name, version: config.version });
 }
 
-export async function loadProjectImagePreview(projectPath: string, id: number): Promise<ArrayBuffer> {
-  if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
-  const config = await ProjectConfigProxy.load(projectPath);
-  if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
+type LegacyImageAsset = { format: string; height: number; pixels: Uint8Array; width: number };
 
-  const content = await readFile(path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'), 'preview'));
-  return content.buffer.slice(content.byteOffset, content.byteOffset + content.byteLength);
+const readLegacyImageAsset = (data: Uint8Array): LegacyImageAsset => {
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  let offset = 0;
+  const readString = () => {
+    if (offset + 2 > data.byteLength) throw new Error('Image asset is invalid.');
+    const length = view.getUint16(offset, true);
+    offset += 2;
+    if (offset + length > data.byteLength) throw new Error('Image asset is invalid.');
+    const value = new TextDecoder().decode(data.subarray(offset, offset + length));
+    offset += length;
+    return value;
+  };
+  readString();
+  readString();
+  const format = readString();
+  offset += 25;
+  if (offset + 4 > data.byteLength) throw new Error('Image asset is invalid.');
+  const polygonLength = view.getUint32(offset, true);
+  offset += 4 + polygonLength * 2;
+  if (offset + 8 > data.byteLength) throw new Error('Image asset is invalid.');
+  const width = view.getUint32(offset, true);
+  const height = view.getUint32(offset + 4, true);
+  offset += 8;
+  if (!width || !height || offset + width * height * 4 > data.byteLength) throw new Error('Image asset is invalid.');
+  return { format, height, pixels: data.subarray(offset, offset + width * height * 4), width };
+};
+
+const getLegacyCrop = ({ height, pixels, width }: LegacyImageAsset) => {
+  let minX = width, minY = height, maxX = -1, maxY = -1;
+  for (let y = 0; y < height; ++y) for (let x = 0; x < width; ++x) {
+    if (pixels[(y * width + x) * 4 + 3] <= 1) continue;
+    minX = Math.min(minX, x); minY = Math.min(minY, y); maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+  }
+  return maxX < 0 ? { height, width, x: 0, y: 0 } : { height: maxY - minY + 1, width: maxX - minX + 1, x: minX, y: minY };
+};
+
+/** Convert legacy persisted RGBA/preview payloads to the settings-only layout. */
+async function migrateProjectImageAssets(projectPath: string, content: readonly ProjectContent[]): Promise<void> {
+  await Promise.all(content.filter(({ type }) => type === AssetType.Image).map(async ({ id }) => {
+    const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
+    const settingsPath = path.join(assetPath, 'polygon-settings');
+    try {
+      await readFile(settingsPath).then(deserializeProjectImagePolygonSettings);
+    } catch {
+      const legacy = readLegacyImageAsset(await readFile(path.join(assetPath, 'asset')));
+      const settings = createQuadPolygonSettings({
+        alphaThreshold: 1, crop: getLegacyCrop(legacy), maxPointCount: 32, minimalDistance: 8, polygonsApplied: false
+      }, { format: legacy.format, height: legacy.height, width: legacy.width });
+      await writeFile(settingsPath, serializeProjectImagePolygonSettings(settings));
+    }
+    await Promise.all([rm(path.join(assetPath, 'asset'), { force: true }), rm(path.join(assetPath, 'preview'), { force: true })]);
+  }));
 }
 
 export async function loadProjectImageSource(projectPath: string, id: number): Promise<ArrayBuffer> {
@@ -61,55 +109,25 @@ export async function loadProjectImageMetadata(projectPath: string, id: number):
   if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
 
   const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
-  const [content, storedSettings] = await Promise.all([
-    readFile(path.join(assetPath, 'asset')),
-    readFile(path.join(assetPath, 'polygon-settings')).then(deserializeProjectImagePolygonSettings).catch(() => undefined)
+  const [sourceStats, settings] = await Promise.all([
+    stat(path.join(assetPath, 'source')),
+    readFile(path.join(assetPath, 'polygon-settings')).then(deserializeProjectImagePolygonSettings)
   ]);
-  if (storedSettings) return readProjectImageMetadata(content, storedSettings);
-
-  const metadata = readProjectImageMetadata(content);
-  const settings = createQuadPolygonSettings(DEFAULT_IMAGE_POLYGON_SETTINGS, metadata.croppedX, metadata.croppedY, metadata.croppedWidth, metadata.croppedHeight);
-  await writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(settings));
-  return readProjectImageMetadata(content, settings);
+  return readProjectImageMetadata(sourceStats.size, settings);
 }
 
-export async function applyProjectImagePolygonSettings(projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput, image: { height: number; pixels: Uint8Array; preview: Uint8Array; width: number }): Promise<ProjectImageMetadata> {
+export async function applyProjectImagePolygonSettings(projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput): Promise<ProjectImageMetadata> {
   if (!Number.isInteger(id) || id < 0 || id > MAX_U16) throw new Error('Image ID is invalid.');
   const config = await ProjectConfigProxy.load(projectPath);
   if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
 
   const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
-  if (!Number.isInteger(image.width) || !Number.isInteger(image.height) || image.width < 1 || image.height < 1 || image.pixels.byteLength !== image.width * image.height * 4) throw new Error('Image crop is invalid.');
-  const asset = await readFile(path.join(assetPath, 'asset'));
-  const view = new DataView(asset.buffer, asset.byteOffset, asset.byteLength);
-  let offset = 0;
-  const readString = () => {
-    const length = view.getUint16(offset, true);
-    offset += 2 + length;
-  };
-  readString();
-  readString();
-  readString();
-  offset += 25;
-  const polygonLength = view.getUint32(offset, true);
-  offset += 4 + polygonLength * 2;
-  const pixelOffset = offset + 8;
-  if (pixelOffset > asset.byteLength) throw new Error('Image asset is invalid.');
-  const updatedAsset = new Uint8Array(pixelOffset + image.pixels.byteLength);
-  updatedAsset.set(asset.subarray(0, offset));
-  const updatedView = new DataView(updatedAsset.buffer);
-  updatedView.setUint32(offset, image.width, true);
-  updatedView.setUint32(offset + 4, image.height, true);
-  updatedAsset.set(image.pixels, pixelOffset);
-  const updatedSettings = settings.polygons?.length
-    ? { ...settings, offset: settings.offset ?? 0, polygons: settings.polygons }
-    : createQuadPolygonSettings(settings, 0, 0, image.width, image.height);
-  await Promise.all([
-    writeFile(path.join(assetPath, 'asset'), updatedAsset),
-    writeFile(path.join(assetPath, 'preview'), image.preview),
+  const updatedSettings: ProjectImagePolygonSettings = { ...settings, offset: settings.offset ?? 0, polygons: settings.polygons ?? [] };
+  const [sourceStats] = await Promise.all([
+    stat(path.join(assetPath, 'source')),
     writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(updatedSettings))
   ]);
-  return readProjectImageMetadata(updatedAsset, updatedSettings);
+  return readProjectImageMetadata(sourceStats.size, updatedSettings);
 }
 
 export async function renameProject(projectPath: string, name: string): Promise<string> {
@@ -175,14 +193,13 @@ export async function createProjectTextureAtlas(projectPath: string, parentId: n
 const IMAGE_EXTENSIONS = new Set(['.avif', '.bmp', '.gif', '.jpeg', '.jpg', '.png', '.svg', '.webp']);
 const FONT_EXTENSIONS = new Set(['.eot', '.otf', '.ttf', '.woff', '.woff2']);
 
-export type ImportProjectAsset = { data?: readonly number[] | Uint8Array; filePath: string; preview?: readonly number[] | Uint8Array };
+export type ImportProjectAsset = { filePath: string; polygonSettings?: readonly number[] | Uint8Array };
 export type ImportProjectAssetResult = { asset: ProjectContent | null; error: string | null; filePath: string };
 
 type PlannedProjectAsset = {
   assetType: AssetType.Image | AssetType.Font;
   id: number;
-  imageData: readonly number[] | Uint8Array | undefined;
-  imagePreview: readonly number[] | Uint8Array | undefined;
+  imageSettings: readonly number[] | Uint8Array | undefined;
   name: string;
 };
 
@@ -205,7 +222,7 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
 
   // Reserve all names and IDs before creating files, so the file phase is only
   // responsible for materializing an already-determined import plan.
-  assets.forEach(({ data, filePath, preview }, index) => {
+  assets.forEach(({ filePath, polygonSettings }, index) => {
     try {
       const extension = path.extname(filePath).toLocaleLowerCase();
       const isImage = IMAGE_EXTENSIONS.has(extension);
@@ -214,15 +231,14 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
       const baseName = path.basename(fileName, extension);
       const assetName = baseName.slice(0, 32);
       if (!assetType || !fileName || fileName !== path.basename(fileName) || !isAssetName(assetName)) throw new Error('Asset type is not supported.');
-      const imageData = isImage ? data : undefined;
-      if (isImage && (!imageData || !imageData.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff))) throw new Error('Image data is missing or invalid.');
-      const imagePreview = isImage ? preview : undefined;
-      if (imagePreview && !imagePreview.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff)) throw new Error('Image preview is invalid.');
+      const imageSettings = isImage ? polygonSettings : undefined;
+      if (isImage && (!imageSettings || !imageSettings.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff))) throw new Error('Image polygon settings are missing or invalid.');
+      if (imageSettings) deserializeProjectImagePolygonSettings(new Uint8Array(imageSettings));
       if (nextContentId > MAX_U16) throw new Error('The maximum number of assets has been reached.');
 
       const name = getUniqueAssetName(assetName, existingNames);
       existingNames.add(name);
-      plans.set(index, { assetType, id: nextContentId++, imageData, imagePreview, name });
+      plans.set(index, { assetType, id: nextContentId++, imageSettings, name });
     } catch (error) {
       planErrors.set(index, error instanceof Error ? error.message : 'Import failed.');
     }
@@ -232,8 +248,7 @@ export async function importProjectAssets(projectPath: string, bundleId: number,
     Array.from(plans, ([index, plan]) => ({
       assetPath: path.join(projectPath, 'src', 'assets', String(plan.id).padStart(5, '0')),
       filePath: assets[index].filePath,
-      imageData: plan.imageData,
-      imagePreview: plan.imagePreview,
+      imageSettings: plan.imageSettings,
       index
     }))
   );

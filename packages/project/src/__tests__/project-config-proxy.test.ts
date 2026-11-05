@@ -3,11 +3,13 @@ import { access, mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promise
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 
-import { createProject, deleteProjectContent, duplicateProjectContent, importProjectAssets, loadProjectImagePreview } from '../project';
+import { createQuadPolygonSettings, serializeProjectImagePolygonSettings } from '../image-polygon-settings';
+import { createProject, deleteProjectContent, duplicateProjectContent, importProjectAssets } from '../project';
 import { ProjectConfigProxy } from '../project-config-proxy';
 
 describe('ProjectConfigProxy', () => {
   let projectPath = '';
+  const imageSettings = () => serializeProjectImagePolygonSettings(createQuadPolygonSettings({ alphaThreshold: 0, maxPointCount: 32, minimalDistance: 8, polygonsApplied: false }, { format: 'png', height: 1, width: 1 }));
 
   afterEach(async () => {
     if (projectPath) await rm(projectPath, { force: true, recursive: true });
@@ -33,7 +35,7 @@ describe('ProjectConfigProxy', () => {
     );
   });
 
-  test('imports image and font assets with unique names and serialized image data', async () => {
+  test('imports image and font assets with unique names and polygon settings', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     const destination = path.join(projectPath, 'Example');
     const imagePath = path.join(projectPath, 'hero.png');
@@ -43,17 +45,16 @@ describe('ProjectConfigProxy', () => {
     await createProject(destination, 'Example');
 
     await expect(importProjectAssets(destination, 2, [
-      { data: [7, 8, 9], filePath: imagePath, preview: [10, 11, 12] },
+      { filePath: imagePath, polygonSettings: imageSettings() },
       { filePath: fontPath }
     ])).resolves.toEqual([
       { asset: { id: 3, name: 'hero', parentId: 2, type: 4, version: 0 }, error: null, filePath: imagePath },
       { asset: { id: 4, name: 'hero (1)', parentId: 2, type: 6, version: 0 }, error: null, filePath: fontPath }
     ]);
     await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
-    await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'asset'))).resolves.toEqual(Buffer.from([7, 8, 9]));
-    await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'preview'))).resolves.toEqual(Buffer.from([10, 11, 12]));
-    await expect(loadProjectImagePreview(destination, 3)).resolves.toEqual(new Uint8Array([10, 11, 12]).buffer);
-    await expect(loadProjectImagePreview(destination, 4)).rejects.toThrow('Image is not in the project.');
+    await expect(readFile(path.join(destination, 'src', 'assets', '00003', 'polygon-settings'))).resolves.toEqual(Buffer.from(imageSettings()));
+    await expect(access(path.join(destination, 'src', 'assets', '00003', 'asset'))).rejects.toMatchObject({ code: 'ENOENT' });
+    await expect(access(path.join(destination, 'src', 'assets', '00003', 'preview'))).rejects.toMatchObject({ code: 'ENOENT' });
     await expect(readFile(path.join(destination, 'src', 'assets', '00004', 'source'))).resolves.toEqual(Buffer.from([4, 5, 6]));
     const config = JSON.parse(await readFile(path.join(destination, 'src', 'config.json'), 'utf8')) as { content: Array<{ data: unknown; id: number }> };
     expect(config.content.find(({ id }) => id === 3)).not.toHaveProperty('data');
@@ -65,14 +66,14 @@ describe('ProjectConfigProxy', () => {
     const imagePath = path.join(projectPath, 'hero.png');
     await writeFile(imagePath, new Uint8Array([1, 2, 3]));
     await createProject(destination, 'Example');
-    await importProjectAssets(destination, 2, [{ data: [4, 5, 6], filePath: imagePath }]);
+    await importProjectAssets(destination, 2, [{ filePath: imagePath, polygonSettings: imageSettings() }]);
 
     await expect(duplicateProjectContent(destination, [2])).resolves.toEqual([
       { id: 4, name: 'default_bundle (1)', parentId: 1, type: 2, version: 0 },
       { id: 5, name: 'hero', parentId: 4, type: 4, version: 0 }
     ]);
     await expect(readFile(path.join(destination, 'src', 'assets', '00005', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
-    await expect(readFile(path.join(destination, 'src', 'assets', '00005', 'asset'))).resolves.toEqual(Buffer.from([4, 5, 6]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00005', 'polygon-settings'))).resolves.toEqual(Buffer.from(imageSettings()));
   });
 
   test('duplicates nested folders, atlases, and images that were moved after creation', async () => {
@@ -81,7 +82,7 @@ describe('ProjectConfigProxy', () => {
     const imagePath = path.join(projectPath, 'hero.png');
     await writeFile(imagePath, new Uint8Array([1, 2, 3]));
     await createProject(destination, 'Example');
-    await importProjectAssets(destination, 2, [{ data: [4, 5, 6], filePath: imagePath }]);
+    await importProjectAssets(destination, 2, [{ filePath: imagePath, polygonSettings: imageSettings() }]);
     const config = await ProjectConfigProxy.load(destination);
     await config.addBundleFolder('Characters', 2);
     await config.addTextureAtlas('Atlas', 4);
@@ -94,7 +95,7 @@ describe('ProjectConfigProxy', () => {
       { id: 9, name: 'hero', parentId: 8, type: 4, version: 0 }
     ]);
     await expect(readFile(path.join(destination, 'src', 'assets', '00009', 'source'))).resolves.toEqual(Buffer.from([1, 2, 3]));
-    await expect(readFile(path.join(destination, 'src', 'assets', '00009', 'asset'))).resolves.toEqual(Buffer.from([4, 5, 6]));
+    await expect(readFile(path.join(destination, 'src', 'assets', '00009', 'polygon-settings'))).resolves.toEqual(Buffer.from(imageSettings()));
   });
 
   test('plans unique names and IDs before creating asset files', async () => {
@@ -107,8 +108,8 @@ describe('ProjectConfigProxy', () => {
     await createProject(destination, 'Example');
 
     await expect(importProjectAssets(destination, 2, [
-      { data: [3], filePath: imagePath },
-      { data: [4], filePath: duplicateImagePath }
+      { filePath: imagePath, polygonSettings: imageSettings() },
+      { filePath: duplicateImagePath, polygonSettings: imageSettings() }
     ])).resolves.toEqual([
       { asset: { id: 3, name: 'hero', parentId: 2, type: 4, version: 0 }, error: null, filePath: imagePath },
       { asset: { id: 4, name: 'hero (1)', parentId: 2, type: 4, version: 0 }, error: null, filePath: duplicateImagePath }

@@ -4,8 +4,7 @@ import { Worker } from 'node:worker_threads';
 type ImportAssetFileTask = {
   assetPath: string;
   filePath: string;
-  imageData: readonly number[] | Uint8Array | undefined;
-  imagePreview: readonly number[] | Uint8Array | undefined;
+  imageSettings: readonly number[] | Uint8Array | undefined;
   index: number;
 };
 
@@ -21,8 +20,7 @@ function workerMain(): void {
       await mkdir(path.dirname(task.assetPath), { recursive: true });
       await mkdir(task.assetPath, { recursive: false });
       await copyFile(task.filePath, path.join(task.assetPath, 'source'));
-      if (task.imageData) await writeFile(path.join(task.assetPath, 'asset'), Buffer.from(task.imageData));
-      if (task.imagePreview) await writeFile(path.join(task.assetPath, 'preview'), Buffer.from(task.imagePreview));
+      if (task.imageSettings) await writeFile(path.join(task.assetPath, 'polygon-settings'), Buffer.from(task.imageSettings));
       parentPort.postMessage({ index: task.index });
     } catch (error) {
       await rm(task.assetPath, { force: true, recursive: true });
