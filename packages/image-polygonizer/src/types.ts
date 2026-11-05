@@ -8,6 +8,7 @@ export type ThreadType =
     | 'projectExport'
     | 'projectSave'
     | 'polygonize'
+    | 'triangulate'
     | 'addImages';
 
 export interface ImageMetadata {
@@ -34,6 +35,7 @@ export interface ImagePolygonizerInstance {
     init(): Promise<void>;
     importImages(files: FileList): Promise<ImageConfig[]>;
     polygonize(polygonizeImages: ImageConfig[]): Promise<ImageActionPayload<Uint16Array>[]>;
+    triangulate(points: Uint16Array): Promise<Uint16Array>;
     serializeImageConfigs(images: ImageConfig[], onProgress?: (completed: number, total: number) => void): Promise<Uint8Array[]>;
     serializeImages(images: ImageConfig[]): Promise<Uint8Array>;
     deserializeImages(data: Uint8Array): Promise<ImageConfig[]>;
@@ -46,6 +48,7 @@ type ThreadInputDataByType = {
     projectExport: { imageConfig: ImageConfig; exportConfig: ImageExportConfig };
     projectSave: ImageConfig;
     polygonize: ImageConfig;
+    triangulate: Uint16Array;
     addImages: File;
 };
 
@@ -55,6 +58,7 @@ type ThreadOutputDataByType = {
     projectExport: ExportedImage;
     projectSave: Uint8Array;
     polygonize: ImageActionPayload<Uint16Array>;
+    triangulate: Uint16Array;
     addImages: ImageConfig;
 };
 

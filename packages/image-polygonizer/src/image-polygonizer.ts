@@ -23,7 +23,7 @@ export default class ImagePolygonizer implements ImagePolygonizerInstance {
             return;
         }
 
-        const wasmUrl = new URL('../../image-polygonizer-algo/pkg/image_polygonizer_algo_bg.wasm', import.meta.url);
+        const wasmUrl = new URL('../../image-polygonizer-algo/dist/image-polygonizer.wasm', import.meta.url);
         const buffer = await fetch(wasmUrl).then(r => r.arrayBuffer());
         const count = this.#parallel.threadCount;
         const inputs: ThreadInput<'init'>[] = Array.from({ length: count }, () => {
@@ -72,6 +72,12 @@ export default class ImagePolygonizer implements ImagePolygonizerInstance {
                 )
             )
             : Promise.resolve([]);
+    }
+
+    async triangulate(points: Uint16Array): Promise<Uint16Array> {
+        const workerPoints = points.slice();
+        const input: ThreadInput<'triangulate'> = { type: 'triangulate', data: workerPoints, transfetrable: [workerPoints.buffer] };
+        return new Promise((resolve, reject) => this.#parallel.start([input], ([result]) => resolve(result), reject));
     }
 
     async serializeImageConfigs(images: ImageConfig[], onProgress?: (completed: number, total: number) => void): Promise<Uint8Array[]> {

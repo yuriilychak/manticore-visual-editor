@@ -31,6 +31,15 @@ export default class WasmWrapper {
         return result;
     }
 
+    triangulate(points: Uint16Array): Uint16Array {
+        const wasm = this.#wasm!;
+        const ptr = this.#passArray16ToWasm(points, wasm.__wbindgen_malloc as Function);
+        const ret = (wasm.triangulate as Function)(ptr, this.#vecLen) as [number, number];
+        const result = this.#getUint(1).subarray(ret[0] >>> 1, (ret[0] >>> 1) + ret[1]).slice();
+        (wasm.__wbindgen_free as Function)(ret[0], ret[1] * 2, 2);
+        return result;
+    }
+
     #getUint(index: 0): Uint8Array;
     #getUint(index: 1): Uint16Array;
     #getUint(index: 0 | 1): UintArray {
@@ -44,6 +53,13 @@ export default class WasmWrapper {
     #passArray8ToWasm(arg: Uint8Array, malloc: Function): number {
         const ptr = malloc(arg.length, 1) >>> 0;
         this.#getUint(0).set(arg, ptr);
+        this.#vecLen = arg.length;
+        return ptr;
+    }
+
+    #passArray16ToWasm(arg: Uint16Array, malloc: Function): number {
+        const ptr = malloc(arg.length * 2, 2) >>> 0;
+        this.#getUint(1).set(arg, ptr >>> 1);
         this.#vecLen = arg.length;
         return ptr;
     }

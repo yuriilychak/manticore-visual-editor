@@ -7,4 +7,5 @@ apps/*/dist
 apps/*/coverage
 apps/*/release
 apps/*/.vite
+packages/image-polygonizer-algo/target/
 .DS_Store

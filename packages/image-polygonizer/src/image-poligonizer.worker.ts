@@ -55,6 +55,11 @@ self.onmessage = async ({ data }: MessageEvent<ThreadInput>) => {
             message = { id, data: polygonData };
             transferrable.push(polygonData.buffer);
             break;
+        case 'triangulate':
+            await wasmReady;
+            message = wasm.triangulate(data.data as Uint16Array);
+            transferrable.push(message.buffer);
+            break;
         default:
             message = { type: 'error', data: 'Unknown thread input type' };
     }

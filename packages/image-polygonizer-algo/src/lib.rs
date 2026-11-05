@@ -64,3 +64,31 @@ pub fn polygonize(
         OUTLINE,
     )
 }
+
+/// Triangulate one simple polygon expressed as flat `[x0, y0, x1, y1, …]`
+/// coordinates. Returns flat vertex indices `[a0, b0, c0, …]`.
+///
+/// Odd-length input cannot represent coordinate pairs and is rejected with an
+/// empty result rather than being passed to the triangulator.
+#[wasm_bindgen]
+pub fn triangulate(points: &[u16]) -> Vec<u16> {
+    if points.len() % 2 != 0 {
+        return Vec::new();
+    }
+    triangulate_polygon(points)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::triangulate;
+
+    #[test]
+    fn triangulate_exports_triangle_indices() {
+        assert_eq!(triangulate(&[0, 0, 10, 0, 0, 10]), vec![0, 1, 2]);
+    }
+
+    #[test]
+    fn triangulate_rejects_unpaired_coordinate() {
+        assert!(triangulate(&[0, 0, 10]).is_empty());
+    }
+}

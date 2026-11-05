@@ -1,6 +1,28 @@
 import { createQuadPolygonSettings, type ProjectImageCrop, type ProjectImagePolygonSettingsInput } from '@manticore/project/image-polygon-settings';
 import { type ImageConfig, ImagePolygonizer, PolygonData } from 'image-polygonizer';
 
+export const cropHasTransparency = async (source: ArrayBuffer, format: string, crop: ProjectImageCrop): Promise<boolean> => {
+  const bitmap = await createImageBitmap(new Blob([source], { type: `image/${format}` }));
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = bitmap.width;
+    canvas.height = bitmap.height;
+    const context = canvas.getContext('2d', { willReadFrequently: true });
+    if (!context) throw new Error('Could not inspect image alpha.');
+    context.drawImage(bitmap, 0, 0);
+    const left = Math.max(0, crop.x);
+    const top = Math.max(0, crop.y);
+    const right = Math.min(bitmap.width, crop.x + crop.width);
+    const bottom = Math.min(bitmap.height, crop.y + crop.height);
+    if (right <= left || bottom <= top) return false;
+    const { data } = context.getImageData(left, top, right - left, bottom - top);
+    for (let index = 3; index < data.length; index += 4) if (data[index] < 255) return true;
+    return false;
+  } finally {
+    bitmap.close();
+  }
+};
+
 const getCropBounds = (pixels: ImageData, alphaThreshold: number) => {
   let minX = pixels.width;
   let minY = pixels.height;
