@@ -1,6 +1,7 @@
 export type ProjectImagePolygon = { points: Uint16Array; triangles: Uint16Array };
 export type ProjectImageCrop = { height: number; width: number; x: number; y: number };
 export type ProjectImageSource = { format: string; height: number; width: number };
+export type ProjectImageSlice9 = { bottom: number; left: number; right: number; top: number };
 
 export type ProjectImagePolygonSettings = {
   alphaThreshold: number;
@@ -9,6 +10,7 @@ export type ProjectImagePolygonSettings = {
   offset: number;
   polygons: ProjectImagePolygon[];
   polygonsApplied: boolean;
+  slice9?: ProjectImageSlice9;
   crop: ProjectImageCrop;
   source: ProjectImageSource;
 };
@@ -48,6 +50,7 @@ const validateSettings = (settings: ProjectImagePolygonSettings) => {
   const { crop, source } = settings;
   if (!crop || ![crop.x, crop.y, crop.width, crop.height].every(Number.isInteger) || crop.width < 1 || crop.height < 1) throw new Error('Image crop is invalid.');
   if (!source || !Number.isInteger(source.width) || !Number.isInteger(source.height) || source.width < 1 || source.height < 1 || !source.format) throw new Error('Image source is invalid.');
+  if (settings.slice9 && (!Object.values(settings.slice9).every(Number.isInteger) || settings.slice9.left < 0 || settings.slice9.right < 0 || settings.slice9.top < 0 || settings.slice9.bottom < 0 || settings.slice9.left + settings.slice9.right > source.width || settings.slice9.top + settings.slice9.bottom > source.height)) throw new Error('Slice 9 setting is invalid.');
   if (!settings.polygons.length) throw new Error('Polygon count is invalid.');
   settings.polygons.forEach(validatePolygon);
 };
@@ -75,6 +78,7 @@ export function deserializeProjectImagePolygonSettings(data: Uint8Array): Projec
   }
   const settings: ProjectImagePolygonSettings = {
     ...serialized,
+    slice9: typeof serialized.slice9 === 'object' ? serialized.slice9 : undefined,
     polygons: serialized.polygons?.map(({ points, triangles }) => ({ points: toUint16Array(points), triangles: toUint16Array(triangles) }))
   };
   validateSettings(settings);

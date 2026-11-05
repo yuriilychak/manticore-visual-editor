@@ -12,11 +12,13 @@ type ImagePreviewProps = {
   id: number;
   metadata: ProjectImageMetadata | null;
   refreshVersion: number;
+  slice9?: { bottom: number; left: number; right: number; top: number };
   showPolygon: boolean;
+  showSlice9: boolean;
   showTriangles: boolean;
 };
 
-const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, showPolygon, showTriangles }) => {
+const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, showPolygon, showSlice9, showTriangles, slice9 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { projectPath } = useProjectStructure();
@@ -78,6 +80,21 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
       const imageX = (width - imageWidth) / 2;
       const imageY = (height - imageHeight) / 2;
       context.drawImage(bitmap, imageX, imageY, imageWidth, imageHeight);
+      if (showSlice9 && slice9) {
+        const { bottom, left, right, top } = slice9;
+        const crop = metadata.polygonSettings.crop;
+        context.save();
+        context.setLineDash([6, 4]);
+        context.strokeStyle = theme.palette.warning.main;
+        context.lineWidth = 1;
+        const cropX = imageX + crop.x * scale;
+        const cropY = imageY + crop.y * scale;
+        const cropWidth = crop.width * scale;
+        const cropHeight = crop.height * scale;
+        [cropX + left * scale, cropX + cropWidth - right * scale].forEach((guideX) => { context.beginPath(); context.moveTo(guideX, cropY); context.lineTo(guideX, cropY + cropHeight); context.stroke(); });
+        [cropY + top * scale, cropY + cropHeight - bottom * scale].forEach((guideY) => { context.beginPath(); context.moveTo(cropX, guideY); context.lineTo(cropX + cropWidth, guideY); context.stroke(); });
+        context.restore();
+      }
       if ((!showPolygon && !showTriangles) || !metadata || !metadata.sourceWidth || !metadata.sourceHeight) return;
 
       const contentScale = Math.min(imageWidth / metadata.sourceWidth, imageHeight / metadata.sourceHeight);
@@ -131,7 +148,7 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
     resizeObserver.observe(canvas);
     draw();
     return () => resizeObserver.disconnect();
-  }, [bitmap, metadata, showPolygon, showTriangles, theme.palette.background.default, theme.palette.background.paper, theme.palette.error.main, theme.palette.info.main]);
+  }, [bitmap, metadata, showPolygon, showSlice9, showTriangles, slice9, theme.palette.background.default, theme.palette.background.paper, theme.palette.error.main, theme.palette.info.main, theme.palette.warning.main]);
 
   return (
     <Box bgcolor="action.hover" height={PREVIEW_SIZE + PREVIEW_PADDING} position="relative" width="100%">

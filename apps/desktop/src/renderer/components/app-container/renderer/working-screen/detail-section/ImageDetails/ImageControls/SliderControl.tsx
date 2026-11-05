@@ -6,9 +6,10 @@ import { Box, Slider, type SliderProps, Typography } from '@mui/material';
 import { SLIDER_CONFIG_BY_ID } from './constants';
 import type { ControlProps, SliderControlId } from './types';
 
-const SliderControl: FC<ControlProps> = ({ disabled = false, id, onChange, value }) => {
+const SliderControl: FC<ControlProps> = ({ disabled = false, id, max: maxOverride, onChange, value }) => {
   const { t } = useTranslation();
-  const { max, min } = SLIDER_CONFIG_BY_ID[id as SliderControlId];
+  const { max: configuredMax, min } = SLIDER_CONFIG_BY_ID[id as SliderControlId];
+  const max = maxOverride ?? configuredMax;
   const label = t(`details.${id}`);
   const sliderValue = value as number;
   const marks = useMemo(

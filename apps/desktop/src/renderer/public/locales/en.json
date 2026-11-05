@@ -81,6 +81,8 @@
     "bytes": "bytes",
     "showTriangles": "Show triangles",
     "showPolygon": "Show polygon",
+    "showSlice9": "Show Slice 9",
+    "slice9": "Slice 9",
     "usePolygonsInsteadOfQuads": "Use polygon instead of quad",
     "alphaThreshold": "Alpha threshold",
     "pointCount": "Point count",

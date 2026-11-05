@@ -1,4 +1,4 @@
-import { createQuadPolygonSettings, type ProjectImageCrop, type ProjectImagePolygonSettingsInput } from '@manticore/project/image-polygon-settings';
+import { createQuadPolygonSettings, type ProjectImageCrop, type ProjectImagePolygonSettingsInput, type ProjectImageSlice9 } from '@manticore/project/image-polygon-settings';
 import { type ImageConfig, ImagePolygonizer, PolygonData } from 'image-polygonizer';
 
 export const cropHasTransparency = async (source: ArrayBuffer, format: string, crop: ProjectImageCrop): Promise<boolean> => {
@@ -76,9 +76,9 @@ const createPolygonSettings = async (
   cropCanvas: HTMLCanvasElement,
   alphaCrop: ProjectImageCrop,
   source: { format: string; height: number; width: number },
-  { alphaThreshold, generatePolygons, maxPointCount, minimalDistance }: Pick<ImageTransformOptions, 'alphaThreshold' | 'generatePolygons' | 'maxPointCount' | 'minimalDistance'>
+  { alphaThreshold, generatePolygons, maxPointCount, minimalDistance, slice9 }: Pick<ImageTransformOptions, 'alphaThreshold' | 'generatePolygons' | 'maxPointCount' | 'minimalDistance' | 'slice9'>
 ) => {
-  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, crop: alphaCrop, maxPointCount, minimalDistance, polygonsApplied: generatePolygons, source };
+  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, crop: alphaCrop, maxPointCount, minimalDistance, polygonsApplied: generatePolygons, slice9, source };
   if (!generatePolygons) return createQuadPolygonSettings(settings, source);
 
   const polygonBitmap = await createImageBitmap(cropCanvas);
@@ -128,6 +128,7 @@ type ImageTransformOptions = {
   generatePolygons: boolean;
   maxPointCount: number;
   minimalDistance: number;
+  slice9?: ProjectImageSlice9;
 };
 
 export const createImageUpdate = async (source: ArrayBuffer, options: ImageTransformOptions) => {

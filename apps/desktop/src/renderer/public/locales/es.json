@@ -81,6 +81,8 @@
     "bytes": "bytes",
     "showTriangles": "Mostrar triángulos",
     "showPolygon": "Mostrar polígono",
+    "showSlice9": "Mostrar Corte 9",
+    "slice9": "Corte 9",
     "usePolygonsInsteadOfQuads": "Usar polígono en lugar de cuadrilátero",
     "alphaThreshold": "Umbral alfa",
     "pointCount": "Cantidad de puntos",
