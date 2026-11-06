@@ -2,7 +2,7 @@ import type { ProjectImageMetadata } from '@manticore/project';
 import { type FC, memo, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, Switch, Typography, useTheme } from '@mui/material';
 
 import { useProjectStructure } from '../../../../../ProjectStructureContext';
 
@@ -13,18 +13,18 @@ type ImagePreviewProps = {
   metadata: ProjectImageMetadata | null;
   refreshVersion: number;
   slice9?: { bottom: number; left: number; right: number; top: number };
-  showPolygon: boolean;
-  showSlice9: boolean;
-  showTriangles: boolean;
 };
 
-const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, showPolygon, showSlice9, showTriangles, slice9 }) => {
+const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, slice9 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { projectPath } = useProjectStructure();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [previewResult, setPreviewResult] = useState<{ id: number; projectPath: string; bitmap: ImageBitmap } | null>(null);
   const [previewError, setPreviewError] = useState<{ id: number; projectPath: string } | null>(null);
+  const [showPolygon, setShowPolygon] = useState(false);
+  const [showSlice9, setShowSlice9] = useState(false);
+  const [showTriangles, setShowTriangles] = useState(false);
   const bitmap = previewResult?.id === id && previewResult.projectPath === projectPath ? previewResult.bitmap : null;
   const unavailable = !window.manticore?.loadImageSource || (previewError?.id === id && previewError.projectPath === projectPath);
 
@@ -80,7 +80,7 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
       const imageX = (width - imageWidth) / 2;
       const imageY = (height - imageHeight) / 2;
       context.drawImage(bitmap, imageX, imageY, imageWidth, imageHeight);
-      if (showSlice9 && slice9) {
+      if (showSlice9 && slice9 && metadata) {
         const { bottom, left, right, top } = slice9;
         const crop = metadata.polygonSettings.crop;
         context.save();
@@ -151,8 +151,13 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sho
   }, [bitmap, metadata, showPolygon, showSlice9, showTriangles, slice9, theme.palette.background.default, theme.palette.background.paper, theme.palette.error.main, theme.palette.info.main, theme.palette.warning.main]);
 
   return (
-    <Box bgcolor="action.hover" height={PREVIEW_SIZE + PREVIEW_PADDING} position="relative" width="100%">
-      <Box aria-label={t('details.imagePreview')} component="canvas" height="100%" ref={canvasRef} sx={{ display: 'block', width: '100%' }} />
+    <Box bgcolor="action.hover" width="100%">
+      <Box aria-label={t('details.imagePreview')} component="canvas" height={PREVIEW_SIZE + PREVIEW_PADDING} ref={canvasRef} sx={{ display: 'block', width: '100%' }} />
+      <Box display="flex" gap={1} px={1} py={0.5}>
+        <Box alignItems="center" display="flex" flexDirection="column"><Typography lineHeight={1} variant="caption">{t('details.polygon')}</Typography><Switch checked={showPolygon} onChange={(_event, value) => setShowPolygon(value)} size="small" sx={{ mt: -0.5 }} /></Box>
+        <Box alignItems="center" display="flex" flexDirection="column"><Typography lineHeight={1} variant="caption">{t('details.triangles')}</Typography><Switch checked={showTriangles} onChange={(_event, value) => setShowTriangles(value)} size="small" sx={{ mt: -0.5 }} /></Box>
+        {slice9 && <Box alignItems="center" display="flex" flexDirection="column"><Typography lineHeight={1} variant="caption">{t('details.slice9')}</Typography><Switch checked={showSlice9} onChange={(_event, value) => setShowSlice9(value)} size="small" sx={{ mt: -0.5 }} /></Box>}
+      </Box>
       {unavailable && (
         <Typography color="text.secondary" sx={{ left: '50%', position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)' }} variant="body2">
           {t('details.previewUnavailable')}

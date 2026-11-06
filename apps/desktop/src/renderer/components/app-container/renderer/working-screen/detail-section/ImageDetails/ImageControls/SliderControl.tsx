@@ -1,15 +1,15 @@
 import { type FC, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Box, Slider, type SliderProps, Typography } from '@mui/material';
+import { Slider, type SliderProps } from '@mui/material';
 
 import { SLIDER_CONFIG_BY_ID } from './constants';
+import ControlLabel from './ControlLabel';
 import type { ControlProps, SliderControlId } from './types';
 
-const SliderControl: FC<ControlProps> = ({ disabled = false, id, max: maxOverride, onChange, value }) => {
+const SliderControl: FC<ControlProps> = ({ disabled = false, id, onChange, value }) => {
   const { t } = useTranslation();
-  const { max: configuredMax, min } = SLIDER_CONFIG_BY_ID[id as SliderControlId];
-  const max = maxOverride ?? configuredMax;
+  const { max, min } = SLIDER_CONFIG_BY_ID[id as SliderControlId];
   const label = t(`details.${id}`);
   const sliderValue = value as number;
   const marks = useMemo(
@@ -24,10 +24,7 @@ const SliderControl: FC<ControlProps> = ({ disabled = false, id, max: maxOverrid
   };
 
   return (
-    <Box pr={1} width="100%">
-      <Typography component="label" htmlFor={id} variant="body2">
-        {label}
-      </Typography>
+    <ControlLabel htmlFor={id} id={id}>
       <Slider
         aria-label={label}
         disabled={disabled}
@@ -37,11 +34,11 @@ const SliderControl: FC<ControlProps> = ({ disabled = false, id, max: maxOverrid
         min={min}
         onChange={handleChange}
         size="small"
-        sx={{ '& .MuiSlider-markLabel': { mt: '-8px' }, mb: '4px', mt: '-8px' }}
+        sx={{ '& .MuiSlider-markLabel': { fontSize: '0.75rem', mt: '-8px' }, mb: '4px', mt: '-8px' }}
         value={sliderValue}
         valueLabelDisplay="off"
       />
-    </Box>
+    </ControlLabel>
   );
 };
 

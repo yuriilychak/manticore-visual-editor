@@ -1,12 +1,18 @@
-import { type FC } from 'react';
+import { type ComponentType, type FC, useMemo } from 'react';
 
 import { Box } from '@mui/material';
 
-import { CONTROL_IDS, SLIDER_IDS, TOGGLE_IDS } from './constants';
-import { isSliderControlId } from './helpers';
+import { CONTROL_IDS, CONTROL_TYPE_BY_ID, SLICE_RANGE_CONTROL_IDS, SLIDER_IDS, TOGGLE_IDS } from './constants';
+import SliceRangeControl from './SliceRangeControl';
 import SliderControl from './SliderControl';
 import ToggleControl from './ToggleControl';
-import type { ControlId, ControlProps, ControlValueById } from './types';
+import type { ControlId, ControlProps, ControlType, ControlValueById } from './types';
+
+const CONTROL_BY_TYPE: Record<ControlType, ComponentType<ControlProps>> = {
+  sliceRange: SliceRangeControl,
+  slider: SliderControl,
+  toggle: ToggleControl
+};
 
 type ImageControlsProps = {
   canGeneratePolygons: boolean;
@@ -18,19 +24,26 @@ type ImageControlsProps = {
 };
 
 const ImageControls: FC<ImageControlsProps> = ({ canGeneratePolygons, generatePolygons, onChange, sourceHeight, sourceWidth, values }) => {
+  const controlDataById = useMemo<Partial<Record<ControlId, number>>>(() => ({
+    sliceHorizontal: sourceWidth,
+    sliceVertical: sourceHeight
+  }), [sourceHeight, sourceWidth]);
   const hiddenControlIds = new Set<ControlId>(
-    [...SLIDER_IDS.filter((id) => id.startsWith('slice') ? !values.slice9 : !canGeneratePolygons || (!generatePolygons && id !== 'alphaThreshold')), ...(generatePolygons ? ['slice9' as const, 'showSlice9' as const] : !values.slice9 ? ['showSlice9' as const] : [])]
+    [
+      ...SLIDER_IDS.filter((id) => !canGeneratePolygons || (!generatePolygons && id !== 'alphaThreshold')),
+      ...SLICE_RANGE_CONTROL_IDS.filter(() => generatePolygons || !values.slice9),
+      ...(generatePolygons ? ['slice9' as const, 'transparentPadding' as const, 'colorMargin' as const] : [])
+    ]
   );
   const disabledControlIds = new Set<ControlId>(
-    TOGGLE_IDS.filter((id) => !canGeneratePolygons && id === 'usePolygonsInsteadOfQuads')
+    TOGGLE_IDS.filter((id) => (!canGeneratePolygons && id === 'usePolygonsInsteadOfQuads') || (id === 'transparentPadding' && values.colorMargin) || (id === 'colorMargin' && values.transparentPadding))
   );
 
   return (
     <Box columnGap={2} display="flex" flexWrap="wrap" px={1} rowGap={1}>
       {CONTROL_IDS.filter((id) => !hiddenControlIds.has(id)).map((id) => {
-        const Control = isSliderControlId(id) ? SliderControl : ToggleControl;
-        const max = id === 'sliceLeft' ? sourceWidth - values.sliceRight : id === 'sliceRight' ? sourceWidth - values.sliceLeft : id === 'sliceTop' ? sourceHeight - values.sliceBottom : id === 'sliceBottom' ? sourceHeight - values.sliceTop : undefined;
-        return <Control disabled={disabledControlIds.has(id)} id={id} key={id} max={max} onChange={onChange} value={values[id]} />;
+        const Control = CONTROL_BY_TYPE[CONTROL_TYPE_BY_ID[id]];
+        return <Control data={controlDataById[id]} disabled={disabledControlIds.has(id)} id={id} key={id} onChange={onChange} value={values[id]} />;
       })}
     </Box>
   );

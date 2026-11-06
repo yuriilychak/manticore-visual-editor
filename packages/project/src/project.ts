@@ -122,7 +122,7 @@ export async function applyProjectImagePolygonSettings(projectPath: string, id: 
   if (!config.content.some((item) => item.id === id && item.type === AssetType.Image)) throw new Error('Image is not in the project.');
 
   const assetPath = path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
-  const updatedSettings: ProjectImagePolygonSettings = { ...settings, offset: settings.offset ?? 0, polygons: settings.polygons ?? [] };
+  const updatedSettings: ProjectImagePolygonSettings = { ...settings, colorMargin: settings.colorMargin ?? false, offset: settings.offset ?? 0, polygons: settings.polygons ?? [], transparentPadding: settings.transparentPadding ?? false };
   const [sourceStats] = await Promise.all([
     stat(path.join(assetPath, 'source')),
     writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(updatedSettings))

@@ -76,9 +76,9 @@ const createPolygonSettings = async (
   cropCanvas: HTMLCanvasElement,
   alphaCrop: ProjectImageCrop,
   source: { format: string; height: number; width: number },
-  { alphaThreshold, generatePolygons, maxPointCount, minimalDistance, slice9 }: Pick<ImageTransformOptions, 'alphaThreshold' | 'generatePolygons' | 'maxPointCount' | 'minimalDistance' | 'slice9'>
+  { alphaThreshold, colorMargin, generatePolygons, maxPointCount, minimalDistance, slice9, transparentPadding }: Pick<ImageTransformOptions, 'alphaThreshold' | 'colorMargin' | 'generatePolygons' | 'maxPointCount' | 'minimalDistance' | 'slice9' | 'transparentPadding'>
 ) => {
-  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, crop: alphaCrop, maxPointCount, minimalDistance, polygonsApplied: generatePolygons, slice9, source };
+  const settings: ProjectImagePolygonSettingsInput = { alphaThreshold, colorMargin, crop: alphaCrop, maxPointCount, minimalDistance, polygonsApplied: generatePolygons, slice9, source, transparentPadding };
   if (!generatePolygons) return createQuadPolygonSettings(settings, source);
 
   const polygonBitmap = await createImageBitmap(cropCanvas);
@@ -124,11 +124,13 @@ const createPolygonSettings = async (
 
 type ImageTransformOptions = {
   alphaThreshold: number;
+  colorMargin: boolean;
   format: string;
   generatePolygons: boolean;
   maxPointCount: number;
   minimalDistance: number;
   slice9?: ProjectImageSlice9;
+  transparentPadding: boolean;
 };
 
 export const createImageUpdate = async (source: ArrayBuffer, options: ImageTransformOptions) => {
