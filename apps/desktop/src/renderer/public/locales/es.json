@@ -71,6 +71,8 @@
     "bundleEmpty": "El paquete está vacío",
     "filesByType": "Archivos por tipo",
     "images": "Imágenes",
+    "polygonEditorInstructions": "Arrastra un cuadrado para moverlo. Haz doble clic en un cuadrado para eliminarlo. Haz clic en otro lugar para añadir un punto al borde más cercano.",
+    "polygonEditorTitle": "Modificar polígono",
     "textureAtlases": "Atlas de texturas",
     "fonts": "Fuentes",
     "imagePreview": "Vista previa de la imagen",

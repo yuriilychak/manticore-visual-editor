@@ -23,6 +23,22 @@ export const cropHasTransparency = async (source: ArrayBuffer, format: string, c
   }
 };
 
+export const loadCroppedHasTransparency = async (
+  projectPath: string,
+  id: number,
+  format: string,
+  crop: ProjectImageCrop,
+  request: { active: boolean }
+): Promise<boolean> => {
+  try {
+    const source = await window.manticore?.loadImageSource?.(projectPath, id);
+    if (!request.active || !source) return false;
+    return request.active && await cropHasTransparency(source, format, crop);
+  } catch {
+    return false;
+  }
+};
+
 export const createTriangulatedPolygons = async (
   polygonizer: ImagePolygonizer,
   polygons: readonly { points: Uint16Array }[],

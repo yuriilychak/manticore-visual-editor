@@ -2,10 +2,11 @@ import type { ProjectContent } from '@manticore/project/types';
 import { ImagePolygonizer } from 'image-polygonizer';
 import { type MouseEvent, useCallback, useEffect, useReducer } from 'react';
 
-import { useProjectStructure } from '../../../../ProjectStructureContext';
+import { useProjectStructure } from '../../../../../ProjectStructureContext';
 
-import { createImageUpdate, createTriangulatedPolygons, cropHasTransparency } from './helpers';
-import type { ControlProps, ControlValueById } from './ImageControls/types';
+import type { ControlProps, ControlValueById } from '../ImageControls/types';
+
+import { createImageUpdate, createTriangulatedPolygons, loadCroppedHasTransparency } from './helpers';
 import { imageDetailsReducer, INITIAL_IMAGE_DETAILS_STATE } from './reducer';
 
 const useImageDetails = ({ id }: ProjectContent) => {
@@ -47,27 +48,23 @@ const useImageDetails = ({ id }: ProjectContent) => {
     || JSON.stringify(slice9) !== JSON.stringify(metadata.polygonSettings.slice9)
     || transparentPadding !== metadata.polygonSettings.transparentPadding
   ));
-  const handleControlChange = useCallback<ControlProps['onChange']>((id, value) => {
-    dispatch({ type: 'control-changed', payload: { id, value } });
-  }, []);
+  const handleControlChange = useCallback<ControlProps['onChange']>((id, value) => dispatch({ type: 'control-changed', payload: { id, value } }), []);
 
   useEffect(() => {
-    let active = true;
+    const request = { active: true };
     void window.manticore?.loadImageMetadata?.(projectPath, id)
-      .then((value) => {
-        if (!active) return;
+      .then(async (value) => {
+        if (!request.active) return;
         dispatch({ type: 'metadata-loaded', payload: { id, projectPath, value } });
-        void window.manticore?.loadImageSource?.(projectPath, id)
-          .then((source) => cropHasTransparency(source, value.format, value.polygonSettings.crop))
-          .then((hasTransparency) => { if (active) dispatch({ type: 'cropped-transparency-loaded', payload: { hasTransparency } }); })
-          .catch(() => { if (active) dispatch({ type: 'cropped-transparency-loaded', payload: { hasTransparency: false } }); });
+        const hasTransparency = await loadCroppedHasTransparency(projectPath, id, value.format, value.polygonSettings.crop, request);
+        if (request.active) dispatch({ type: 'cropped-transparency-loaded', payload: { hasTransparency } });
       })
       .catch(() => undefined);
 
-    return () => { active = false; };
+    return () => { request.active = false; };
   }, [id, projectPath]);
 
-  const applyPolygonSettings = async () => {
+  const applyPolygonSettings = useCallback(async () => {
     const apply = window.manticore?.applyImagePolygonSettings;
     const loadSource = window.manticore?.loadImageSource;
     if (!apply || !loadSource || !metadata) return;
@@ -90,13 +87,13 @@ const useImageDetails = ({ id }: ProjectContent) => {
     } finally {
       dispatch({ type: 'applying-changed', payload: { applying: false } });
     }
-  };
-  const openPolygonEditor = async () => {
+  }, [alphaThreshold, colorMargin, generatePolygons, id, maxPointCount, metadata, minimalDistance, projectPath, slice9, transparentPadding]);
+  const openPolygonEditor = useCallback(async () => {
     const polygon = metadata?.polygonSettings.polygons[0];
     const source = await window.manticore?.loadImageSource?.(projectPath, id);
     if (!polygon || !source || !metadata) return;
     dispatch({ type: 'polygon-editor-opened', payload: { points: polygon.points.map((point) => point - metadata.polygonSettings.offset), source } });
-  };
+  }, [id, metadata, projectPath]);
   const savePolygonEditor = async (points: Uint16Array) => {
     if (!metadata || !window.manticore?.applyImagePolygonSettings) return;
     dispatch({ type: 'applying-changed', payload: { applying: true } });
@@ -123,7 +120,7 @@ const useImageDetails = ({ id }: ProjectContent) => {
     open: true,
     points: polygonEditor.points
   } : null;
-  const handleButtonClick = ({ currentTarget }: MouseEvent<HTMLButtonElement>) => {
+  const handleButtonClick = useCallback(({ currentTarget }: MouseEvent<HTMLButtonElement>) => {
     switch (currentTarget.id) {
       case 'apply':
         void applyPolygonSettings();
@@ -132,7 +129,7 @@ const useImageDetails = ({ id }: ProjectContent) => {
         void openPolygonEditor();
         break;
     }
-  };
+  }, [applyPolygonSettings, openPolygonEditor]);
 
   return {
     applying,

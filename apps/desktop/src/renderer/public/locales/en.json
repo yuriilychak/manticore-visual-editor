@@ -71,6 +71,8 @@
     "bundleEmpty": "Bundle is empty",
     "filesByType": "Files by type",
     "images": "Images",
+    "polygonEditorInstructions": "Drag a square to move it. Double-click a square to remove it. Click elsewhere to add a point to the nearest edge.",
+    "polygonEditorTitle": "Modify polygon",
     "textureAtlases": "Texture atlases",
     "fonts": "Fonts",
     "imagePreview": "Image preview",

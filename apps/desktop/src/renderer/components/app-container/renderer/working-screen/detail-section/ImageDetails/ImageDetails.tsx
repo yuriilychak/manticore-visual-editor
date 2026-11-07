@@ -3,12 +3,12 @@ import { type FC } from 'react';
 
 import { Box } from '@mui/material';
 
+import { useImageDetails } from './controller';
 import ImageActions from './ImageActions';
 import { ImageControls } from './ImageControls';
 import { ImageMetadata } from './ImageMetadata';
 import { ImagePreview } from './ImagePreview';
-import PolygonEditorDialog from './PolygonEditorDialog';
-import useImageDetails from './useImageDetails';
+import { PolygonEditorDialog } from './PolygonEditorDialog';
 
 type ImageDetailsProps = {
   item: ProjectContent;

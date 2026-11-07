@@ -1,6 +1,6 @@
 import type { ProjectImageMetadata } from '@manticore/project';
 
-import type { ControlId, ControlValue } from './ImageControls/types';
+import type { ControlId, ControlValue } from '../ImageControls/types';
 
 export type Slice9 = { bottom: number; left: number; right: number; top: number };
 
