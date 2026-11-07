@@ -29,15 +29,15 @@ export const createTriangulatedPolygons = async (
   offset: number,
   points: Uint16Array
 ) => {
-  const updatedPolygons: Array<{ points: Uint16Array; triangles: Uint16Array }> = [];
-  for (const { points: original } of polygons) {
-    const polygonPoints = updatedPolygons.length ? original.map((point) => point - offset) : points;
-    const indices = await polygonizer.triangulate(polygonPoints);
+  const polygonPoints = polygons.map(({ points: original }, index) => index ? original.map((point) => point - offset) : points);
+  const indicesByPolygon = await polygonizer.triangulate(polygonPoints);
+
+  return polygonPoints.map((points, index) => {
+    const indices = indicesByPolygon[index];
     const triangles = new Uint16Array(indices.length / 3);
     for (let index = 0; index < indices.length; index += 3) triangles[index / 3] = (indices[index] << 10) | (indices[index + 1] << 5) | indices[index + 2];
-    updatedPolygons.push({ points: polygonPoints, triangles });
-  }
-  return updatedPolygons;
+    return { points, triangles };
+  });
 };
 
 const getCropBounds = (pixels: ImageData, alphaThreshold: number) => {

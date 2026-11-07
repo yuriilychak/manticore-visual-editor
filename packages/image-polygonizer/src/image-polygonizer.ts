@@ -74,10 +74,14 @@ export default class ImagePolygonizer implements ImagePolygonizerInstance {
             : Promise.resolve([]);
     }
 
-    async triangulate(points: Uint16Array): Promise<Uint16Array> {
-        const workerPoints = points.slice();
-        const input: ThreadInput<'triangulate'> = { type: 'triangulate', data: workerPoints, transfetrable: [workerPoints.buffer] };
-        return new Promise((resolve, reject) => this.#parallel.start([input], ([result]) => resolve(result), reject));
+    async triangulate(polygons: readonly Uint16Array[]): Promise<Uint16Array[]> {
+        const inputs: ThreadInput<'triangulate'>[] = polygons.map((points) => {
+            const workerPoints = points.slice();
+            return { type: 'triangulate', data: workerPoints, transfetrable: [workerPoints.buffer] };
+        });
+        return inputs.length !== 0
+            ? new Promise((resolve, reject) => this.#parallel.start(inputs, (results) => resolve(results), reject))
+            : Promise.resolve([]);
     }
 
     async serializeImageConfigs(images: ImageConfig[], onProgress?: (completed: number, total: number) => void): Promise<Uint8Array[]> {

@@ -35,7 +35,7 @@ export interface ImagePolygonizerInstance {
     init(): Promise<void>;
     importImages(files: FileList): Promise<ImageConfig[]>;
     polygonize(polygonizeImages: ImageConfig[]): Promise<ImageActionPayload<Uint16Array>[]>;
-    triangulate(points: Uint16Array): Promise<Uint16Array>;
+    triangulate(polygons: readonly Uint16Array[]): Promise<Uint16Array[]>;
     serializeImageConfigs(images: ImageConfig[], onProgress?: (completed: number, total: number) => void): Promise<Uint8Array[]>;
     serializeImages(images: ImageConfig[]): Promise<Uint8Array>;
     deserializeImages(data: Uint8Array): Promise<ImageConfig[]>;
