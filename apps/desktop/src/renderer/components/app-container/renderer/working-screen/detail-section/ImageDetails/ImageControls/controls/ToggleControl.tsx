@@ -3,8 +3,9 @@ import { useTranslation } from 'react-i18next';
 
 import { Switch } from '@mui/material';
 
+import type { ControlId, ControlProps } from '../types';
+
 import ControlLabel from './ControlLabel';
-import type { ControlId, ControlProps } from './types';
 
 const ToggleControl: FC<ControlProps> = ({ disabled = false, id, onChange, value }) => {
   const { t } = useTranslation();

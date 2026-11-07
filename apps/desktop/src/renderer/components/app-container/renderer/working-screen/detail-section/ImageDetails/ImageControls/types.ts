@@ -22,8 +22,12 @@ export type ControlValueById = {
 
 export type ControlValue = ControlValueById[ControlId];
 
-export type ControlProps = {
-  data?: unknown;
+export type ControlData = {
+  max: number;
+};
+
+export type ControlProps<Data = unknown> = {
+  data: Data;
   disabled?: boolean;
   id: ControlId;
   onChange: (id: ControlId, value: ControlValue) => void;

@@ -3,22 +3,18 @@ import { useTranslation } from 'react-i18next';
 
 import { Slider, type SliderProps } from '@mui/material';
 
-import { SLIDER_CONFIG_BY_ID } from './constants';
+import type { ControlProps, SliderControlId } from '../types';
+
+import { SLIDER_CONFIG_BY_ID, SLIDER_SX } from './constants';
 import ControlLabel from './ControlLabel';
-import type { ControlProps, SliderControlId } from './types';
+import { getSliderMarks } from './helpers';
 
 const SliderControl: FC<ControlProps> = ({ disabled = false, id, onChange, value }) => {
   const { t } = useTranslation();
   const { max, min } = SLIDER_CONFIG_BY_ID[id as SliderControlId];
   const label = t(`details.${id}`);
   const sliderValue = value as number;
-  const marks = useMemo(
-    () =>
-      [min, sliderValue, max]
-        .filter((mark, index, values) => values.indexOf(mark) === index)
-        .map((mark) => ({ label: String(mark), value: mark })),
-    [max, min, sliderValue]
-  );
+  const marks = useMemo(() => getSliderMarks([min, sliderValue, max]), [max, min, sliderValue]);
   const handleChange: SliderProps['onChange'] = (_event, nextValue) => {
     if (typeof nextValue === 'number') onChange(id, nextValue);
   };
@@ -34,7 +30,7 @@ const SliderControl: FC<ControlProps> = ({ disabled = false, id, onChange, value
         min={min}
         onChange={handleChange}
         size="small"
-        sx={{ '& .MuiSlider-markLabel': { fontSize: '0.75rem', mt: '-8px' }, mb: '4px', mt: '-8px' }}
+        sx={SLIDER_SX}
         value={sliderValue}
         valueLabelDisplay="off"
       />
