@@ -41,19 +41,26 @@ export const loadCroppedHasTransparency = async (
 
 export const createTriangulatedPolygons = async (
   polygonizer: ImagePolygonizer,
-  polygons: readonly { points: Uint16Array }[],
-  offset: number,
-  points: Uint16Array
+  polygons: readonly Uint16Array[]
 ) => {
-  const polygonPoints = polygons.map(({ points: original }, index) => index ? original.map((point) => point - offset) : points);
-  const indicesByPolygon = await polygonizer.triangulate(polygonPoints);
+  const indicesByPolygon = await polygonizer.triangulate(polygons);
 
-  return polygonPoints.map((points, index) => {
+  return polygons.map((points, index) => {
     const indices = indicesByPolygon[index];
     const triangles = new Uint16Array(indices.length / 3);
     for (let index = 0; index < indices.length; index += 3) triangles[index / 3] = (indices[index] << 10) | (indices[index + 1] << 5) | indices[index + 2];
     return { points, triangles };
   });
+};
+
+export const toEditorPoints = (points: Uint16Array, offset: number) => Int16Array.from(points, (point) => point - offset);
+
+export const toStoredPoints = (points: Int16Array, offset: number) => Uint16Array.from(points, (point) => point + offset);
+
+export const getPolygonOffset = (polygons: readonly Int16Array[]) => {
+  let minimum = 0;
+  for (const points of polygons) for (const point of points) minimum = Math.min(minimum, point);
+  return -minimum;
 };
 
 const getCropBounds = (pixels: ImageData, alphaThreshold: number) => {
@@ -92,15 +99,15 @@ const createCropCanvas = (sourceBitmap: ImageBitmap, alphaThreshold: number) => 
   return { crop: { height, width, x, y }, cropCanvas };
 };
 
-const getPolygonCrop = (polygons: Uint16Array[], offset: number, alphaCrop: ProjectImageCrop): ProjectImageCrop => {
+export const getPolygonCrop = (polygons: readonly ArrayLike<number>[], offset = 0, origin: ProjectImageCrop = { height: 1, width: 1, x: 0, y: 0 }): ProjectImageCrop => {
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (const points of polygons) for (let index = 0; index < points.length; index += 2) {
-    minX = Math.min(minX, alphaCrop.x + points[index] - offset);
-    minY = Math.min(minY, alphaCrop.y + points[index + 1] - offset);
-    maxX = Math.max(maxX, alphaCrop.x + points[index] - offset);
-    maxY = Math.max(maxY, alphaCrop.y + points[index + 1] - offset);
+    minX = Math.min(minX, origin.x + points[index] - offset);
+    minY = Math.min(minY, origin.y + points[index + 1] - offset);
+    maxX = Math.max(maxX, origin.x + points[index] - offset);
+    maxY = Math.max(maxY, origin.y + points[index + 1] - offset);
   }
-  return !Number.isFinite(minX) ? alphaCrop : {
+  return !Number.isFinite(minX) ? origin : {
     x: Math.floor(minX), y: Math.floor(minY), width: Math.ceil(maxX) - Math.floor(minX) + 1, height: Math.ceil(maxY) - Math.floor(minY) + 1
   };
 };

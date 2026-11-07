@@ -11,7 +11,7 @@ type ImageBounds = {
 };
 
 type PolygonEditorBuilderProps = {
-  allPoints: readonly Uint16Array[];
+  allPoints: readonly Int16Array[];
   bitmap: ImageBitmap;
   canvas: HTMLCanvasElement;
   context: CanvasRenderingContext2D;

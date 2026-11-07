@@ -26,8 +26,8 @@ export const toPoint = (canvas: HTMLCanvasElement | null, bitmap: ImageBitmap | 
   const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
   return {
     point: {
-      x: Math.max(0, Math.min(bitmap.width, (canvasX - (canvas.width - bitmap.width * scale) / 2) / scale)),
-      y: Math.max(0, Math.min(bitmap.height, (canvasY - (canvas.height - bitmap.height * scale) / 2) / scale))
+      x: (canvasX - (canvas.width - bitmap.width * scale) / 2) / scale,
+      y: (canvasY - (canvas.height - bitmap.height * scale) / 2) / scale
     },
     scale
   };
@@ -58,4 +58,4 @@ export const insertPointAtNearestEdge = (points: readonly Point[], point: Point)
   return updatedPoints;
 };
 
-export const serializePoints = (points: readonly Point[]) => new Uint16Array(points.flatMap(({ x, y }) => [Math.round(x), Math.round(y)]));
+export const serializePoints = (points: readonly Point[]) => new Int16Array(points.flatMap(({ x, y }) => [Math.round(x), Math.round(y)]));

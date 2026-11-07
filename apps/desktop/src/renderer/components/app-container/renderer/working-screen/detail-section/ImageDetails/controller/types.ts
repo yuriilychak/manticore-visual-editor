@@ -4,7 +4,7 @@ import type { ControlId, ControlValue } from '../ImageControls/types';
 
 export type Slice9 = { bottom: number; left: number; right: number; top: number };
 
-export type PolygonEditorState = { points: Uint16Array; source: ArrayBuffer };
+export type PolygonEditorState = { source: ArrayBuffer };
 
 export type MetadataResult = { id: number; projectPath: string; value: ProjectImageMetadata };
 

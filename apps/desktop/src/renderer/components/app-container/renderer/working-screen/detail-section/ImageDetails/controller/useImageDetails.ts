@@ -6,7 +6,7 @@ import { useProjectStructure } from '../../../../../ProjectStructureContext';
 
 import type { ControlProps, ControlValueById } from '../ImageControls/types';
 
-import { createImageUpdate, createTriangulatedPolygons, loadCroppedHasTransparency } from './helpers';
+import { createImageUpdate, createTriangulatedPolygons, getPolygonCrop, getPolygonOffset, loadCroppedHasTransparency, toEditorPoints, toStoredPoints } from './helpers';
 import { imageDetailsReducer, INITIAL_IMAGE_DETAILS_STATE } from './reducer';
 
 const useImageDetails = ({ id }: ProjectContent) => {
@@ -89,19 +89,28 @@ const useImageDetails = ({ id }: ProjectContent) => {
     }
   }, [alphaThreshold, colorMargin, generatePolygons, id, maxPointCount, metadata, minimalDistance, projectPath, slice9, transparentPadding]);
   const openPolygonEditor = useCallback(async () => {
-    const polygon = metadata?.polygonSettings.polygons[0];
     const source = await window.manticore?.loadImageSource?.(projectPath, id);
-    if (!polygon || !source || !metadata) return;
-    dispatch({ type: 'polygon-editor-opened', payload: { points: polygon.points.map((point) => point - metadata.polygonSettings.offset), source } });
+    if (!source || !metadata?.polygonSettings.polygons.length) return;
+    dispatch({ type: 'polygon-editor-opened', payload: { source } });
   }, [id, metadata, projectPath]);
-  const savePolygonEditor = async (points: Uint16Array) => {
+  const savePolygonEditor = async (selectedPolygonIndex: number, points: Int16Array) => {
     if (!metadata || !window.manticore?.applyImagePolygonSettings) return;
     dispatch({ type: 'applying-changed', payload: { applying: true } });
     const polygonizer = new ImagePolygonizer();
     try {
       await polygonizer.init();
-      const updatedPolygons = await createTriangulatedPolygons(polygonizer, metadata.polygonSettings.polygons, metadata.polygonSettings.offset, points);
-      const value = await window.manticore.applyImagePolygonSettings(projectPath, id, { ...metadata.polygonSettings, offset: 0, polygons: updatedPolygons, polygonsApplied: true });
+      const editorPolygons = metadata.polygonSettings.polygons.map(({ points: original }, index) => (
+        index === selectedPolygonIndex ? points : toEditorPoints(original, metadata.polygonSettings.offset)
+      ));
+      const offset = getPolygonOffset(editorPolygons);
+      const updatedPolygons = await createTriangulatedPolygons(polygonizer, editorPolygons.map((polygon) => toStoredPoints(polygon, offset)));
+      const value = await window.manticore.applyImagePolygonSettings(projectPath, id, {
+        ...metadata.polygonSettings,
+        crop: getPolygonCrop(editorPolygons),
+        offset,
+        polygons: updatedPolygons,
+        polygonsApplied: true
+      });
       dispatch({ type: 'metadata-updated', payload: { id, projectPath, value } });
       dispatch({ type: 'polygon-editor-closed' });
     } finally {
@@ -109,16 +118,27 @@ const useImageDetails = ({ id }: ProjectContent) => {
       dispatch({ type: 'applying-changed', payload: { applying: false } });
     }
   };
+  const deletePolygonEditor = async (selectedPolygonIndex: number) => {
+    if (!metadata || !window.manticore?.applyImagePolygonSettings || metadata.polygonSettings.polygons.length <= 1) return;
+    dispatch({ type: 'applying-changed', payload: { applying: true } });
+    try {
+      const polygons = metadata.polygonSettings.polygons.filter((_, index) => index !== selectedPolygonIndex);
+      const value = await window.manticore.applyImagePolygonSettings(projectPath, id, { ...metadata.polygonSettings, polygons, polygonsApplied: true });
+      dispatch({ type: 'metadata-updated', payload: { id, projectPath, value } });
+    } finally {
+      dispatch({ type: 'applying-changed', payload: { applying: false } });
+    }
+  };
   const closePolygonEditor = useCallback(() => dispatch({ type: 'polygon-editor-closed' }), []);
   const polygonEditorDialog = polygonEditor && metadata ? {
-    allPoints: metadata.polygonSettings.polygons.slice(1).map(({ points }) => points.map((point) => point - metadata.polygonSettings.offset)),
     format: metadata.format,
     image: polygonEditor.source,
     maxPointCount: metadata.polygonSettings.maxPointCount,
     onClose: closePolygonEditor,
+    onDelete: deletePolygonEditor,
     onSubmit: savePolygonEditor,
     open: true,
-    points: polygonEditor.points
+    polygons: metadata.polygonSettings.polygons.map(({ points }) => toEditorPoints(points, metadata.polygonSettings.offset))
   } : null;
   const handleButtonClick = useCallback(({ currentTarget }: MouseEvent<HTMLButtonElement>) => {
     switch (currentTarget.id) {
