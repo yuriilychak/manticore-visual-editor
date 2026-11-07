@@ -142,6 +142,100 @@ describe('ProjectSection', () => {
     }
   });
 
+  test('toggles the selected item when it has children and Enter is pressed', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }],
+      [],
+      [1]
+    );
+
+    fireEvent.keyDown(window, { key: 'Enter' });
+
+    expect(onAction).toHaveBeenCalledWith('expanded-item-toggled', AssetType.ProjectFolder, 1);
+  });
+
+  test('toggles a selected container instead of renaming it with Enter on macOS', () => {
+    const manticore = window.manticore;
+    window.manticore = { platform: 'darwin' } as never;
+    const onAction = jest.fn<ProjectActionHandler>();
+
+    try {
+      renderProjectSection(
+        onAction,
+        [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }],
+        [],
+        [1]
+      );
+
+      fireEvent.keyDown(window, { key: 'Enter' });
+
+      expect(onAction).toHaveBeenCalledWith('expanded-item-toggled', AssetType.ProjectFolder, 1);
+      expect(screen.queryByRole('textbox', { name: 'common.renameName' })).not.toBeInTheDocument();
+    } finally {
+      window.manticore = manticore;
+    }
+  });
+
+  test('does not toggle a multi-selection with Enter', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Assets/Images' }],
+      [],
+      [1, 2]
+    );
+
+    fireEvent.keyDown(window, { key: 'Enter' });
+
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  test('moves a single selection through visible items with the arrow keys', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(
+      onAction,
+      [{ id: 1, items: [], name: 'Assets' }, { id: 2, items: [], name: 'Bundles' }],
+      [],
+      [1]
+    );
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+    fireEvent.keyDown(window, { key: 'ArrowUp' });
+
+    expect(onAction).toHaveBeenNthCalledWith(1, 'select', AssetType.ProjectFolder, 2, {
+      id: 2,
+      isExtended: false,
+      isRange: false
+    });
+    expect(onAction).toHaveBeenNthCalledWith(2, 'select', AssetType.Project, ProjectItemId.Project, {
+      id: ProjectItemId.Project,
+      isExtended: false,
+      isRange: false
+    });
+  });
+
+  test('does not use arrow keys to change multi-selection', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }], [], [ProjectItemId.Project, 1]);
+
+    fireEvent.keyDown(window, { key: 'ArrowDown' });
+
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
+  test('does not use modified arrow keys to change selection', () => {
+    const onAction = jest.fn<ProjectActionHandler>();
+    renderProjectSection(onAction, [{ id: 1, items: [], name: 'Assets' }], [], [ProjectItemId.Project]);
+
+    fireEvent.keyDown(window, { key: 'ArrowDown', shiftKey: true });
+    fireEvent.keyDown(window, { key: 'ArrowDown', ctrlKey: true });
+    fireEvent.keyDown(window, { key: 'ArrowDown', metaKey: true });
+
+    expect(onAction).not.toHaveBeenCalled();
+  });
+
   test('selects the visible inclusive range with Shift click', () => {
     const onAction = jest.fn<ProjectActionHandler>();
     renderProjectSection(

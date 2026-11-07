@@ -52,6 +52,43 @@ const ProjectSection: FC = () => {
   }, [selection]);
   useEffect(() => keyboardShortcuts.subscribe(handleShortcut), [handleShortcut]);
   useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (
+        (event.key !== 'ArrowUp' && event.key !== 'ArrowDown' && event.key !== 'Enter') ||
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        selection.length !== 1 ||
+        (event.target instanceof Element && event.target.closest('input, textarea, [contenteditable="true"]'))
+      ) return;
+
+      if (event.key === 'Enter') {
+        const selectedItem = contentById[selection[0]];
+        if (!selectedItem || !getChildrenIds(childrenIdsByParentId, selectedItem.id).length) return;
+
+        event.preventDefault();
+        event.stopImmediatePropagation();
+        void onAction('expanded-item-toggled', selectedItem.type, selectedItem.id);
+        return;
+      }
+
+      const items = [{ id: ProjectItemId.Project, type: AssetType.Project }, ...visibleProjectItems.map(({ id }) => ({ id, type: contentById[id]?.type }))];
+      const currentIndex = items.findIndex(({ id }) => id === selection[0]);
+      const nextIndex = currentIndex + (event.key === 'ArrowUp' ? -1 : 1);
+      const nextItem = items[nextIndex];
+      if (currentIndex < 0 || nextItem?.type === undefined) return;
+
+      event.preventDefault();
+      void onAction('select', nextItem.type, nextItem.id, { id: nextItem.id, isExtended: false, isRange: false });
+      if (nextIndex === 0) virtualizer.scrollToOffset(0);
+      else virtualizer.scrollToIndex(nextIndex - 1);
+    };
+
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
+  }, [childrenIdsByParentId, contentById, onAction, selection, visibleProjectItems, virtualizer]);
+  useEffect(() => {
     if (!contextMenu.isOpen) return;
 
     const handleContextMenu = (event: globalThis.MouseEvent) => {
