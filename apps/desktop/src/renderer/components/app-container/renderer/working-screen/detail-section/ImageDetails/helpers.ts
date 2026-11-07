@@ -23,6 +23,23 @@ export const cropHasTransparency = async (source: ArrayBuffer, format: string, c
   }
 };
 
+export const createTriangulatedPolygons = async (
+  polygonizer: ImagePolygonizer,
+  polygons: readonly { points: Uint16Array }[],
+  offset: number,
+  points: Uint16Array
+) => {
+  const updatedPolygons: Array<{ points: Uint16Array; triangles: Uint16Array }> = [];
+  for (const { points: original } of polygons) {
+    const polygonPoints = updatedPolygons.length ? original.map((point) => point - offset) : points;
+    const indices = await polygonizer.triangulate(polygonPoints);
+    const triangles = new Uint16Array(indices.length / 3);
+    for (let index = 0; index < indices.length; index += 3) triangles[index / 3] = (indices[index] << 10) | (indices[index + 1] << 5) | indices[index + 2];
+    updatedPolygons.push({ points: polygonPoints, triangles });
+  }
+  return updatedPolygons;
+};
+
 const getCropBounds = (pixels: ImageData, alphaThreshold: number) => {
   let minX = pixels.width;
   let minY = pixels.height;

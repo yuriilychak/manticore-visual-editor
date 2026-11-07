@@ -49,6 +49,7 @@
     "importAssetsError": "Could not import the selected assets.",
     "moveBundleError": "Could not move the bundle.",
     "moveFolderError": "Could not move the folder.",
+    "modify": "Modify",
     "moveSelectionWarning": "Some selected items cannot be moved to this destination.",
     "moveRenamedWarning": "During the move, \"{{previousName}}\" was renamed to \"{{name}}\".",
     "openProjectError": "Could not open the project.",

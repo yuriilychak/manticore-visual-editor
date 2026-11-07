@@ -49,6 +49,7 @@
     "importAssetsError": "No se pudieron importar los recursos seleccionados.",
     "moveBundleError": "No se pudo mover el paquete.",
     "moveFolderError": "No se pudo mover la carpeta.",
+    "modify": "Modificar",
     "moveSelectionWarning": "Algunos elementos seleccionados no se pueden mover a este destino.",
     "moveRenamedWarning": "Durante el movimiento, \"{{previousName}}\" se cambió el nombre a \"{{name}}\".",
     "openProjectError": "No se pudo abrir el proyecto.",
