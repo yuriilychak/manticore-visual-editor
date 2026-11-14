@@ -2,6 +2,7 @@ node_modules
 dist
 .turbo
 .history
+.vscode/
 *.log
 apps/*/dist
 apps/*/coverage
