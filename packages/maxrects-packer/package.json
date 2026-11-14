@@ -1,0 +1,32 @@
+{
+  "name": "maxrects-packer",
+  "version": "3.0.0",
+  "description": "WASM-accelerated 2D bin packer with WebWorker parallelism",
+  "license": "MIT",
+  "main": "../../lib/maxrects-packer.js",
+  "module": "../../lib/maxrects-packer.js",
+  "types": "../../lib/maxrects-packer.d.ts",
+  "exports": {
+    ".": {
+      "import": "../../lib/maxrects-packer.js",
+      "types": "../../lib/maxrects-packer.d.ts"
+    },
+    "./worker": {
+      "import": "../../lib/maxrects-packer.worker.js"
+    }
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "test": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@rollup/plugin-terser": "^1.0.0",
+    "@rollup/plugin-typescript": "^12.1.0",
+    "maxrects-packer-algo": "*",
+    "rollup": "^4.34.0",
+    "rollup-plugin-dts": "^6.4.1",
+    "tslib": "^2.8.0",
+    "typescript": "~5.7.0"
+  },
+  "sideEffects": false
+}
