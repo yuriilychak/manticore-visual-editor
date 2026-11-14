@@ -6,9 +6,11 @@ import { AssetType, type ProjectActionHandler } from '../../../../../../../types
 import { ProjectStructureContext } from '../../../../ProjectStructureContext';
 
 import DetailSection from '../DetailSection';
+import { getSelectedImageIds } from '../helpers';
 
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('../ImageDetails', () => ({ ImageDetails: ({ item }: { item: ProjectContent }) => <canvas aria-label="details.imagePreview" data-image-id={item.id} /> }));
+jest.mock('../ImageDetails/MultipleImageDetails', () => ({ __esModule: true, default: ({ imageIds }: { imageIds: readonly number[] }) => <output aria-label="multiple-image-details">{imageIds.join(',')}</output> }));
 
 const content: ProjectContent[] = [
   { id: 2, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
@@ -22,6 +24,7 @@ const content: ProjectContent[] = [
   { id: 10, name: 'Empty folder', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
   { id: 11, name: 'Images only', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
   { id: 12, name: 'Logo', parentId: 11, type: AssetType.Image, version: 0 },
+  { id: 14, name: 'Background', parentId: 11, type: AssetType.Image, version: 0 },
   { id: 13, name: 'Empty bundle', parentId: 2, type: AssetType.Bundle, version: 0 }
 ];
 const contentById = Object.fromEntries(content.map((item) => [item.id, item]));
@@ -94,8 +97,26 @@ describe('DetailSection', () => {
   test('shows only file types with nonzero counts', () => {
     renderDetailSection([11]);
 
-    expect(screen.getByText('details.images').parentElement?.parentElement).toHaveTextContent('1');
+    expect(screen.getByText('details.images').parentElement?.parentElement).toHaveTextContent('2');
     expect(screen.queryByText('details.textureAtlases')).not.toBeInTheDocument();
     expect(screen.queryByText('details.fonts')).not.toBeInTheDocument();
+  });
+
+  test('shows bulk image details for image-only selections, including their selected container', () => {
+    renderDetailSection([11, 12, 14]);
+
+    expect(screen.getByLabelText('multiple-image-details')).toHaveTextContent('12,14');
+    expect(screen.queryByLabelText('details.imagePreview')).not.toBeInTheDocument();
+  });
+
+  test('does not show bulk image details for selections with non-image leaves', () => {
+    renderDetailSection([3, 4, 5, 6, 7, 8]);
+
+    expect(screen.queryByLabelText('multiple-image-details')).not.toBeInTheDocument();
+  });
+
+  test('requires all descendants of a selected image-only container to be selected', () => {
+    expect(getSelectedImageIds(childrenIdsByParentId, contentById, [11])).toEqual([]);
+    expect(getSelectedImageIds(childrenIdsByParentId, contentById, [11, 12, 14])).toEqual([12, 14]);
   });
 });

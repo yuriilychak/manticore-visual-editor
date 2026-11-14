@@ -1,5 +1,5 @@
 import type { ProjectContent } from '@manticore/project/types';
-import { type FC, memo } from 'react';
+import { type FC, memo, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Box, Typography } from '@mui/material';
@@ -7,8 +7,11 @@ import { Box, Typography } from '@mui/material';
 import { AssetType } from '../../../../../../types';
 import { PROJECT_ITEM_CONFIG } from '../../../constants';
 import { useProjectStructure } from '../../../ProjectStructureContext';
+
 import { FolderBundleDetails } from './FolderBundleDetails';
+import { getSelectedImageIds } from './helpers';
 import { ImageDetails } from './ImageDetails';
+import MultipleImageDetails from './ImageDetails/MultipleImageDetails';
 
 const DETAILS_COMPONENT_BY_TYPE: Partial<Record<AssetType, FC<{ item: ProjectContent }>>> = {
   [AssetType.ProjectFolder]: FolderBundleDetails,
@@ -19,8 +22,12 @@ const DETAILS_COMPONENT_BY_TYPE: Partial<Record<AssetType, FC<{ item: ProjectCon
 
 const DetailSection: FC = () => {
   const { t } = useTranslation();
-  const { contentById, selection } = useProjectStructure();
+  const { childrenIdsByParentId, contentById, selection } = useProjectStructure();
   const selectedItem = selection.length === 1 ? contentById[selection[0]] : undefined;
+  const selectedImageIds = useMemo(
+    () => getSelectedImageIds(childrenIdsByParentId, contentById, selection),
+    [childrenIdsByParentId, contentById, selection]
+  );
   const HeaderIcon = selectedItem ? PROJECT_ITEM_CONFIG[selectedItem.type].icon : null;
   const DetailsComponent = selectedItem ? DETAILS_COMPONENT_BY_TYPE[selectedItem.type] : undefined;
   const title = selectedItem?.name ?? t('details.title');
@@ -34,6 +41,7 @@ const DetailSection: FC = () => {
         </Typography>
       </Box>
       {DetailsComponent && selectedItem && <DetailsComponent item={selectedItem} />}
+      {selectedImageIds.length > 1 && <MultipleImageDetails imageIds={selectedImageIds} key={selectedImageIds.join('-')} />}
     </Box>
   );
 };

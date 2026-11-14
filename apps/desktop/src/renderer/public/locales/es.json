@@ -84,6 +84,7 @@
     "realSize": "Tamaño real",
     "croppedSize": "Tamaño recortado",
     "imageFormat": "Formato de imagen",
+    "processingImages": "Procesando imágenes: {{processed}} de {{total}}",
     "bytes": "bytes",
     "showTriangles": "Mostrar triángulos",
     "showPolygon": "Mostrar polígono",
