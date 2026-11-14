@@ -1,5 +1,4 @@
-import { IRectangle } from "./types";
-import { IOption } from "./types";
+import type { IRectangle, IOption } from './types';
 
 // --- PackerOption u8 bitfield ---
 

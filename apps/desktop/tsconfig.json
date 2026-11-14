@@ -16,7 +16,10 @@
       "@manticore/project/types": ["../../packages/project/src/types.ts"],
       "@manticore/project/constants": ["../../packages/project/src/constants.ts"],
       "@manticore/project/image-polygon-settings": ["../../packages/project/src/image-polygon-settings.ts"],
-      "image-polygonizer": ["../../packages/image-polygonizer/src/index.ts"]
+      "atlas-packer": ["../../packages/atlas-packer/src/index.ts"],
+      "image-polygonizer": ["../../packages/image-polygonizer/src/index.ts"],
+      "maxrects-packer": ["../../packages/maxrects-packer/src/index.ts"],
+      "maxrects-packer/rectangles": ["../../packages/maxrects-packer/src/rectangles.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "rollup.config.mjs"],

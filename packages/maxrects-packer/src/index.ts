@@ -15,20 +15,22 @@
  * ```
  */
 
-export { IRectangle, IOption } from "./types";
+export type { IRectangle, IOption } from './types';
+export { packRectangles, type PackRectangle, type PackedRectangle } from './rectangles';
 export {
-    BinResult,
     serializeOptions,
     serializeInputRects,
     deserializeChunks,
     serializeWorkerResults,
     deserializeBins
 } from "./serialization";
-export { WorkerPool, WorkerPoolOptions } from "./worker_pool";
+export type { BinResult } from './serialization';
+export { WorkerPool } from './worker_pool';
+export type { WorkerPoolOptions } from './worker_pool';
 export {
-    MaxRectsPackerWasmOptions,
     MaxRectsPackerWasm
 } from "./packer";
+export type { MaxRectsPackerWasmOptions } from './packer';
 
 // Re-export WASM glue for direct / single-threaded usage
 export {

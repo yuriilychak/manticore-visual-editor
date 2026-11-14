@@ -5,7 +5,7 @@ import { AssetType } from './asset-type';
 
 import { MAX_U16 } from './constants';
 import { createProjectContent, isAssetName, isProjectContent } from './content';
-import type { ProjectConfig, ProjectContent } from './types';
+import type { ProjectConfig, ProjectContent, ProjectTextureAtlasQuad } from './types';
 
 export class ProjectConfigProxy {
   static async load(projectPath: string): Promise<ProjectConfigProxy> {
@@ -87,6 +87,29 @@ export class ProjectConfigProxy {
 
   async addTextureAtlas(name: string, parentId: number): Promise<ProjectContent> {
     return this.addBundleContent(name, parentId, AssetType.TextureAtlas);
+  }
+
+  async setTextureAtlasQuad(id: number, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
+    const atlas = this.config.content.find((item) => item.id === id && item.type === AssetType.TextureAtlas);
+    const imageIds = this.config.content.filter((item) => item.parentId === id && item.type === AssetType.Image).map((item) => item.id);
+    if (!atlas || imageIds.length !== quad.items.length || new Set(quad.items.map((item) => item.id)).size !== imageIds.length || !imageIds.every((imageId) => quad.items.some((item) => item.id === imageId))) {
+      throw new Error('Texture atlas layout is invalid.');
+    }
+    const updated = { ...atlas, quad };
+    this.config.content[this.config.content.indexOf(atlas)] = updated;
+    await this.save();
+    await writeFile(path.join(path.dirname(this.configPath), 'assets', String(id).padStart(5, '0'), 'quad.json'), `${JSON.stringify(quad, null, 2)}\n`, 'utf8');
+    return updated;
+  }
+
+  async markTextureAtlasOutdatedByImage(id: number): Promise<void> {
+    const image = this.config.content.find((item) => item.id === id && item.type === AssetType.Image);
+    const atlas = image && this.config.content.find((item) => item.id === image.parentId && item.type === AssetType.TextureAtlas);
+    if (!atlas?.quad || atlas.quad.outdated) return;
+    const quad = { ...atlas.quad, outdated: true };
+    this.config.content[this.config.content.indexOf(atlas)] = { ...atlas, quad };
+    await this.save();
+    await writeFile(path.join(path.dirname(this.configPath), 'assets', String(atlas.id).padStart(5, '0'), 'quad.json'), `${JSON.stringify(quad, null, 2)}\n`, 'utf8');
   }
 
   getNextContentId(): number {

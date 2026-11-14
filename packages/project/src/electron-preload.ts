@@ -2,6 +2,7 @@ import type { IpcRenderer } from 'electron';
 
 import type { ProjectContent } from './types';
 import type { ProjectImagePolygonSettingsInput } from './image-polygon-settings';
+import type { ProjectTextureAtlasQuad } from './types';
 
 export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   canCreateProject: (options: { name: string; parentPath: string }) => ipcRenderer.invoke('project:can-create', options),
@@ -17,6 +18,7 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   loadImportImages: (filePaths: string[]) => ipcRenderer.invoke('project:load-import-images', filePaths),
   loadImageSource: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-image-source', projectPath, id),
   loadImageMetadata: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-image-metadata', projectPath, id),
+  loadTextureAtlas: (projectPath: string, id: number) => ipcRenderer.invoke('project:load-texture-atlas', projectPath, id),
   moveProjectBundle: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-bundle', projectPath, id, parentId),
   moveProjectContent: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-content', projectPath, id, parentId),
   moveProjectFolder: (projectPath: string, id: number, parentId: number) => ipcRenderer.invoke('project:move-folder', projectPath, id, parentId),
@@ -32,6 +34,7 @@ export const createProjectBridge = (ipcRenderer: IpcRenderer) => ({
   renameProjectFolder: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-folder', projectPath, id, name),
   renameProjectTextureAtlas: (projectPath: string, id: number, name: string) => ipcRenderer.invoke('project:rename-texture-atlas', projectPath, id, name),
   restoreLastOpenedProject: () => ipcRenderer.invoke('project:restore-last-opened'),
+  saveTextureAtlas: (projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad) => ipcRenderer.invoke('project:save-texture-atlas', projectPath, id, image, quad),
   selectImportFiles: () => ipcRenderer.invoke('project:select-import-files'),
   selectProjectLocation: () => ipcRenderer.invoke('project:select-location')
 });

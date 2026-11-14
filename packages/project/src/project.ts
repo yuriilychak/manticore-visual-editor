@@ -9,7 +9,7 @@ import { readProjectImageMetadata, type ProjectImageMetadata } from './image-met
 import { createQuadPolygonSettings, deserializeProjectImagePolygonSettings, serializeProjectImagePolygonSettings, type ProjectImagePolygonSettings, type ProjectImagePolygonSettingsInput } from './image-polygon-settings';
 import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
-import type { ProjectConfig, ProjectContent, ProjectInfo } from './types';
+import type { ProjectConfig, ProjectContent, ProjectInfo, ProjectTextureAtlasQuad } from './types';
 
 function toProjectInfo(projectPath: string, config: ProjectConfig): ProjectInfo {
   return { content: config.content, name: config.name, path: projectPath, version: config.version };
@@ -125,9 +125,34 @@ export async function applyProjectImagePolygonSettings(projectPath: string, id: 
   const updatedSettings: ProjectImagePolygonSettings = { ...settings, colorMargin: settings.colorMargin ?? false, offset: settings.offset ?? 0, polygons: settings.polygons ?? [], transparentPadding: settings.transparentPadding ?? false };
   const [sourceStats] = await Promise.all([
     stat(path.join(assetPath, 'source')),
-    writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(updatedSettings))
+    writeFile(path.join(assetPath, 'polygon-settings'), serializeProjectImagePolygonSettings(updatedSettings)),
+    config.markTextureAtlasOutdatedByImage(id)
   ]);
   return readProjectImageMetadata(sourceStats.size, updatedSettings);
+}
+
+const getTextureAtlasAssetPath = (projectPath: string, id: number) => path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
+
+export async function loadProjectTextureAtlas(projectPath: string, id: number): Promise<{ image: ArrayBuffer; quad: ProjectTextureAtlasQuad }> {
+  const config = await ProjectConfigProxy.load(projectPath);
+  const atlas = config.content.find((item) => item.id === id && item.type === AssetType.TextureAtlas);
+  if (!atlas?.quad) throw new Error('Texture atlas has not been generated.');
+  const assetPath = getTextureAtlasAssetPath(projectPath, id);
+  const [image, quadFile] = await Promise.all([
+    readFile(path.join(assetPath, 'atlas.png')),
+    readFile(path.join(assetPath, 'quad.json'), 'utf8')
+  ]);
+  const quad = JSON.parse(quadFile) as ProjectTextureAtlasQuad;
+  if (JSON.stringify(quad) !== JSON.stringify(atlas.quad)) throw new Error('Texture atlas metadata is invalid.');
+  return { image: image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), quad };
+}
+
+export async function saveProjectTextureAtlas(projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
+  const config = await ProjectConfigProxy.load(projectPath);
+  const assetPath = getTextureAtlasAssetPath(projectPath, id);
+  await mkdir(assetPath, { recursive: true });
+  await writeFile(path.join(assetPath, 'atlas.png'), Buffer.from(image));
+  return config.setTextureAtlasQuad(id, quad);
 }
 
 export async function renameProject(projectPath: string, name: string): Promise<string> {
@@ -300,7 +325,7 @@ export async function deleteProjectContent(projectPath: string, ids: readonly nu
   }
 
   const assetPaths = config.content
-    .filter((item) => deletedIds.has(item.id) && (item.type === AssetType.Image || item.type === AssetType.Font))
+    .filter((item) => deletedIds.has(item.id) && (item.type === AssetType.Image || item.type === AssetType.Font || item.type === AssetType.TextureAtlas))
     .map((item) => path.join(projectPath, 'src', 'assets', String(item.id).padStart(5, '0')));
   await deleteImportAssetFiles(assetPaths);
   await config.deleteContent(deletedIds);

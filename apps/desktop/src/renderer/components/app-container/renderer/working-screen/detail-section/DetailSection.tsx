@@ -41,6 +41,7 @@ const DetailSection: FC = () => {
         <Typography component="h2" minWidth={0} noWrap title={title} variant="subtitle1">
           {title}
         </Typography>
+        {selectedItem && <Typography color="text.secondary" variant="caption">#{selectedItem.id}</Typography>}
       </Box>
       {DetailsComponent && selectedItem && <DetailsComponent item={selectedItem} />}
       {Boolean(selectedAtlasIds.length) && <AtlasPreview atlasIds={selectedAtlasIds} />}

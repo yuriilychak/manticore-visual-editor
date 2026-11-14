@@ -11,7 +11,10 @@ export default defineConfig({
       '@manticore/project/constants': fileURLToPath(new URL('../../packages/project/src/constants.ts', import.meta.url)),
       '@manticore/project/image-polygon-settings': fileURLToPath(new URL('../../packages/project/src/image-polygon-settings.ts', import.meta.url)),
       '@manticore/project': fileURLToPath(new URL('../../packages/project/src/index.ts', import.meta.url)),
-      'image-polygonizer': fileURLToPath(new URL('../../packages/image-polygonizer/src/index.ts', import.meta.url))
+      'atlas-packer': fileURLToPath(new URL('../../packages/atlas-packer/src/index.ts', import.meta.url)),
+      'image-polygonizer': fileURLToPath(new URL('../../packages/image-polygonizer/src/index.ts', import.meta.url)),
+      'maxrects-packer/rectangles': fileURLToPath(new URL('../../packages/maxrects-packer/src/rectangles.ts', import.meta.url)),
+      'maxrects-packer': fileURLToPath(new URL('../../packages/maxrects-packer/src/index.ts', import.meta.url))
     }
   },
   base: './',

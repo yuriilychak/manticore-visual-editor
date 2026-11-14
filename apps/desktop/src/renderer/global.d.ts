@@ -1,6 +1,7 @@
 import type { ProjectImageMetadata } from '@manticore/project';
 import type { ProjectImagePolygonSettingsInput } from '@manticore/project';
 import type { ProjectContent } from '@manticore/project/types';
+import type { ProjectTextureAtlasQuad } from '@manticore/project/types';
 
 import type {
   NewProjectOptions,
@@ -23,7 +24,9 @@ declare global {
       loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
       loadImageSource?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
       loadImageMetadata?: (projectPath: string, id: number) => Promise<ProjectImageMetadata>;
+      loadTextureAtlas?: (projectPath: string, id: number) => Promise<{ image: ArrayBuffer; quad: ProjectTextureAtlasQuad }>;
       applyImagePolygonSettings?: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => Promise<ProjectImageMetadata>;
+      saveTextureAtlas?: (projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad) => Promise<ProjectContent>;
       selectImportFiles?: () => Promise<string[]>;
       importAssets?: (projectPath: string, bundleId: number, assets: Array<{ filePath: string; polygonSettings?: Uint8Array }>, jobId: string) => Promise<Array<{ asset: ProjectContent | null; error: string | null; filePath: string }>>;
       onImportAssetsProgress?: (listener: (jobId: string, result: { asset: ProjectContent | null; error: string | null; filePath: string }) => void) => () => void;

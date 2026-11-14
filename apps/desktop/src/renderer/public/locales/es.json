@@ -36,6 +36,7 @@
   "common": {
     "actions": "Acciones",
     "apply": "Aplicar",
+    "generate": "Generar",
     "cancel": "Cancelar",
     "cancelRename": "Cancelar cambio de nombre",
     "contentConfigurationError": "No se pudo configurar el contenido solicitado.",
@@ -81,6 +82,8 @@
     "imagePreview": "Vista previa de la imagen",
     "atlasPreview": "Vista previa del atlas",
     "atlasPreviewUnavailable": "Genera el atlas para ver su vista previa.",
+    "atlasSize": "Tamaño del atlas: {{width}} × {{height}} px",
+    "atlasOutdated": "Este atlas está desactualizado. Genéralo de nuevo para incluir los cambios de las imágenes.",
     "previewUnavailable": "Vista previa no disponible",
     "binarySize": "Tamaño binario",
     "realSize": "Tamaño real",

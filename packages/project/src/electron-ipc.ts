@@ -17,6 +17,7 @@ import {
   isAssetName,
   loadProjectImageMetadata,
   loadProjectImageSource,
+  loadProjectTextureAtlas,
   moveProjectBundle,
   moveProjectContent,
   moveProjectFolder,
@@ -24,10 +25,12 @@ import {
   renameProjectBundle,
   renameProjectBundleFolder,
   renameProjectFolder,
-  renameProjectTextureAtlas
+  renameProjectTextureAtlas,
+  saveProjectTextureAtlas
 } from './index';
 import type { ImportProjectAsset, ProjectInfo } from './index';
 import type { ProjectImagePolygonSettingsInput } from './image-polygon-settings';
+import type { ProjectTextureAtlasQuad } from './types';
 
 type RegisterProjectIpcOptions = {
   dialog: { showOpenDialog: (window: BrowserWindow | undefined, options: OpenDialogOptions) => ReturnType<typeof import('electron').dialog.showOpenDialog> };
@@ -78,6 +81,8 @@ export const registerProjectIpcHandlers = ({ dialog, getWindow, ipcMain, onProje
   ipcMain.handle('project:load-image-source', (_event, projectPath: string, id: number) => loadProjectImageSource(projectPath, id));
   ipcMain.handle('project:load-image-metadata', (_event, projectPath: string, id: number) => loadProjectImageMetadata(projectPath, id));
   ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => applyProjectImagePolygonSettings(projectPath, id, settings));
+  ipcMain.handle('project:load-texture-atlas', (_event, projectPath: string, id: number) => loadProjectTextureAtlas(projectPath, id));
+  ipcMain.handle('project:save-texture-atlas', (_event, projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad) => saveProjectTextureAtlas(projectPath, id, image, quad));
   ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) => importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result)));
   ipcMain.handle('project:delete-content', (_event, projectPath: string, ids: number[]) => deleteProjectContent(projectPath, ids));
   ipcMain.handle('project:duplicate-content', (_event, projectPath: string, ids: number[], targetParentId?: number) => duplicateProjectContent(projectPath, ids, targetParentId));

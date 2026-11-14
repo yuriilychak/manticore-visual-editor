@@ -9,8 +9,7 @@
  * 5. TS deserializes final bins → typed result matching the TS library API
  */
 
-import { IRectangle } from "./types";
-import { IOption } from "./types";
+import type { IRectangle, IOption } from './types';
 import {
     BinResult,
     deserializeBins,
@@ -19,7 +18,8 @@ import {
     serializeOptions,
     serializeWorkerResults
 } from "./serialization";
-import { WorkerPool, WorkerPoolOptions } from "./worker_pool";
+import { WorkerPool } from './worker_pool';
+import type { WorkerPoolOptions } from './worker_pool';
 import initWasm, { prepare_chunks, merge_results } from "./wasm_glue.js";
 
 export interface MaxRectsPackerWasmOptions {
