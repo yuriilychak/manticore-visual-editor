@@ -12,6 +12,7 @@ import { useProjectStructure } from '../../../../ProjectStructureContext';
 type AtlasPreviewProps = { atlasIds: readonly number[] };
 type SourceImage = { id: number; metadata: ProjectImageMetadata; source: ArrayBuffer };
 type Preview = { atlasId: number; quad: ProjectTextureAtlasQuad; url: string } | null;
+type SpritePixels = { height: number; scaleFix: boolean; width: number; x: number; y: number };
 
 const getMimeType = (format: string) => format === 'svg+xml' ? 'image/svg+xml' : `image/${format}`;
 
@@ -19,6 +20,40 @@ const toPng = async (canvas: HTMLCanvasElement) => {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
   if (!blob) throw new Error('Could not generate texture atlas image.');
   return { data: await blob.arrayBuffer(), url: URL.createObjectURL(blob) };
+};
+
+const processSpritePixels = (pixels: Uint8ClampedArray, atlasWidth: number, { height, scaleFix, width, x, y }: SpritePixels) => {
+  const padding = 4;
+  const left = x - padding, top = y - padding, regionWidth = width + padding * 2, regionHeight = height + padding * 2;
+  const owner = new Int32Array(regionWidth * regionHeight).fill(-1);
+  const queue: number[] = [];
+  const indexAt = (localX: number, localY: number) => ((top + localY) * atlasWidth + left + localX) * 4;
+  for (let localY = padding; localY < padding + height; ++localY) for (let localX = padding; localX < padding + width; ++localX) {
+    const index = indexAt(localX, localY);
+    if (!pixels[index + 3]) continue;
+    const localIndex = localY * regionWidth + localX;
+    owner[localIndex] = localIndex;
+    queue.push(localIndex);
+  }
+  for (let offset = 0; offset < queue.length; ++offset) {
+    const current = queue[offset];
+    const localX = current % regionWidth, localY = Math.floor(current / regionWidth);
+    for (const [nextX, nextY] of [[localX - 1, localY], [localX + 1, localY], [localX, localY - 1], [localX, localY + 1]]) {
+      if (nextX < 0 || nextY < 0 || nextX >= regionWidth || nextY >= regionHeight) continue;
+      const next = nextY * regionWidth + nextX;
+      if (owner[next] >= 0) continue;
+      owner[next] = owner[current]; queue.push(next);
+    }
+  }
+  for (let localY = 0; localY < regionHeight; ++localY) for (let localX = 0; localX < regionWidth; ++localX) {
+    const localIndex = localY * regionWidth + localX, source = owner[localIndex];
+    if (source < 0) continue;
+    const index = indexAt(localX, localY), sourceIndex = indexAt(source % regionWidth, Math.floor(source / regionWidth));
+    const inInnerPadding = localX < padding || localX >= padding + width || localY < padding || localY >= padding + height;
+    const distance = Math.max(Math.max(0, padding - localX, localX - (padding + width - 1)), Math.max(0, padding - localY, localY - (padding + height - 1)));
+    if (scaleFix && inInnerPadding && distance <= 2) pixels.set(pixels.subarray(sourceIndex, sourceIndex + 4), index);
+    if (!pixels[index + 3]) pixels.set(pixels.subarray(sourceIndex, sourceIndex + 3), index);
+  }
 };
 
 const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
@@ -67,6 +102,13 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
         } else context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, placement.x, placement.y, crop.width, crop.height);
       } finally { bitmap.close(); }
     }
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    for (const placement of layout.items) {
+      const image = images.find(({ id }) => id === placement.id)!;
+      const { colorMargin, crop } = image.metadata.polygonSettings;
+      processSpritePixels(pixels.data, canvas.width, { height: placement.rotated ? crop.width : crop.height, scaleFix: colorMargin, width: placement.rotated ? crop.height : crop.width, x: placement.x, y: placement.y });
+    }
+    context.putImageData(pixels, 0, 0);
     const quad: ProjectTextureAtlasQuad = { ...layout, outdated: false };
     const png = await toPng(canvas);
     await saveTextureAtlas(projectPath, atlasId, png.data, quad);
