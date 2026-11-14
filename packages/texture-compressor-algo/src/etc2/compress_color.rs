@@ -1694,17 +1694,27 @@ mod wasm_api_tests {
             "color SSIM must be in [0,1], got {color_ssim}");
     }
 
-    /// Full pipeline test using a real image — exercises the exact WASM path.
+    /// Full pipeline test using a compact sprite-like RGBA fixture.
     #[test]
     fn compress_chunk_pipeline_real_image() {
         Tables::init();
 
-        // Load the package-owned fixture (RGBA), then convert to BGRA.
-        let (mut raw_bgra, w, h) = crate::shared::image_io::load_png_as_rgba(
-            concat!(env!("CARGO_MANIFEST_DIR"), "/res/example.png")
-        ).expect("failed to load test image");
+        // This deterministic fixture covers opaque, translucent, and fully
+        // transparent pixels without requiring a demo PNG in the algorithm package.
+        let w = 8u32;
+        let h = 8u32;
+        let mut raw_bgra = vec![0u8; (w * h * 4) as usize];
+        for y in 0..h {
+            for x in 0..w {
+                let pixel = ((y * w + x) * 4) as usize;
+                raw_bgra[pixel] = (x * 31) as u8;
+                raw_bgra[pixel + 1] = (y * 31) as u8;
+                raw_bgra[pixel + 2] = ((x + y) * 16) as u8;
+                raw_bgra[pixel + 3] = match (x + y) % 3 { 0 => 0, 1 => 128, _ => 255 };
+            }
+        }
         for pixel in raw_bgra.chunks_exact_mut(4) {
-            pixel.swap(0, 2); // RGBA → BGRA
+            pixel.swap(0, 2); // RGBA → BGRA expected by the ETC2 encoder
         }
 
         let tex_w = ((w.max(1) + 3) / 4 * 4) as u32;

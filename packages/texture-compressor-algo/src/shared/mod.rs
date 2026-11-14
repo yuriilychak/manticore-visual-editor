@@ -1,5 +1,3 @@
-#[cfg(not(target_arch = "wasm32"))]
-pub mod image_io;
 pub mod quality;
 pub mod texture;
 pub mod types;
