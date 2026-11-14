@@ -1,8 +1,11 @@
 node_modules
 dist
+.agent
+.aws
+.codex
 .turbo
 .history
-.vscode/
+.vscode
 *.log
 apps/*/dist
 apps/*/coverage
