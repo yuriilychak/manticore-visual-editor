@@ -79,6 +79,8 @@
     "textureAtlases": "Texture atlases",
     "fonts": "Fonts",
     "imagePreview": "Image preview",
+    "atlasPreview": "Atlas preview",
+    "atlasPreviewUnavailable": "Generate the atlas to see its preview.",
     "previewUnavailable": "Preview unavailable",
     "binarySize": "Binary size",
     "realSize": "Real size",

@@ -23,3 +23,8 @@ export const getSelectedImageIds = (
 
   return isImageOnlySelection ? selection.filter((id) => contentById[id]?.type === AssetType.Image) : [];
 };
+
+export const getSelectedAtlasIds = (contentById: Readonly<Record<number, ProjectContent>>, selection: readonly number[]) =>
+  selection.length && selection.every((id) => contentById[id]?.type === AssetType.TextureAtlas)
+    ? selection
+    : [];

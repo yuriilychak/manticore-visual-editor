@@ -8,8 +8,9 @@ import { AssetType } from '../../../../../../types';
 import { PROJECT_ITEM_CONFIG } from '../../../constants';
 import { useProjectStructure } from '../../../ProjectStructureContext';
 
+import { AtlasPreview } from './AtlasPreview';
 import { FolderBundleDetails } from './FolderBundleDetails';
-import { getSelectedImageIds } from './helpers';
+import { getSelectedAtlasIds, getSelectedImageIds } from './helpers';
 import { ImageDetails } from './ImageDetails';
 import MultipleImageDetails from './ImageDetails/MultipleImageDetails';
 
@@ -28,6 +29,7 @@ const DetailSection: FC = () => {
     () => getSelectedImageIds(childrenIdsByParentId, contentById, selection),
     [childrenIdsByParentId, contentById, selection]
   );
+  const selectedAtlasIds = useMemo(() => getSelectedAtlasIds(contentById, selection), [contentById, selection]);
   const HeaderIcon = selectedItem ? PROJECT_ITEM_CONFIG[selectedItem.type].icon : null;
   const DetailsComponent = selectedItem ? DETAILS_COMPONENT_BY_TYPE[selectedItem.type] : undefined;
   const title = selectedItem?.name ?? t('details.title');
@@ -41,6 +43,7 @@ const DetailSection: FC = () => {
         </Typography>
       </Box>
       {DetailsComponent && selectedItem && <DetailsComponent item={selectedItem} />}
+      {Boolean(selectedAtlasIds.length) && <AtlasPreview atlasIds={selectedAtlasIds} />}
       {selectedImageIds.length > 1 && <MultipleImageDetails imageIds={selectedImageIds} key={selectedImageIds.join('-')} />}
     </Box>
   );

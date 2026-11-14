@@ -79,6 +79,8 @@
     "textureAtlases": "Atlas de texturas",
     "fonts": "Fuentes",
     "imagePreview": "Vista previa de la imagen",
+    "atlasPreview": "Vista previa del atlas",
+    "atlasPreviewUnavailable": "Genera el atlas para ver su vista previa.",
     "previewUnavailable": "Vista previa no disponible",
     "binarySize": "Tamaño binario",
     "realSize": "Tamaño real",

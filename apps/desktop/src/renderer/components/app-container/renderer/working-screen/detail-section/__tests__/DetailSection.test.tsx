@@ -11,6 +11,7 @@ import { getSelectedImageIds } from '../helpers';
 jest.mock('react-i18next', () => ({ useTranslation: () => ({ t: (key: string) => key }) }));
 jest.mock('../ImageDetails', () => ({ ImageDetails: ({ item }: { item: ProjectContent }) => <canvas aria-label="details.imagePreview" data-image-id={item.id} /> }));
 jest.mock('../ImageDetails/MultipleImageDetails', () => ({ __esModule: true, default: ({ imageIds }: { imageIds: readonly number[] }) => <output aria-label="multiple-image-details">{imageIds.join(',')}</output> }));
+jest.mock('../AtlasPreview', () => ({ AtlasPreview: ({ atlasIds }: { atlasIds: readonly number[] }) => <output aria-label="details.atlasPreview">{atlasIds.join(',')}</output> }));
 
 const content: ProjectContent[] = [
   { id: 2, name: 'Assets', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
@@ -25,7 +26,8 @@ const content: ProjectContent[] = [
   { id: 11, name: 'Images only', parentId: 0, type: AssetType.ProjectFolder, version: 0 },
   { id: 12, name: 'Logo', parentId: 11, type: AssetType.Image, version: 0 },
   { id: 14, name: 'Background', parentId: 11, type: AssetType.Image, version: 0 },
-  { id: 13, name: 'Empty bundle', parentId: 2, type: AssetType.Bundle, version: 0 }
+  { id: 13, name: 'Empty bundle', parentId: 2, type: AssetType.Bundle, version: 0 },
+  { id: 15, name: 'Effects', parentId: 0, type: AssetType.TextureAtlas, version: 0 }
 ];
 const contentById = Object.fromEntries(content.map((item) => [item.id, item]));
 const childrenIdsByParentId: Record<number, number[]> = Object.fromEntries(content.map((item) => [item.id, []]));
@@ -75,6 +77,18 @@ describe('DetailSection', () => {
     expect(heading.parentElement?.querySelector('svg')).toBeInTheDocument();
     expect(screen.getByLabelText('details.imagePreview')).toHaveAttribute('data-image-id', '5');
     expect(screen.queryByText('details.filesByType')).not.toBeInTheDocument();
+  });
+
+  test('shows the atlas preview for one or more selected atlases', () => {
+    const { rerender } = renderDetailSection([6]);
+    expect(screen.getByLabelText('details.atlasPreview')).toHaveTextContent('6');
+
+    rerender(
+      <ProjectStructureContext.Provider value={{ childrenIdsByParentId, contentById, expandedItemIds: new Set(), isPasting: false, onAction: jest.fn<ProjectActionHandler>(), projectName: 'Test project', projectPath: '/test', selection: [6, 15], visibleProjectItems: [] }}>
+        <DetailSection />
+      </ProjectStructureContext.Provider>
+    );
+    expect(screen.getByLabelText('details.atlasPreview')).toHaveTextContent('6,15');
   });
 
   test('hides zero counts for an empty folder', () => {
