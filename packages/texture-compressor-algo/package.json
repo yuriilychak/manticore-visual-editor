@@ -1,0 +1,16 @@
+{
+  "name": "texture-compressor-algo",
+  "version": "0.1.0",
+  "description": "Rust/WASM ETC2 and DXT5 texture compression algorithms",
+  "license": "MIT",
+  "files": [
+    "src",
+    "Cargo.toml",
+    "Cargo.lock"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --target web --out-dir ../../lib/.texture-compressor-wasm --out-name texture_compressor && mv ../../lib/.texture-compressor-wasm/texture_compressor_bg.wasm ../../lib/texture-compressor.wasm && rm -rf ../../lib/.texture-compressor-wasm",
+    "test": "cargo test"
+  },
+  "sideEffects": false
+}

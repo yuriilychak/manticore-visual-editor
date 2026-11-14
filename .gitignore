@@ -8,4 +8,11 @@ apps/*/coverage
 apps/*/release
 apps/*/.vite
 packages/image-polygonizer-algo/target/
+# Rust and wasm-pack build artifacts shared by algorithm packages.
+packages/*-algo/.cargo/
+packages/*-algo/target/
+packages/*-algo/pkg/
+packages/*-algo/dist/
+# Generated browser bundles and WASM binaries.
+/lib/
 .DS_Store

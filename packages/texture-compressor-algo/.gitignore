@@ -1,0 +1,5 @@
+# Cargo and wasm-pack local/generated output
+.cargo/
+target/
+pkg/
+dist/
