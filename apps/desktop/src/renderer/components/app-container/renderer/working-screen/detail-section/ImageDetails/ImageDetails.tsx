@@ -20,9 +20,9 @@ const ImageDetails: FC<ImageDetailsProps> = ({ item }) => {
 
   return (
     <Box display="flex" flexDirection="column" gap={2} mt={2}>
-      <ImagePreview id={id} metadata={metadata} refreshVersion={previewVersion} slice9={slice9} />
+      <ImagePreview disabled={applying} id={id} metadata={metadata} refreshVersion={previewVersion} slice9={slice9} />
       {metadata && <ImageMetadata metadata={metadata} />}
-      <ImageControls canGeneratePolygons={canGeneratePolygons} generatePolygons={generatePolygons} onChange={handleControlChange} sourceHeight={metadata?.croppedHeight ?? 1} sourceWidth={metadata?.croppedWidth ?? 1} values={controlValues} />
+      <ImageControls canGeneratePolygons={canGeneratePolygons} disabled={applying} generatePolygons={generatePolygons} onChange={handleControlChange} sourceHeight={metadata?.croppedHeight ?? 1} sourceWidth={metadata?.croppedWidth ?? 1} values={controlValues} />
       <ImageActions applying={applying} canApplyPolygonSettings={canApplyPolygonSettings} canModifyPolygons={canModifyPolygons} onClick={handleButtonClick} />
       {polygonEditorDialog && <PolygonEditorDialog {...polygonEditorDialog} />}
     </Box>

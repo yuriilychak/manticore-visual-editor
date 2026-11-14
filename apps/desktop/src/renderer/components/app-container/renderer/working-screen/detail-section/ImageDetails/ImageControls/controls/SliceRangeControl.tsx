@@ -9,7 +9,7 @@ import { SLICE_RANGE_LABEL_IDS, SLIDER_SX } from './constants';
 import ControlLabel from './ControlLabel';
 import { getSliderMarks } from './helpers';
 
-const SliceRangeControl: FC<ControlProps<ControlData>> = ({ data, id, onChange, value }) => {
+const SliceRangeControl: FC<ControlProps<ControlData>> = ({ data, disabled = false, id, onChange, value }) => {
   const { t } = useTranslation();
   const [startId, endId] = SLICE_RANGE_LABEL_IDS[id as SliceControlId];
   const [startValue, endValue] = value as [number, number];
@@ -25,6 +25,7 @@ const SliceRangeControl: FC<ControlProps<ControlData>> = ({ data, id, onChange, 
   return <ControlLabel id={[startId, endId]}>
     <Slider
       aria-label={`${startLabel} / ${endLabel}`}
+      disabled={disabled}
       marks={marks}
       max={max}
       min={0}

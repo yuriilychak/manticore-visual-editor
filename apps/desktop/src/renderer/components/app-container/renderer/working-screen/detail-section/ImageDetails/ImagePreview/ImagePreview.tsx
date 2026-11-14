@@ -11,13 +11,14 @@ import ImagePreviewBuilder, { type Slice9 } from './ImagePreviewBuilder';
 import PreviewToggle from './PreviewToggle';
 
 type ImagePreviewProps = {
+  disabled: boolean;
   id: number;
   metadata: ProjectImageMetadata | null;
   refreshVersion: number;
   slice9?: Slice9;
 };
 
-const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, slice9 }) => {
+const ImagePreview: FC<ImagePreviewProps> = ({ disabled, id, metadata, refreshVersion, slice9 }) => {
   const { t } = useTranslation();
   const theme = useTheme();
   const { projectPath } = useProjectStructure();
@@ -55,7 +56,7 @@ const ImagePreview: FC<ImagePreviewProps> = ({ id, metadata, refreshVersion, sli
     <Box bgcolor="action.hover" width="100%">
       <Box aria-label={t('details.imagePreview')} component="canvas" height={PREVIEW_SIZE + PREVIEW_PADDING} ref={canvasRef} sx={{ display: 'block', width: '100%' }} />
       <Box display="flex" gap={1} px={1} py={0.5}>
-        {PREVIEW_TOGGLE_IDS.map((toggleId) => (slice9 || toggleId !== 'slice9') && <PreviewToggle checked={checkedByToggleId[toggleId]} id={toggleId} key={toggleId} setCheckedByToggleId={setCheckedByToggleId} />)}
+        {PREVIEW_TOGGLE_IDS.map((toggleId) => (slice9 || toggleId !== 'slice9') && <PreviewToggle checked={checkedByToggleId[toggleId]} disabled={disabled} id={toggleId} key={toggleId} setCheckedByToggleId={setCheckedByToggleId} />)}
       </Box>
       {unavailable && (
         <Typography color="text.secondary" sx={{ left: '50%', position: 'absolute', top: '50%', transform: 'translate(-50%, -50%)' }} variant="body2">

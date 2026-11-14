@@ -8,6 +8,7 @@ import type { ControlData, ControlId, ControlProps, ControlValueById } from './t
 
 type ImageControlsProps = {
   canGeneratePolygons: boolean;
+  disabled: boolean;
   generatePolygons: boolean;
   onChange: ControlProps['onChange'];
   sourceHeight: number;
@@ -15,7 +16,7 @@ type ImageControlsProps = {
   values: ControlValueById;
 };
 
-const ImageControls: FC<ImageControlsProps> = ({ canGeneratePolygons, generatePolygons, onChange, sourceHeight, sourceWidth, values }) => {
+const ImageControls: FC<ImageControlsProps> = ({ canGeneratePolygons, disabled, generatePolygons, onChange, sourceHeight, sourceWidth, values }) => {
   const controlDataById = useMemo<Partial<Record<ControlId, ControlData>>>(() => ({
     sliceHorizontal: { max: sourceWidth },
     sliceVertical: { max: sourceHeight }
@@ -28,9 +29,15 @@ const ImageControls: FC<ImageControlsProps> = ({ canGeneratePolygons, generatePo
     ]
   );
   const disabledControlById: Partial<Record<ControlId, boolean>> = {
-    colorMargin: values.transparentPadding,
-    transparentPadding: values.colorMargin,
-    usePolygonsInsteadOfQuads: !canGeneratePolygons
+    alphaThreshold: disabled,
+    colorMargin: disabled || values.transparentPadding,
+    minimalDistance: disabled,
+    pointCount: disabled,
+    slice9: disabled,
+    sliceHorizontal: disabled,
+    sliceVertical: disabled,
+    transparentPadding: disabled || values.colorMargin,
+    usePolygonsInsteadOfQuads: !canGeneratePolygons || disabled
   };
 
   return (
