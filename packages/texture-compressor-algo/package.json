@@ -9,7 +9,7 @@
     "Cargo.lock"
   ],
   "scripts": {
-    "build": "wasm-pack build --target web --out-dir ../../lib/.texture-compressor-wasm --out-name texture_compressor && mv ../../lib/.texture-compressor-wasm/texture_compressor_bg.wasm ../../lib/texture-compressor.wasm && rm -rf ../../lib/.texture-compressor-wasm",
+    "build": "wasm-pack build --target no-modules --out-dir dist --out-name texture-compressor && mv dist/texture-compressor_bg.wasm dist/texture-compressor.wasm",
     "test": "cargo test"
   },
   "sideEffects": false

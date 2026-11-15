@@ -17,6 +17,8 @@
       "@manticore/project/constants": ["../../packages/project/src/constants.ts"],
       "@manticore/project/image-polygon-settings": ["../../packages/project/src/image-polygon-settings.ts"],
       "atlas-packer": ["../../packages/atlas-packer/src/index.ts"],
+      "texture-compressor": ["../../packages/texture-compressor/src/index.ts"],
+      "texture-atlas-clusterizer": ["../../packages/texture-atlas-clusterizer/src/index.ts"],
       "image-polygonizer": ["../../packages/image-polygonizer/src/index.ts"],
       "maxrects-packer": ["../../packages/maxrects-packer/src/index.ts"],
       "maxrects-packer/rectangles": ["../../packages/maxrects-packer/src/rectangles.ts"]

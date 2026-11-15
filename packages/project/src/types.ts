@@ -6,6 +6,7 @@ export type ProjectContentType = Exclude<AssetType, AssetType.None>;
 
 export type ProjectTextureAtlasQuadItem = { id: number; rotated: boolean; x: number; y: number };
 export type ProjectTextureAtlasQuad = { height: number; items: ProjectTextureAtlasQuadItem[]; outdated: boolean; width: number };
+export type ProjectTextureAtlasFiles = { dxt5: ArrayBuffer; dxt5Preview: ArrayBuffer; etc2: ArrayBuffer; etc2Preview: ArrayBuffer; png: ArrayBuffer };
 
 export type ProjectInfo = {
   content?: ProjectContent[];

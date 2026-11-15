@@ -1,0 +1,16 @@
+[package]
+name = "texture-atlas-clusterizer-algo"
+version = "0.1.0"
+edition = "2021"
+description = "WASM color-margin cluster processing for texture atlases"
+license = "MIT"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[profile.release]
+opt-level = "z"
+lto = true
+codegen-units = 1
+panic = "abort"
+strip = "debuginfo"

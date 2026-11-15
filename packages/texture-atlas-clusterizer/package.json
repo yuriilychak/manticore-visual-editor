@@ -1,0 +1,24 @@
+{
+  "name": "texture-atlas-clusterizer",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "exports": {
+    ".": {
+      "import": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --noEmit",
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "atlas-packer": "file:../atlas-packer",
+    "texture-atlas-clusterizer-algo": "file:../texture-atlas-clusterizer-algo"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  },
+  "sideEffects": false
+}

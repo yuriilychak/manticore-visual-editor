@@ -1,6 +1,6 @@
 import type { ImportProjectAsset, ProjectInfo } from '@manticore/project';
 import type { ProjectImagePolygonSettingsInput } from '@manticore/project';
-import type { ProjectTextureAtlasQuad } from '@manticore/project';
+import type { ProjectTextureAtlasFiles, ProjectTextureAtlasQuad } from '@manticore/project';
 import {
   applyProjectImagePolygonSettings,
   createProject,
@@ -183,7 +183,7 @@ ipcMain.handle('project:load-image-source', (_event, projectPath: string, id: nu
 ipcMain.handle('project:load-image-metadata', (_event, projectPath: string, id: number) => loadProjectImageMetadata(projectPath, id));
 ipcMain.handle('project:apply-image-polygon-settings', (_event, projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => applyProjectImagePolygonSettings(projectPath, id, settings));
 ipcMain.handle('project:load-texture-atlas', (_event, projectPath: string, id: number) => loadProjectTextureAtlas(projectPath, id));
-ipcMain.handle('project:save-texture-atlas', (_event, projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad) => saveProjectTextureAtlas(projectPath, id, image, quad));
+ipcMain.handle('project:save-texture-atlas', (_event, projectPath: string, id: number, files: ProjectTextureAtlasFiles, quad: ProjectTextureAtlasQuad) => saveProjectTextureAtlas(projectPath, id, files, quad));
 ipcMain.handle('project:import-assets', (event, projectPath: string, bundleId: number, assets: ImportProjectAsset[], jobId: string) =>
   importProjectAssets(projectPath, bundleId, assets, (result) => event.sender.send('project:import-assets-progress', jobId, result))
 );

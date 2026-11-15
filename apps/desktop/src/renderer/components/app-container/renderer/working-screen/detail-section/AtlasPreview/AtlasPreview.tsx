@@ -3,8 +3,10 @@ import type { ProjectTextureAtlasQuad } from '@manticore/project/types';
 import { packAtlasImages } from 'atlas-packer';
 import { type FC, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { createTextureAtlasClusterizer, type TextureAtlasClusterizer } from 'texture-atlas-clusterizer';
+import { createTextureCompressor, type TextureCompressor } from 'texture-compressor';
 
-import { Alert, Box, Button, Typography } from '@mui/material';
+import { Alert, Box, Button, Dialog, DialogContent, LinearProgress, Typography } from '@mui/material';
 
 import { AssetType } from '../../../../../../../types';
 import { useProjectStructure } from '../../../../ProjectStructureContext';
@@ -12,7 +14,7 @@ import { useProjectStructure } from '../../../../ProjectStructureContext';
 type AtlasPreviewProps = { atlasIds: readonly number[] };
 type SourceImage = { id: number; metadata: ProjectImageMetadata; source: ArrayBuffer };
 type Preview = { atlasId: number; quad: ProjectTextureAtlasQuad; url: string } | null;
-type SpritePixels = { height: number; scaleFix: boolean; width: number; x: number; y: number };
+type AtlasGenerationProgress = { atlas: number; progress: number; status: string; total: number };
 
 const getMimeType = (format: string) => format === 'svg+xml' ? 'image/svg+xml' : `image/${format}`;
 
@@ -22,39 +24,21 @@ const toPng = async (canvas: HTMLCanvasElement) => {
   return { data: await blob.arrayBuffer(), url: URL.createObjectURL(blob) };
 };
 
-const processSpritePixels = (pixels: Uint8ClampedArray, atlasWidth: number, { height, scaleFix, width, x, y }: SpritePixels) => {
-  const padding = 4;
-  const left = x - padding, top = y - padding, regionWidth = width + padding * 2, regionHeight = height + padding * 2;
-  const owner = new Int32Array(regionWidth * regionHeight).fill(-1);
-  const queue: number[] = [];
-  const indexAt = (localX: number, localY: number) => ((top + localY) * atlasWidth + left + localX) * 4;
-  for (let localY = padding; localY < padding + height; ++localY) for (let localX = padding; localX < padding + width; ++localX) {
-    const index = indexAt(localX, localY);
-    if (!pixels[index + 3]) continue;
-    const localIndex = localY * regionWidth + localX;
-    owner[localIndex] = localIndex;
-    queue.push(localIndex);
-  }
-  for (let offset = 0; offset < queue.length; ++offset) {
-    const current = queue[offset];
-    const localX = current % regionWidth, localY = Math.floor(current / regionWidth);
-    for (const [nextX, nextY] of [[localX - 1, localY], [localX + 1, localY], [localX, localY - 1], [localX, localY + 1]]) {
-      if (nextX < 0 || nextY < 0 || nextX >= regionWidth || nextY >= regionHeight) continue;
-      const next = nextY * regionWidth + nextX;
-      if (owner[next] >= 0) continue;
-      owner[next] = owner[current]; queue.push(next);
-    }
-  }
-  for (let localY = 0; localY < regionHeight; ++localY) for (let localX = 0; localX < regionWidth; ++localX) {
-    const localIndex = localY * regionWidth + localX, source = owner[localIndex];
-    if (source < 0) continue;
-    const index = indexAt(localX, localY), sourceIndex = indexAt(source % regionWidth, Math.floor(source / regionWidth));
-    const inInnerPadding = localX < padding || localX >= padding + width || localY < padding || localY >= padding + height;
-    const distance = Math.max(Math.max(0, padding - localX, localX - (padding + width - 1)), Math.max(0, padding - localY, localY - (padding + height - 1)));
-    if (scaleFix && inInnerPadding && distance <= 2) pixels.set(pixels.subarray(sourceIndex, sourceIndex + 4), index);
-    if (!pixels[index + 3]) pixels.set(pixels.subarray(sourceIndex, sourceIndex + 3), index);
-  }
+const compressedPreviewToPng = async (width: number, height: number, rgba: Uint8Array): Promise<ArrayBuffer> => {
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d', { alpha: true });
+  if (!context) throw new Error('Could not generate compressed texture preview.');
+  const image = context.createImageData(width, height);
+  image.data.set(rgba);
+  context.putImageData(image, 0, 0);
+  const png = await toPng(canvas);
+  URL.revokeObjectURL(png.url);
+  return png.data;
 };
+
+const toArrayBuffer = (data: Uint8Array): ArrayBuffer => data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength) as ArrayBuffer;
 
 const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
   const { t } = useTranslation();
@@ -62,6 +46,7 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
   const [applying, setApplying] = useState(false);
   const [error, setError] = useState('');
   const [preview, setPreview] = useState<Preview>(null);
+  const [generationProgress, setGenerationProgress] = useState<AtlasGenerationProgress | null>(null);
   const previewAtlasId = atlasIds.at(-1) ?? 0;
   const replacePreview = useCallback((nextPreview: Preview) => setPreview((current) => {
     if (current?.url) URL.revokeObjectURL(current.url);
@@ -76,12 +61,14 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
       .catch(() => replacePreview(null));
   }, [previewAtlasId, projectPath, replacePreview]);
 
-  const generateAtlas = useCallback(async (atlasId: number) => {
+  const generateAtlas = useCallback(async (atlasId: number, compressor: TextureCompressor, clusterizer: TextureAtlasClusterizer, updateProgress: (progress: number, status: string) => void) => {
     const { loadImageMetadata, loadImageSource, saveTextureAtlas } = window.manticore ?? {};
     if (!loadImageMetadata || !loadImageSource || !saveTextureAtlas) throw new Error('Texture atlas generation is unavailable.');
     const imageIds = (childrenIdsByParentId[atlasId] ?? []).filter((id) => contentById[id]?.type === AssetType.Image);
     if (!imageIds.length) throw new Error('Texture atlas has no images.');
+    updateProgress(0.05, t('details.atlasGenerationLoadingImages'));
     const images = await Promise.all(imageIds.map(async (id): Promise<SourceImage> => ({ id, metadata: await loadImageMetadata(projectPath, id), source: await loadImageSource(projectPath, id) })));
+    updateProgress(0.15, t('details.atlasGenerationPacking'));
     const layout = packAtlasImages(images.map(({ id, metadata }) => ({ height: metadata.croppedHeight, id, width: metadata.croppedWidth })));
     if (!layout) throw new Error('Texture atlas exceeds 4096 × 4096. Split these images into multiple atlases.');
 
@@ -91,7 +78,8 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
     const context = canvas.getContext('2d', { alpha: true });
     if (!context) throw new Error('Could not create texture atlas image.');
     context.clearRect(0, 0, canvas.width, canvas.height);
-    for (const placement of layout.items) {
+    for (const [index, placement] of layout.items.entries()) {
+      updateProgress(0.2 + index / layout.items.length * 0.2, t('details.atlasGenerationDrawingImages'));
       const image = images.find(({ id }) => id === placement.id)!;
       const { crop } = image.metadata.polygonSettings;
       const bitmap = await createImageBitmap(new Blob([image.source], { type: getMimeType(image.metadata.format) }));
@@ -102,29 +90,62 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
         } else context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, placement.x, placement.y, crop.width, crop.height);
       } finally { bitmap.close(); }
     }
+    updateProgress(0.45, t('details.atlasGenerationPadding'));
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-    for (const placement of layout.items) {
+    await clusterizer.applyColorMargins(pixels.data, canvas.width, layout.items.map((placement) => {
       const image = images.find(({ id }) => id === placement.id)!;
       const { colorMargin, crop } = image.metadata.polygonSettings;
-      processSpritePixels(pixels.data, canvas.width, { height: placement.rotated ? crop.width : crop.height, scaleFix: colorMargin, width: placement.rotated ? crop.height : crop.width, x: placement.x, y: placement.y });
-    }
+      return { height: placement.rotated ? crop.width : crop.height, scaleFix: colorMargin, width: placement.rotated ? crop.height : crop.width, x: placement.x, y: placement.y };
+    }));
     context.putImageData(pixels, 0, 0);
     const quad: ProjectTextureAtlasQuad = { ...layout, outdated: false };
+    updateProgress(0.55, t('details.atlasGenerationEncodingPng'));
     const png = await toPng(canvas);
-    await saveTextureAtlas(projectPath, atlasId, png.data, quad);
+    const rgba = new Uint8Array(pixels.data);
+    updateProgress(0.65, t('details.atlasGenerationCompressingEtc2'));
+    const etc2 = await compressor.compress('etc2', { debug: true, height: canvas.height, pixels: rgba, width: canvas.width });
+    updateProgress(0.8, t('details.atlasGenerationCompressingDxt5'));
+    const dxt5 = await compressor.compress('dxt5', { debug: true, height: canvas.height, pixels: rgba, width: canvas.width });
+    if (!etc2.debugRgba || !dxt5.debugRgba) throw new Error('Could not generate compressed texture previews.');
+    updateProgress(0.9, t('details.atlasGenerationSaving'));
+    await saveTextureAtlas(projectPath, atlasId, {
+      dxt5: toArrayBuffer(dxt5.data),
+      dxt5Preview: await compressedPreviewToPng(dxt5.width, dxt5.height, dxt5.debugRgba),
+      etc2: toArrayBuffer(etc2.data),
+      etc2Preview: await compressedPreviewToPng(etc2.width, etc2.height, etc2.debugRgba),
+      png: png.data,
+    }, quad);
+    updateProgress(1, t('details.atlasGenerationSaving'));
     if (atlasId === previewAtlasId) replacePreview({ atlasId, quad, url: png.url });
     else URL.revokeObjectURL(png.url);
-  }, [childrenIdsByParentId, contentById, previewAtlasId, projectPath, replacePreview]);
+  }, [childrenIdsByParentId, contentById, previewAtlasId, projectPath, replacePreview, t]);
 
   const generate = useCallback(async () => {
     setApplying(true); setError('');
-    try { await Promise.all(atlasIds.map(generateAtlas)); }
+    setGenerationProgress({ atlas: 0, progress: 0, status: t('details.atlasGenerationPreparing'), total: atlasIds.length });
+    let clusterizer: TextureAtlasClusterizer | undefined;
+    try {
+      const [compressor, createdClusterizer] = await Promise.all([createTextureCompressor(), createTextureAtlasClusterizer()]);
+      clusterizer = createdClusterizer;
+      for (const [index, atlasId] of atlasIds.entries()) {
+        await generateAtlas(atlasId, compressor, clusterizer, (progress, status) => setGenerationProgress({ atlas: index + 1, progress: (index + progress) / atlasIds.length * 100, status, total: atlasIds.length }));
+      }
+    }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not generate texture atlas.'); }
-    finally { setApplying(false); }
-  }, [atlasIds, generateAtlas]);
+    finally { clusterizer?.terminate(); setApplying(false); setGenerationProgress(null); }
+  }, [atlasIds, generateAtlas, t]);
 
   const visiblePreview = preview?.atlasId === previewAtlasId ? preview : null;
   return <Box aria-label={t('details.atlasPreview')} bgcolor="action.hover" display="flex" flexDirection="column" gap={1} minHeight={132} p={2} role="region">
+    <Dialog aria-labelledby="atlas-generation-progress-title" disableEscapeKeyDown onClose={() => undefined} open={applying}>
+      <DialogContent sx={{ minWidth: 280 }}>
+        <Typography id="atlas-generation-progress-title" mb={2} variant="body1">
+          {t('details.generatingAtlas', { current: generationProgress?.atlas ?? 0, total: generationProgress?.total ?? atlasIds.length })}
+        </Typography>
+        <LinearProgress aria-label={generationProgress?.status} value={generationProgress?.progress ?? 0} variant="determinate" />
+        <Typography color="text.secondary" mt={1} variant="body2">{generationProgress?.status}</Typography>
+      </DialogContent>
+    </Dialog>
     <Box alignItems="center" display="flex" justifyContent="space-between">
       <Typography component="h3" variant="body2">{t('details.atlasPreview')}</Typography>
       <Button disabled={applying} loading={applying} onClick={() => void generate()} size="small" variant="contained">{t('common.generate')}</Button>

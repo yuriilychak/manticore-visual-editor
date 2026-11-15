@@ -9,7 +9,7 @@ import { readProjectImageMetadata, type ProjectImageMetadata } from './image-met
 import { createQuadPolygonSettings, deserializeProjectImagePolygonSettings, serializeProjectImagePolygonSettings, type ProjectImagePolygonSettings, type ProjectImagePolygonSettingsInput } from './image-polygon-settings';
 import { deleteImportAssetFiles, materializeImportAssetFiles } from './import-asset-file-pool';
 import { ProjectConfigProxy } from './project-config-proxy';
-import type { ProjectConfig, ProjectContent, ProjectInfo, ProjectTextureAtlasQuad } from './types';
+import type { ProjectConfig, ProjectContent, ProjectInfo, ProjectTextureAtlasFiles, ProjectTextureAtlasQuad } from './types';
 
 function toProjectInfo(projectPath: string, config: ProjectConfig): ProjectInfo {
   return { content: config.content, name: config.name, path: projectPath, version: config.version };
@@ -147,11 +147,17 @@ export async function loadProjectTextureAtlas(projectPath: string, id: number): 
   return { image: image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), quad };
 }
 
-export async function saveProjectTextureAtlas(projectPath: string, id: number, image: ArrayBuffer, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
+export async function saveProjectTextureAtlas(projectPath: string, id: number, files: ProjectTextureAtlasFiles, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
   const config = await ProjectConfigProxy.load(projectPath);
   const assetPath = getTextureAtlasAssetPath(projectPath, id);
   await mkdir(assetPath, { recursive: true });
-  await writeFile(path.join(assetPath, 'atlas.png'), Buffer.from(image));
+  await Promise.all([
+    writeFile(path.join(assetPath, 'atlas.png'), Buffer.from(files.png)),
+    writeFile(path.join(assetPath, 'atlas.etc2'), Buffer.from(files.etc2)),
+    writeFile(path.join(assetPath, 'atlas.dxt5'), Buffer.from(files.dxt5)),
+    writeFile(path.join(assetPath, 'atlas.etc2.png'), Buffer.from(files.etc2Preview)),
+    writeFile(path.join(assetPath, 'atlas.dxt5.png'), Buffer.from(files.dxt5Preview)),
+  ]);
   return config.setTextureAtlasQuad(id, quad);
 }
 

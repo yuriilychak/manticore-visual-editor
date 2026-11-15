@@ -29,6 +29,7 @@
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-i18next": "^16.0.0",
+    "texture-atlas-clusterizer": "file:../../packages/texture-atlas-clusterizer",
     "vite": "^7.1.3"
   },
   "devDependencies": {

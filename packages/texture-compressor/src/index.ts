@@ -1,4 +1,4 @@
-export { TextureCompressor } from './texture-compressor';
+export { createTextureCompressor, TextureCompressor } from './texture-compressor';
 export type {
     TextureCompressionFormat,
     TextureCompressionMetrics,

@@ -102,6 +102,14 @@ export class TextureCompressor {
     }
 }
 
+/** Create a compressor using this package's bundled worker and WASM binary. */
+export function createTextureCompressor(): Promise<TextureCompressor> {
+    return TextureCompressor.create({
+        wasmUrl: new URL('../../texture-compressor-algo/dist/texture-compressor.wasm', import.meta.url),
+        workerSource: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }),
+    });
+}
+
 function splitChunks(data: Uint8Array, blockSize: number, count: number): Uint8Array[] {
     const total = data.byteLength / blockSize;
     return Array.from({ length: count }, (_, index) => {
