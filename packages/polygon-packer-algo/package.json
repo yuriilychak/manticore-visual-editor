@@ -1,0 +1,13 @@
+{
+  "name": "polygon-packer-algo",
+  "version": "0.1.0",
+  "description": "A WebAssembly package for nesting using Rust",
+  "private": true,
+  "author": "",
+  "license": "MIT",
+  "scripts": {
+    "build": "wasm-pack build --target no-modules --out-dir dist --out-name polygon-packer && cp dist/polygon-packer_bg.wasm ../../lib/polygon-packer.wasm"
+  },
+  "files": ["src", "tests", "Cargo.toml", "Cargo.lock"],
+  "sideEffects": false
+}
