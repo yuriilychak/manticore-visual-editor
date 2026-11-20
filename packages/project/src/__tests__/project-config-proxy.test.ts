@@ -35,6 +35,35 @@ describe('ProjectConfigProxy', () => {
     );
   });
 
+  test('repairs an invalid generated atlas layout while preserving its content', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    const destination = path.join(projectPath, 'Example');
+    await createProject(destination, 'Example');
+    const configPath = path.join(destination, 'src', 'config.json');
+    const atlasPath = path.join(destination, 'src', 'assets', '00003');
+    await mkdir(atlasPath, { recursive: true });
+    await writeFile(path.join(atlasPath, 'quad.json'), '{"invalid":true}');
+    await writeFile(configPath, JSON.stringify({
+      content: [
+        { id: 1, name: '', parentId: 0, type: 1, version: 0 },
+        { id: 2, name: 'default_bundle', parentId: 1, type: 2, version: 0 },
+        {
+          id: 3, name: 'Atlas', parentId: 2, type: 5, version: 0,
+          quad: { height: 1024, items: [{ id: 4, rotated: false, x: -1, y: 0 }], outdated: false, width: 1024 }
+        },
+        { id: 4, name: 'hero', parentId: 3, type: 4, version: 0 }
+      ],
+      name: 'Example', version: 0
+    }));
+
+    const loaded = await ProjectConfigProxy.load(destination);
+
+    expect(loaded.content.find(({ id }) => id === 3)).toEqual({ id: 3, name: 'Atlas', parentId: 2, type: 5, version: 0 });
+    await expect(access(path.join(atlasPath, 'quad.json'))).rejects.toMatchObject({ code: 'ENOENT' });
+    const saved = JSON.parse(await readFile(configPath, 'utf8')) as { content: Array<{ id: number; quad?: unknown }> };
+    expect(saved.content.find(({ id }) => id === 3)).not.toHaveProperty('quad');
+  });
+
   test('imports image and font assets with unique names and polygon settings', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     const destination = path.join(projectPath, 'Example');

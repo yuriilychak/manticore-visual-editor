@@ -25,7 +25,7 @@ declare global {
       loadImportImages?: (filePaths: string[]) => Promise<Array<{ content: ArrayBuffer; name: string; path: string; type: string }>>;
       loadImageSource?: (projectPath: string, id: number) => Promise<ArrayBuffer>;
       loadImageMetadata?: (projectPath: string, id: number) => Promise<ProjectImageMetadata>;
-      loadTextureAtlas?: (projectPath: string, id: number) => Promise<{ image: ArrayBuffer; quad: ProjectTextureAtlasQuad }>;
+      loadTextureAtlas?: (projectPath: string, id: number) => Promise<{ image: ArrayBuffer; inputImage?: ArrayBuffer; quad: ProjectTextureAtlasQuad }>;
       applyImagePolygonSettings?: (projectPath: string, id: number, settings: ProjectImagePolygonSettingsInput) => Promise<ProjectImageMetadata>;
       saveTextureAtlas?: (projectPath: string, id: number, files: ProjectTextureAtlasFiles, quad: ProjectTextureAtlasQuad) => Promise<ProjectContent>;
       selectImportFiles?: () => Promise<string[]>;

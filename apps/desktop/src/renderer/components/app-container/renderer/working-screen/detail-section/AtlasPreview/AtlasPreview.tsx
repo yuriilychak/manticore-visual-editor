@@ -1,9 +1,9 @@
 import type { ProjectImageMetadata } from '@manticore/project';
 import type { ProjectTextureAtlasQuad } from '@manticore/project/types';
-import { packAtlasImages } from 'atlas-packer';
+import { packAtlasImagesWithPolygons } from 'atlas-packer';
 import { type FC, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { createTextureAtlasClusterizer, type TextureAtlasClusterizer } from 'texture-atlas-clusterizer';
+import { createTextureAtlasClusterizer, type TextureAtlasClusterizer, type TextureAtlasSprite } from 'texture-atlas-clusterizer';
 import { createTextureCompressor, type TextureCompressor } from 'texture-compressor';
 
 import { Alert, Box, Button, Dialog, DialogContent, LinearProgress, Typography } from '@mui/material';
@@ -15,8 +15,35 @@ type AtlasPreviewProps = { atlasIds: readonly number[] };
 type SourceImage = { id: number; metadata: ProjectImageMetadata; source: ArrayBuffer };
 type Preview = { atlasId: number; quad: ProjectTextureAtlasQuad; url: string } | null;
 type AtlasGenerationProgress = { atlas: number; progress: number; status: string; total: number };
+type PolygonBounds = { height: number; maxX: number; maxY: number; minX: number; minY: number; width: number };
+
+const getPolygonBounds = (points: Uint16Array | undefined, crop: { height: number; width: number; x: number; y: number }): PolygonBounds => {
+  if (!points?.length) return { height: crop.height, maxX: crop.width, maxY: crop.height, minX: 0, minY: 0, width: crop.width };
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (let index = 0; index < points.length; index += 2) {
+    const x = points[index] - crop.x, y = points[index + 1] - crop.y;
+    minX = Math.min(minX, x); minY = Math.min(minY, y);
+    maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
+  }
+  return { height: maxY - minY, maxX, maxY, minX, minY, width: maxX - minX };
+};
 
 const getMimeType = (format: string) => format === 'svg+xml' ? 'image/svg+xml' : `image/${format}`;
+
+const toAtlasPolygons = ({ polygonSettings: { crop, polygons, polygonsApplied } }: ProjectImageMetadata) => {
+  if (!polygonsApplied) return undefined;
+  const normalized = polygons.map(({ points }) => Float32Array.from(points, (point, index) => point - (index % 2 ? crop.y : crop.x)));
+  const valid = normalized.filter((points) => {
+    if (points.length < 6) return false;
+    let area = 0;
+    for (let index = 0; index < points.length; index += 2) {
+      const next = (index + 2) % points.length;
+      area += points[index] * points[next + 1] - points[next] * points[index + 1];
+    }
+    return area !== 0;
+  });
+  return valid.length ? valid : undefined;
+};
 
 const toPng = async (canvas: HTMLCanvasElement) => {
   const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
@@ -57,48 +84,83 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
   useEffect(() => {
     if (!window.manticore?.loadTextureAtlas || !previewAtlasId) return;
     void window.manticore.loadTextureAtlas(projectPath, previewAtlasId)
-      .then(({ image, quad }) => replacePreview({ atlasId: previewAtlasId, quad, url: URL.createObjectURL(new Blob([image], { type: 'image/png' })) }))
+      .then(({ image, quad }) => replacePreview({
+        atlasId: previewAtlasId,
+        quad,
+        url: URL.createObjectURL(new Blob([image], { type: 'image/png' }))
+      }))
       .catch(() => replacePreview(null));
   }, [previewAtlasId, projectPath, replacePreview]);
 
-  const generateAtlas = useCallback(async (atlasId: number, compressor: TextureCompressor, clusterizer: TextureAtlasClusterizer, updateProgress: (progress: number, status: string) => void) => {
+  const generateAtlas = useCallback(async (atlasId: number, clusterizer: TextureAtlasClusterizer, compressor: TextureCompressor, updateProgress: (progress: number, status: string) => void) => {
     const { loadImageMetadata, loadImageSource, saveTextureAtlas } = window.manticore ?? {};
     if (!loadImageMetadata || !loadImageSource || !saveTextureAtlas) throw new Error('Texture atlas generation is unavailable.');
     const imageIds = (childrenIdsByParentId[atlasId] ?? []).filter((id) => contentById[id]?.type === AssetType.Image);
     if (!imageIds.length) throw new Error('Texture atlas has no images.');
     updateProgress(0.05, t('details.atlasGenerationLoadingImages'));
-    const images = await Promise.all(imageIds.map(async (id): Promise<SourceImage> => ({ id, metadata: await loadImageMetadata(projectPath, id), source: await loadImageSource(projectPath, id) })));
+    const images = await Promise.all(imageIds.map(async (id): Promise<SourceImage> => ({
+      id,
+      metadata: await loadImageMetadata(projectPath, id),
+      source: await loadImageSource(projectPath, id)
+    })));
     updateProgress(0.15, t('details.atlasGenerationPacking'));
-    const layout = packAtlasImages(images.map(({ id, metadata }) => ({ height: metadata.croppedHeight, id, width: metadata.croppedWidth })));
-    if (!layout) throw new Error('Texture atlas exceeds 4096 × 4096. Split these images into multiple atlases.');
+    const layout = await packAtlasImagesWithPolygons(
+      images.map(({ id, metadata }) => ({ height: metadata.croppedHeight, id, polygons: toAtlasPolygons(metadata), width: metadata.croppedWidth })),
+      {
+        onError: (message) => setError(`Polygon packing failed. ${message}`),
+        onProgress: (completePlacements, requiredPlacements) => updateProgress(0.15 + completePlacements / requiredPlacements * 0.05, `Polygon packing: ${completePlacements}/${requiredPlacements} iterations`),
+      },
+    );
+    if (!layout) throw new Error('Texture atlas could not fit within a valid 4096 × 4096 power-of-two atlas. Split these images into multiple atlases.');
 
     const canvas = document.createElement('canvas');
     canvas.width = layout.width;
     canvas.height = layout.height;
     const context = canvas.getContext('2d', { alpha: true });
     if (!context) throw new Error('Could not create texture atlas image.');
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    for (const [index, placement] of layout.items.entries()) {
-      updateProgress(0.2 + index / layout.items.length * 0.2, t('details.atlasGenerationDrawingImages'));
-      const image = images.find(({ id }) => id === placement.id)!;
-      const { crop } = image.metadata.polygonSettings;
-      const bitmap = await createImageBitmap(new Blob([image.source], { type: getMimeType(image.metadata.format) }));
-      try {
-        if (placement.rotated) {
-          context.save(); context.translate(placement.x + crop.height, placement.y); context.rotate(Math.PI / 2);
-          context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height); context.restore();
-        } else context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, placement.x, placement.y, crop.width, crop.height);
-      } finally { bitmap.close(); }
-    }
+    const bitmaps = new Map(await Promise.all(images.map(async (image) => [image.id, await createImageBitmap(new Blob([image.source], { type: getMimeType(image.metadata.format) }))] as const)));
+    const sprites: TextureAtlasSprite[] = [];
+    try {
+      for (const [index, placement] of layout.items.entries()) {
+        updateProgress(0.2 + index / layout.items.length * 0.2, t('details.atlasGenerationDrawingPolygons'));
+        const image = images.find(({ id }) => id === placement.id)!;
+        const bitmap = bitmaps.get(image.id)!;
+        const { crop } = image.metadata.polygonSettings;
+        const rotation = placement.rotation ?? (placement.rotated ? 90 : 0);
+        const polygon = placement.polygonIndex == null ? undefined : image.metadata.polygonSettings.polygons[placement.polygonIndex];
+        const bounds = getPolygonBounds(polygon?.points, crop);
+        context.save();
+        if (rotation === 90) context.translate(placement.x + bounds.maxY, placement.y - bounds.minX);
+        else if (rotation === 180) context.translate(placement.x + bounds.maxX, placement.y + bounds.maxY);
+        else if (rotation === 270) context.translate(placement.x - bounds.minY, placement.y + bounds.maxX);
+        else context.translate(placement.x - bounds.minX, placement.y - bounds.minY);
+        if (rotation) context.rotate(rotation * Math.PI / 180);
+        context.beginPath();
+        if (polygon) {
+          for (let pointIndex = 0; pointIndex < polygon.points.length; pointIndex += 2) {
+            const x = polygon.points[pointIndex] - crop.x, y = polygon.points[pointIndex + 1] - crop.y;
+            if (pointIndex === 0) context.moveTo(x, y);
+            else context.lineTo(x, y);
+          }
+          context.closePath();
+        } else context.rect(0, 0, crop.width, crop.height);
+        context.clip();
+        context.drawImage(bitmap, crop.x, crop.y, crop.width, crop.height, 0, 0, crop.width, crop.height);
+        context.restore();
+        sprites.push({
+          height: rotation % 180 === 0 ? bounds.height : bounds.width,
+          scaleFix: image.metadata.polygonSettings.colorMargin,
+          width: rotation % 180 === 0 ? bounds.width : bounds.height,
+          x: placement.x,
+          y: placement.y
+        });
+      }
+    } finally { bitmaps.forEach((bitmap) => bitmap.close()); }
+    const quad: ProjectTextureAtlasQuad = { ...layout, outdated: false };
     updateProgress(0.45, t('details.atlasGenerationPadding'));
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
-    await clusterizer.applyColorMargins(pixels.data, canvas.width, layout.items.map((placement) => {
-      const image = images.find(({ id }) => id === placement.id)!;
-      const { colorMargin, crop } = image.metadata.polygonSettings;
-      return { height: placement.rotated ? crop.width : crop.height, scaleFix: colorMargin, width: placement.rotated ? crop.height : crop.width, x: placement.x, y: placement.y };
-    }));
+    await clusterizer.applyColorMargins(pixels.data, canvas.width, sprites);
     context.putImageData(pixels, 0, 0);
-    const quad: ProjectTextureAtlasQuad = { ...layout, outdated: false };
     updateProgress(0.55, t('details.atlasGenerationEncodingPng'));
     const png = await toPng(canvas);
     const rgba = new Uint8Array(pixels.data);
@@ -128,7 +190,7 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
       const [compressor, createdClusterizer] = await Promise.all([createTextureCompressor(), createTextureAtlasClusterizer()]);
       clusterizer = createdClusterizer;
       for (const [index, atlasId] of atlasIds.entries()) {
-        await generateAtlas(atlasId, compressor, clusterizer, (progress, status) => setGenerationProgress({ atlas: index + 1, progress: (index + progress) / atlasIds.length * 100, status, total: atlasIds.length }));
+        await generateAtlas(atlasId, clusterizer, compressor, (progress, status) => setGenerationProgress({ atlas: index + 1, progress: (index + progress) / atlasIds.length * 100, status, total: atlasIds.length }));
       }
     }
     catch (reason) { setError(reason instanceof Error ? reason.message : 'Could not generate texture atlas.'); }

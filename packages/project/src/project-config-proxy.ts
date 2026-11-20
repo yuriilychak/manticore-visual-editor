@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises';
+import { readFile, rm, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 import { AssetType } from './asset-type';
@@ -11,16 +11,29 @@ export class ProjectConfigProxy {
   static async load(projectPath: string): Promise<ProjectConfigProxy> {
     const configPath = path.join(projectPath, 'src', 'config.json');
     const config = JSON.parse(await readFile(configPath, 'utf8')) as { content?: unknown; name?: unknown; version?: unknown };
+    const repairedAtlasIds: number[] = [];
+    const rawContent = Array.isArray(config.content) ? config.content.map((item) => {
+      if (isProjectContent(item)) return item;
+      if (typeof item !== 'object' || item === null || (item as { type?: unknown }).type !== AssetType.TextureAtlas || !('quad' in item)) return item;
+      const { quad: _invalidQuad, ...withoutQuad } = item as Record<string, unknown>;
+      if (!isProjectContent(withoutQuad)) return item;
+      repairedAtlasIds.push(withoutQuad.id);
+      return withoutQuad;
+    }) : config.content;
     if (
       !isAssetName(config.name) ||
       typeof config.version !== 'number' || !Number.isInteger(config.version) || config.version < 0 || config.version > MAX_U16 ||
-      !Array.isArray(config.content) || !config.content.every(isProjectContent)
+      !Array.isArray(rawContent) || !rawContent.every(isProjectContent)
     ) {
       throw new Error('Project configuration is invalid.');
     }
+    if (repairedAtlasIds.length) {
+      await writeFile(configPath, `${JSON.stringify({ ...config, content: rawContent }, null, 2)}\n`, 'utf8');
+      await Promise.all(repairedAtlasIds.map((id) => rm(path.join(path.dirname(configPath), 'assets', String(id).padStart(5, '0'), 'quad.json'), { force: true })));
+    }
     // Migrate manifests which stored image bytes in config.json. Asset payloads
     // now live in each asset's directory, so loaded content is normalized too.
-    const content = (config.content as ProjectContent[]).map(({ data, ...item }) => {
+    const content = (rawContent as ProjectContent[]).map(({ data, ...item }) => {
       void data;
       return item;
     });

@@ -1,30 +1,18 @@
-import { packRectangles } from '../../maxrects-packer/src/rectangles';
+import { isQuadAtlas, packPolygonAtlasImages } from './polygon-atlas-packing';
+import { packQuadAtlasImages } from './quad-atlas-packing';
+import type { AtlasLayout, AtlasPolygonImage, PolygonPackingOptions } from './types';
 
-export type AtlasImage = { height: number; id: number; width: number };
-export type AtlasPlacement = { id: number; rotated: boolean; x: number; y: number };
-export type AtlasLayout = { height: number; items: AtlasPlacement[]; width: number };
+export type { AtlasImage, AtlasLayout, AtlasPackingInput, AtlasPlacement, AtlasPolygonImage, PolygonPackingOptions } from './types';
+export { ATLAS_PADDING, MAX_ATLAS_SIZE, MAX_POWER_OF_TWO_ATLAS_SIZE } from './types';
 
-export const ATLAS_PADDING = 4;
-export const MAX_ATLAS_SIZE = 4096;
+/** Packs cropped image dimensions using the rectangular atlas algorithm. */
+export const packAtlasImages = packQuadAtlasImages;
 
-const nextPowerOfTwo = (value: number) => 2 ** Math.ceil(Math.log2(Math.max(1, value)));
-
-/** Packs cropped image dimensions into the smallest fitting square power-of-two atlas. */
-export const packAtlasImages = (images: readonly AtlasImage[]): AtlasLayout | null => {
-  if (!images.length) return null;
-  const rectangles = images.map(({ height, id, width }) => ({ height: height + ATLAS_PADDING * 2, id, width: width + ATLAS_PADDING * 2 }));
-  let size = nextPowerOfTwo(Math.max(
-    Math.ceil(Math.sqrt(rectangles.reduce((total, rectangle) => total + rectangle.width * rectangle.height, 0))),
-    ...rectangles.flatMap(({ height, width }) => [height, width])
-  ));
-  while (size <= MAX_ATLAS_SIZE) {
-    const placements = packRectangles(rectangles, size);
-    if (placements) return {
-      height: size,
-      items: placements.map(({ id, rotated, x, y }) => ({ id, rotated, x: x + ATLAS_PADDING, y: y + ATLAS_PADDING })),
-      width: size
-    };
-    size *= 2;
-  }
-  return null;
+/** Selects the sole atlas-generation step that differs: quad or polygon packing. */
+export const packAtlasImagesWithPolygons = async (images: readonly AtlasPolygonImage[], options: PolygonPackingOptions = {}): Promise<AtlasLayout | null> => {
+  if (isQuadAtlas(images)) return packQuadAtlasImages(images);
+  const layout = await packPolygonAtlasImages(images, options);
+  if (!layout) options.onError?.('Polygons do not fit within one 4096 × 4096 atlas.');
+  options.onProgress?.(1, 1);
+  return layout;
 };

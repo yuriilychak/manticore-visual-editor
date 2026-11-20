@@ -133,18 +133,23 @@ export async function applyProjectImagePolygonSettings(projectPath: string, id: 
 
 const getTextureAtlasAssetPath = (projectPath: string, id: number) => path.join(projectPath, 'src', 'assets', String(id).padStart(5, '0'));
 
-export async function loadProjectTextureAtlas(projectPath: string, id: number): Promise<{ image: ArrayBuffer; quad: ProjectTextureAtlasQuad }> {
+export async function loadProjectTextureAtlas(projectPath: string, id: number): Promise<{ image: ArrayBuffer; inputImage?: ArrayBuffer; quad: ProjectTextureAtlasQuad }> {
   const config = await ProjectConfigProxy.load(projectPath);
   const atlas = config.content.find((item) => item.id === id && item.type === AssetType.TextureAtlas);
   if (!atlas?.quad) throw new Error('Texture atlas has not been generated.');
   const assetPath = getTextureAtlasAssetPath(projectPath, id);
-  const [image, quadFile] = await Promise.all([
+  const [image, inputImage, quadFile] = await Promise.all([
     readFile(path.join(assetPath, 'atlas.png')),
+    readFile(path.join(assetPath, 'atlas.polygon-input.png')).catch(() => undefined),
     readFile(path.join(assetPath, 'quad.json'), 'utf8')
   ]);
   const quad = JSON.parse(quadFile) as ProjectTextureAtlasQuad;
   if (JSON.stringify(quad) !== JSON.stringify(atlas.quad)) throw new Error('Texture atlas metadata is invalid.');
-  return { image: image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength), quad };
+  return {
+    image: image.buffer.slice(image.byteOffset, image.byteOffset + image.byteLength),
+    ...(inputImage ? { inputImage: inputImage.buffer.slice(inputImage.byteOffset, inputImage.byteOffset + inputImage.byteLength) } : {}),
+    quad
+  };
 }
 
 export async function saveProjectTextureAtlas(projectPath: string, id: number, files: ProjectTextureAtlasFiles, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
@@ -157,6 +162,8 @@ export async function saveProjectTextureAtlas(projectPath: string, id: number, f
     writeFile(path.join(assetPath, 'atlas.dxt5'), Buffer.from(files.dxt5)),
     writeFile(path.join(assetPath, 'atlas.etc2.png'), Buffer.from(files.etc2Preview)),
     writeFile(path.join(assetPath, 'atlas.dxt5.png'), Buffer.from(files.dxt5Preview)),
+    rm(path.join(assetPath, 'atlas.polygon-input.png'), { force: true }),
+    rm(path.join(assetPath, 'atlas.maxrects.svg'), { force: true }),
   ]);
   return config.setTextureAtlasQuad(id, quad);
 }

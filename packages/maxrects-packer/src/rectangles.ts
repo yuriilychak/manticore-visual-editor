@@ -23,12 +23,12 @@ const splitFreeRectangles = (freeRectangles: readonly FreeRectangle[], used: Fre
 };
 
 /** Packs generic rectangles into one fixed-size square bin using MaxRects best-short-side-fit. */
-export const packRectangles = (rectangles: readonly PackRectangle[], size: number): PackedRectangle[] | null => {
+export const packRectangles = (rectangles: readonly PackRectangle[], size: number, allowRotation = true): PackedRectangle[] | null => {
   let freeRectangles: FreeRectangle[] = [{ height: size, width: size, x: 0, y: 0 }];
   const packed: PackedRectangle[] = [];
 
   for (const rectangle of [...rectangles].sort((left, right) => right.width * right.height - left.width * left.height)) {
-    const candidates = freeRectangles.flatMap((free) => [false, true].flatMap((rotated) => {
+    const candidates = freeRectangles.flatMap((free) => (allowRotation ? [false, true] : [false]).flatMap((rotated) => {
       const width = rotated ? rectangle.height : rectangle.width;
       const height = rotated ? rectangle.width : rectangle.height;
       return width <= free.width && height <= free.height

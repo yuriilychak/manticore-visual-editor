@@ -89,6 +89,7 @@
     "atlasGenerationLoadingImages": "Cargando imágenes de origen…",
     "atlasGenerationPacking": "Empaquetando imágenes en el atlas…",
     "atlasGenerationDrawingImages": "Dibujando imágenes…",
+    "atlasGenerationDrawingPolygons": "Dibujando polígonos empaquetados…",
     "atlasGenerationPadding": "Aplicando relleno a los bordes de sprites…",
     "atlasGenerationEncodingPng": "Codificando el atlas PNG…",
     "atlasGenerationCompressingEtc2": "Comprimiendo textura ETC2…",
