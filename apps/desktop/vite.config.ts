@@ -12,7 +12,7 @@ export default defineConfig({
       '@manticore/project/image-polygon-settings': fileURLToPath(new URL('../../packages/project/src/image-polygon-settings.ts', import.meta.url)),
       '@manticore/project': fileURLToPath(new URL('../../packages/project/src/index.ts', import.meta.url)),
       'atlas-packer': fileURLToPath(new URL('../../packages/atlas-packer/src/index.ts', import.meta.url)),
-      'polygon-pack': fileURLToPath(new URL('../../packages/polygon-pack/src/index.js', import.meta.url)),
+      'polygon-pack': fileURLToPath(new URL('../../packages/polygon-pack/src/index.ts', import.meta.url)),
       'texture-compressor': fileURLToPath(new URL('../../packages/texture-compressor/src/index.ts', import.meta.url)),
       'texture-atlas-clusterizer': fileURLToPath(new URL('../../packages/texture-atlas-clusterizer/src/index.ts', import.meta.url)),
       'image-polygonizer': fileURLToPath(new URL('../../packages/image-polygonizer/src/index.ts', import.meta.url)),

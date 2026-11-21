@@ -17,11 +17,11 @@ type Preview = { atlasId: number; quad: ProjectTextureAtlasQuad; url: string } |
 type AtlasGenerationProgress = { atlas: number; progress: number; status: string; total: number };
 type PolygonBounds = { height: number; maxX: number; maxY: number; minX: number; minY: number; width: number };
 
-const getPolygonBounds = (points: Uint16Array | undefined, crop: { height: number; width: number; x: number; y: number }): PolygonBounds => {
+const getPolygonBounds = (points: Uint16Array | undefined, crop: { height: number; width: number; x: number; y: number }, offset = 0): PolygonBounds => {
   if (!points?.length) return { height: crop.height, maxX: crop.width, maxY: crop.height, minX: 0, minY: 0, width: crop.width };
   let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
   for (let index = 0; index < points.length; index += 2) {
-    const x = points[index] - crop.x, y = points[index + 1] - crop.y;
+    const x = points[index] - crop.x - offset, y = points[index + 1] - crop.y - offset;
     minX = Math.min(minX, x); minY = Math.min(minY, y);
     maxX = Math.max(maxX, x); maxY = Math.max(maxY, y);
   }
@@ -30,9 +30,9 @@ const getPolygonBounds = (points: Uint16Array | undefined, crop: { height: numbe
 
 const getMimeType = (format: string) => format === 'svg+xml' ? 'image/svg+xml' : `image/${format}`;
 
-const toAtlasPolygons = ({ polygonSettings: { crop, polygons, polygonsApplied } }: ProjectImageMetadata) => {
+const toAtlasPolygons = ({ polygonSettings: { crop, offset, polygons, polygonsApplied } }: ProjectImageMetadata) => {
   if (!polygonsApplied) return undefined;
-  const normalized = polygons.map(({ points }) => Float32Array.from(points, (point, index) => point - (index % 2 ? crop.y : crop.x)));
+  const normalized = polygons.map(({ points }) => Float32Array.from(points, (point, index) => point - (index % 2 ? crop.y : crop.x) - offset));
   const valid = normalized.filter((points) => {
     if (points.length < 6) return false;
     let area = 0;
@@ -125,10 +125,10 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
         updateProgress(0.2 + index / layout.items.length * 0.2, t('details.atlasGenerationDrawingPolygons'));
         const image = images.find(({ id }) => id === placement.id)!;
         const bitmap = bitmaps.get(image.id)!;
-        const { crop } = image.metadata.polygonSettings;
+        const { crop, offset } = image.metadata.polygonSettings;
         const rotation = placement.rotation ?? (placement.rotated ? 90 : 0);
         const polygon = placement.polygonIndex == null ? undefined : image.metadata.polygonSettings.polygons[placement.polygonIndex];
-        const bounds = getPolygonBounds(polygon?.points, crop);
+        const bounds = getPolygonBounds(polygon?.points, crop, offset);
         context.save();
         if (rotation === 90) context.translate(placement.x + bounds.maxY, placement.y - bounds.minX);
         else if (rotation === 180) context.translate(placement.x + bounds.maxX, placement.y + bounds.maxY);
@@ -138,7 +138,7 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
         context.beginPath();
         if (polygon) {
           for (let pointIndex = 0; pointIndex < polygon.points.length; pointIndex += 2) {
-            const x = polygon.points[pointIndex] - crop.x, y = polygon.points[pointIndex + 1] - crop.y;
+            const x = polygon.points[pointIndex] - crop.x - offset, y = polygon.points[pointIndex + 1] - crop.y - offset;
             if (pointIndex === 0) context.moveTo(x, y);
             else context.lineTo(x, y);
           }

@@ -1,66 +1,99 @@
-// Relative paths also work when the Electron renderer is loaded from file://.
+// src/wasm-loader.ts
+var WASM_URL = "/workers/poygon_pack_algo_bg.wasm";
+var NfpWasm = class _NfpWasm {
+  #binary;
+  #wasm;
+  #cachedByteMemory = null;
+  constructor(wasm, binary) {
+    this.#wasm = wasm;
+    this.#binary = binary;
+  }
+  static async create(binary = new ArrayBuffer()) {
+    let wasmBinary;
+    const retainBinary = !binary.byteLength;
+    let instanceBinary;
+    if (retainBinary) {
+      const response = await fetch(WASM_URL);
+      if (!response.ok) throw new Error(`Failed to fetch nesting WASM: ${response.status} ${response.statusText}`);
+      wasmBinary = await response.arrayBuffer();
+      instanceBinary = wasmBinary;
+    } else {
+      wasmBinary = binary;
+      instanceBinary = new ArrayBuffer();
+    }
+    let wasm;
+    const imports = {
+      "./poygon_pack_algo_bg.js": {
+        __wbindgen_init_externref_table() {
+          const table = wasm.__wbindgen_externrefs;
+          table.set(0, void 0);
+          table.set(1024, void 0);
+          table.set(1025, null);
+          table.set(1026, true);
+          table.set(1027, false);
+        }
+      }
+    };
+    const { instance } = await WebAssembly.instantiate(wasmBinary, imports);
+    wasm = instance.exports;
+    wasm.__wbindgen_start();
+    return new _NfpWasm(wasm, instanceBinary);
+  }
+  /** Returns a transferable copy of the main-thread source bytes. */
+  get binary() {
+    if (!this.#binary.byteLength) throw new Error("Nesting WASM source bytes are not available in this worker");
+    return this.#binary.slice(0);
+  }
+  #byteMemory() {
+    if (!this.#cachedByteMemory || this.#cachedByteMemory.byteLength === 0) {
+      this.#cachedByteMemory = new Uint8Array(this.#wasm.memory.buffer);
+    }
+    return this.#cachedByteMemory;
+  }
+  generate(request) {
+    if (!this.#wasm) throw new Error("Nesting WASM has not been initialized in this worker");
+    if (!(request instanceof Uint8Array)) throw new TypeError("Nesting WASM requests must be Uint8Array buffers");
+    const pointer = this.#wasm.__wbindgen_malloc(request.byteLength, 1) >>> 0;
+    this.#byteMemory().set(request, pointer);
+    const result = this.#wasm.generate(pointer, request.byteLength);
+    const values = this.#byteMemory().subarray(result[0], result[0] + result[1]).slice();
+    this.#wasm.__wbindgen_free(result[0], result[1], 1);
+    return values;
+  }
+};
 
-/**
- * Creates the small wasm-bindgen ABI surface the polygon engine requires.
- * This intentionally accepts bytes so workers never fetch the WASM asset.
- */
-async function createNfpWasm(binary) {
-	if (!(binary instanceof ArrayBuffer)) throw new TypeError('Nesting WASM must be an ArrayBuffer');
-
-	let wasm;
-	let cachedFloat64Memory;
-	const imports = {
-		'./poygon_pack_algo_bg.js': {
-			__wbindgen_init_externref_table() {
-				const table = wasm.__wbindgen_externrefs;
-				table.set(0, undefined);
-				table.set(1024, undefined);
-				table.set(1025, null);
-				table.set(1026, true);
-				table.set(1027, false);
-			}
-		}
-	};
-	const { instance } = await WebAssembly.instantiate(binary, imports);
-	wasm = instance.exports;
-	wasm.__wbindgen_start();
-
-	function float64Memory() {
-		if (!cachedFloat64Memory || cachedFloat64Memory.byteLength === 0) {
-			cachedFloat64Memory = new Float64Array(wasm.memory.buffer);
-		}
-		return cachedFloat64Memory;
-	}
-
-	return {
-		generate(request) {
-			const pointer = wasm.__wbindgen_malloc(request.length * Float64Array.BYTES_PER_ELEMENT, Float64Array.BYTES_PER_ELEMENT) >>> 0;
-			float64Memory().set(request, pointer / Float64Array.BYTES_PER_ELEMENT);
-			const result = wasm.generate(pointer, request.length);
-			const values = float64Memory().subarray(result[0] / Float64Array.BYTES_PER_ELEMENT, result[0] / Float64Array.BYTES_PER_ELEMENT + result[1]).slice();
-			wasm.__wbindgen_free(result[0], result[1] * Float64Array.BYTES_PER_ELEMENT, Float64Array.BYTES_PER_ELEMENT);
-			return values;
-		}
-	};
-}
-
-let nfpWasm;
-
+// src/workers/nesting.worker.ts
+var nfpWasm;
 self.onmessage = async ({ data }) => {
-	if (!nfpWasm) {
-		if (data?.type !== 'init') throw new Error('Nesting worker must be initialized before it receives jobs');
-		try {
-			nfpWasm = await createNfpWasm(data.wasm);
-			self.postMessage({ type: 'ready' });
-		} catch (error) {
-			self.postMessage({ type: 'init-error', error: error instanceof Error ? error.message : String(error) });
-		}
-		return;
-	}
-	if (data instanceof Float64Array) {
-		const result = nfpWasm.generate(data);
-		self.postMessage(result, [result.buffer]);
-		return;
-	}
-	throw new Error(`Unsupported nesting worker request: ${data.type}`);
+  if (!data?.type) {
+    throw new Error("Nesting worker message type is required");
+  }
+  if (!nfpWasm) {
+    if (data?.type !== 1 /* INIT */ || !(data.bin instanceof Uint8Array)) {
+      throw new Error("Nesting worker must be initialized before it receives work");
+    }
+    let type;
+    let bin;
+    try {
+      nfpWasm = await NfpWasm.create(data.bin);
+      type = 3 /* READY */;
+      bin = new Uint8Array();
+    } catch (error) {
+      type = 4 /* INIT_ERROR */;
+      bin = new TextEncoder().encode(error instanceof Error ? error.message : String(error));
+    }
+    self.postMessage({ type, bin }, [bin.buffer]);
+    return;
+  }
+  if (data?.type === 2 /* WORK */ && data.bin instanceof Uint8Array) {
+    const bin = nfpWasm.generate(data.bin);
+    self.postMessage({ type: 5 /* RESULT */, bin }, [bin.buffer]);
+    return;
+  }
+  if (data?.type === 6 /* WORK_BATCH */ && Array.isArray(data.bins) && data.bins.every((bin) => bin instanceof Uint8Array)) {
+    const bins = data.bins.map((bin) => nfpWasm.generate(bin));
+    self.postMessage({ type: 7 /* BATCH_RESULT */, bins }, bins.map((bin) => bin.buffer));
+    return;
+  }
+  throw new Error(`Unsupported nesting worker request: ${data?.type}`);
 };

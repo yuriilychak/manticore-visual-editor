@@ -1,6 +1,143 @@
+use crate::binary::{frame, parse_frame, Reader, Writer};
 use crate::point::{almost_equal, Point, TOLERANCE};
 use crate::polygon::Polygon;
-use crate::protocol::{parse_request, serialize_nfp};
+use crate::protocol::{parse_request, serialize_nfp, TYPE_NFP};
+
+pub(crate) const COMPACT_NFP_RESULT_COMMAND: u8 = 0x81;
+pub(crate) const COMPACT_NFP_REQUEST_COMMAND: u8 = 0x80;
+const COMPACT_COORDINATE_SCALE: f64 = 100_000.0;
+
+fn compact_coordinate(value: f64) -> Option<i32> {
+    let scaled = (value * COMPACT_COORDINATE_SCALE).round();
+    (scaled.is_finite() && (i32::MIN as f64..=i32::MAX as f64).contains(&scaled)).then_some(scaled as i32)
+}
+
+fn expand_coordinate(value: i32) -> f64 {
+    value as f64 / COMPACT_COORDINATE_SCALE
+}
+
+pub(crate) fn compact_result(data: &[f64]) -> Option<Vec<u8>> {
+    let key = *data.first()?;
+    let contour_count = *data.get(1)?;
+    if !key.is_finite() || key.fract() != 0.0 || !(0.0..=u32::MAX as f64).contains(&key)
+        || !contour_count.is_finite() || contour_count.fract() != 0.0 || contour_count < 0.0 {
+        return None;
+    }
+    let mut index = 2;
+    let mut writer = Writer::new();
+    writer.u32(key as u32);
+    writer.u32(contour_count as u32);
+    for _ in 0..contour_count as usize {
+        let count = *data.get(index)?;
+        index += 1;
+        if !count.is_finite() || count.fract() != 0.0 || count < 0.0 { return None; }
+        writer.u32(count as u32);
+        for _ in 0..count as usize {
+            writer.i32(compact_coordinate(*data.get(index)?)?);
+            writer.i32(compact_coordinate(*data.get(index + 1)?)?);
+            index += 2;
+        }
+    }
+    (index == data.len()).then(|| frame(COMPACT_NFP_RESULT_COMMAND, 0, &writer.finish())).flatten()
+}
+
+pub(crate) fn expand_compact_result(data: &[u8]) -> Option<Vec<f64>> {
+    let (command, flags, payload) = parse_frame(data)?;
+    if command != COMPACT_NFP_RESULT_COMMAND || flags != 0 { return None; }
+    let mut reader = Reader::new(payload);
+    let key = reader.u32()?;
+    let contour_count = reader.u32()?;
+    let mut result = vec![key as f64, contour_count as f64];
+    for _ in 0..contour_count {
+        let count = reader.u32()?;
+        result.push(count as f64);
+        for _ in 0..count {
+            result.extend([expand_coordinate(reader.i32()?), expand_coordinate(reader.i32()?)]);
+        }
+    }
+    (reader.remaining() == 0).then_some(result)
+}
+
+fn write_polygon(writer: &mut Writer, polygon: &Polygon) -> Option<()> {
+    writer.u32(u32::try_from(polygon.points.len()).ok()?);
+    writer.u32(u32::try_from(polygon.children.len()).ok()?);
+    for point in &polygon.points {
+        writer.i32(compact_coordinate(point.x)?);
+        writer.i32(compact_coordinate(point.y)?);
+    }
+    for child in &polygon.children {
+        write_polygon(writer, child)?;
+    }
+    Some(())
+}
+
+fn read_polygon(reader: &mut Reader) -> Option<Polygon> {
+    let point_count = reader.u32()?;
+    let child_count = reader.u32()?;
+    let mut points = Vec::new();
+    for _ in 0..point_count {
+        points.push(Point { x: expand_coordinate(reader.i32()?), y: expand_coordinate(reader.i32()?) });
+    }
+    let mut children = Vec::new();
+    for _ in 0..child_count {
+        children.push(read_polygon(reader)?);
+    }
+    Some(Polygon { points, children })
+}
+
+fn serialize_legacy_polygon(values: &mut Vec<f64>, polygon: &Polygon) {
+    let start = values.len();
+    values.extend([polygon.points.len() as f64, polygon.children.len() as f64]);
+    let child_offsets = values.len();
+    values.resize(child_offsets + polygon.children.len(), 0.0);
+    for point in &polygon.points {
+        values.extend([point.x, point.y]);
+    }
+    for (index, child) in polygon.children.iter().enumerate() {
+        values[child_offsets + index] = values.len() as f64;
+        serialize_legacy_polygon(values, child);
+    }
+    debug_assert_eq!(start + 2, child_offsets);
+}
+
+pub(crate) fn compact_request(data: &[f64]) -> Option<Vec<u8>> {
+    let request = parse_request(data).ok()?;
+    let mut writer = Writer::new();
+    writer.u32(request.key);
+    writer.u8(u8::from(request.use_holes) | (u8::from(request.inside) << 1));
+    writer.u8(request.rotations);
+    writer.u8(request.a_rotation_index);
+    writer.u8(request.b_rotation_index);
+    write_polygon(&mut writer, &request.a)?;
+    write_polygon(&mut writer, &request.b)?;
+    frame(COMPACT_NFP_REQUEST_COMMAND, 0, &writer.finish())
+}
+
+pub(crate) fn expand_compact_request(data: &[u8]) -> Option<Vec<f64>> {
+    let (command, flags, payload) = parse_frame(data)?;
+    if command != COMPACT_NFP_REQUEST_COMMAND || flags != 0 { return None; }
+    let mut reader = Reader::new(payload);
+    let key = reader.u32()?;
+    let flags = reader.u8()?;
+    let rotations = reader.u8()?;
+    let a_rotation = reader.u8()?;
+    let b_rotation = reader.u8()?;
+    if flags & !0x03 != 0 || rotations == 0 || a_rotation >= rotations || b_rotation >= rotations { return None; }
+    let a = read_polygon(&mut reader)?;
+    let b = read_polygon(&mut reader)?;
+    (reader.remaining() == 0).then_some(())?;
+    let header = TYPE_NFP
+        | (u64::from(flags & 1) << 2)
+        | (u64::from((flags >> 1) & 1) << 3)
+        | (u64::from(a_rotation) << 4)
+        | (u64::from(b_rotation) << 9)
+        | (u64::from(rotations) << 14)
+        | (u64::from(key) << 19);
+    let mut result = vec![header as f64];
+    serialize_legacy_polygon(&mut result, &a);
+    serialize_legacy_polygon(&mut result, &b);
+    Some(result)
+}
 
 fn points_equal(a: Point, b: Point) -> bool {
     almost_equal(a.x, b.x, TOLERANCE) && almost_equal(a.y, b.y, TOLERANCE)
@@ -850,6 +987,35 @@ mod tests {
             generate(request),
             vec![42.0, 1.0, 4.0, 0.0, 0.0, 8.0, 0.0, 8.0, 8.0, 0.0, 8.0]
         );
+    }
+
+    #[test]
+    fn compact_result_round_trips_fixed_point_contours() {
+        let source = vec![42.0, 1.0, 3.0, -1.234_567, 0.000_009, 12.5, 3.25, 0.0, -4.0];
+        let compact = compact_result(&source).expect("compact NFP result");
+        assert_eq!(compact[1], COMPACT_NFP_RESULT_COMMAND);
+        assert_eq!(expand_compact_result(&compact), Some(vec![42.0, 1.0, 3.0, -1.234_57, 0.000_01, 12.5, 3.25, 0.0, -4.0]));
+    }
+
+    #[test]
+    fn compact_request_round_trips_nested_polygon_jobs() {
+        let header = (7_u64 << 19) | (4_u64 << 14) | (2_u64 << 4) | (1_u64 << 9) | 0x0d;
+        let request = vec![
+            header as f64,
+            4.0, 1.0, 12.0, 0.0, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0,
+            3.0, 0.0, 0.0, 2.0, 0.0, 0.0, 2.0,
+            3.0, 0.0, 0.0, 1.0, 0.0, 0.0, 1.0,
+        ];
+        let compact = compact_request(&request).expect("compact NFP request");
+        assert_eq!(compact[1], COMPACT_NFP_REQUEST_COMMAND);
+        let expanded = expand_compact_request(&compact).expect("expand NFP request");
+        let decoded = parse_request(&expanded).expect("valid expanded request");
+        assert_eq!(decoded.key, 7);
+        assert!(decoded.use_holes && decoded.inside);
+        assert_eq!(decoded.rotations, 4);
+        assert_eq!(decoded.a_rotation_index, 2);
+        assert_eq!(decoded.b_rotation_index, 1);
+        assert_eq!(decoded.a.children.len(), 1);
     }
 
     #[test]

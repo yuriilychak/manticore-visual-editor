@@ -1,6 +1,9 @@
 use crate::point::Point;
 use crate::polygon::Polygon;
 use crate::protocol::{parse_config, Config};
+use crate::binary::{frame, parse_frame, Reader, Writer};
+
+pub(crate) const COMPACT_STATE_COMMAND: u8 = 0x84;
 
 #[derive(Clone, Debug)]
 pub(crate) struct Individual {
@@ -110,6 +113,60 @@ pub(crate) fn deserialize_state(data: &[f64]) -> Option<(u64, Vec<Individual>)> 
         });
     }
     (index == data.len()).then_some((seed, population))
+}
+
+/// Compact retained GA state. The algorithm still expands this to f64 at its
+/// boundary, while JavaScript keeps only this framed byte representation.
+pub(crate) fn compact_state(data: &[f64], rotations: u8) -> Option<Vec<u8>> {
+    (rotations > 0).then_some(())?;
+    let (seed, population) = deserialize_state(data)?;
+    let mut writer = Writer::new();
+    writer.u64(seed);
+    writer.u8(rotations);
+    writer.u32(u32::try_from(population.len()).ok()?);
+    for individual in population {
+        let length = u32::try_from(individual.placement.len()).ok()?;
+        (individual.rotation.len() == individual.placement.len()).then_some(())?;
+        writer.u32(length);
+        match individual.fitness {
+            Some(fitness) if fitness.is_finite() => { writer.u8(1); writer.f64(fitness); }
+            None => writer.u8(0),
+            _ => return None,
+        }
+        for placement in individual.placement { writer.u32(u32::try_from(placement).ok()?); }
+        for rotation in individual.rotation {
+            (rotation.is_finite()).then_some(())?;
+            let index = (rotation / (360.0 / rotations as f64)).round();
+            (index.is_finite() && (0.0..rotations as f64).contains(&index)).then_some(())?;
+            writer.u8(index as u8);
+        }
+    }
+    frame(COMPACT_STATE_COMMAND, 0, &writer.finish())
+}
+
+pub(crate) fn expand_compact_state(data: &[u8]) -> Option<Vec<f64>> {
+    let (command, flags, payload) = parse_frame(data)?;
+    if command != COMPACT_STATE_COMMAND || flags != 0 { return None; }
+    let mut reader = Reader::new(payload);
+    let seed = reader.u64()?;
+    let rotations = reader.u8()?;
+    if rotations == 0 { return None; }
+    let count = reader.u32()?;
+    let mut population = Vec::with_capacity(count as usize);
+    for _ in 0..count {
+        let length = reader.u32()? as usize;
+        let fitness = match reader.u8()? { 0 => None, 1 => Some(reader.f64()?), _ => return None };
+        let mut placement = Vec::with_capacity(length);
+        for _ in 0..length { placement.push(reader.u32()? as usize); }
+        let mut rotation = Vec::with_capacity(length);
+        for _ in 0..length {
+            let index = reader.u8()?;
+            if index >= rotations { return None; }
+            rotation.push(index as f64 * (360.0 / rotations as f64));
+        }
+        population.push(Individual { placement, rotation, fitness });
+    }
+    (reader.remaining() == 0).then(|| serialize_state(seed, &population))
 }
 
 impl GeneticAlgorithm {
@@ -519,6 +576,18 @@ mod tests {
         let ga = GeneticAlgorithm::new(vec![square(2.0)], &square(10.0), 2, 10.0, 4, 123).unwrap();
         let state = super::serialize_state(123, &ga.population);
         let (seed, population) = super::deserialize_state(&state).unwrap();
+        assert_eq!(seed, 123);
+        assert_eq!(population.len(), ga.population.len());
+        assert_eq!(population[0].rotation, ga.population[0].rotation);
+    }
+
+    #[test]
+    fn compact_population_state_round_trips_with_f32_rotation_precision() {
+        let ga = GeneticAlgorithm::new(vec![square(2.0)], &square(10.0), 2, 10.0, 7, 123).unwrap();
+        let state = super::serialize_state(123, &ga.population);
+        let compact = super::compact_state(&state, 7).unwrap();
+        let expanded = super::expand_compact_state(&compact).unwrap();
+        let (seed, population) = super::deserialize_state(&expanded).unwrap();
         assert_eq!(seed, 123);
         assert_eq!(population.len(), ga.population.len());
         assert_eq!(population[0].rotation, ga.population[0].rotation);

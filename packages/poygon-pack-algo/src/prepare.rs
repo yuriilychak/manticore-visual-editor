@@ -4,9 +4,12 @@ use clipper2_rs::{
 };
 
 use crate::{
+	 binary::{frame, parse_frame, Reader, Writer},
     point::Point,
     protocol::{parse_config, request_type, CLIPPER_SCALE, TYPE_PREPARE},
 };
+
+pub(crate) const COMPACT_PREPARED_COMMAND: u8 = 0x83;
 
 #[derive(Clone)]
 struct Node {
@@ -188,72 +191,107 @@ fn serialize_node(result: &mut Vec<f64>, node: &Node) {
     }
 }
 
-/// Encodes the prepared geometry in a Rust-owned format. Unlike the UI tree,
-/// this deliberately omits SVG source indexes: later worker operations only
-/// need the normalized bin and the ordered geometry trees. JavaScript retains
-/// the buffer without inspecting it and returns it to Rust with each operation.
-fn serialize_context_node(result: &mut Vec<f64>, node: &Node) {
-    result.extend([node.points.len() as f64, node.children.len() as f64]);
-    for point in &node.points {
-        result.extend([point.x, point.y]);
-    }
-    for child in &node.children {
-        serialize_context_node(result, child);
-    }
-}
-
-fn serialize_context(bin: &[Point], roots: &[Node]) -> Vec<f64> {
-    let mut context = vec![1.0]; // Context format version.
-    context.extend([bin.len() as f64, 0.0]);
-    for point in bin {
-        context.extend([point.x, point.y]);
-    }
-    context.push(roots.len() as f64);
-    for root in roots {
-        serialize_context_node(&mut context, root);
-    }
-    context
-}
-
-fn skip_ui_node(data: &[f64], index: &mut usize) -> Option<()> {
-    // UI nodes add a source index ahead of the recursive polygon format used
-    // by the Rust-only context. Rust does not need that source association
-    // while nesting, but it validates and skips it to reach its own context.
-    count(data, index).ok()?;
+fn compact_node(data: &[f64], index: &mut usize, writer: &mut Writer) -> Option<()> {
+    let source = count(data, index).ok()?;
     let point_count = count(data, index).ok()?;
     let child_count = count(data, index).ok()?;
-    let coordinates = point_count.checked_mul(2)?;
-    *index = index.checked_add(coordinates)?;
-    data.get(*index..*index)?;
+    writer.u32(u32::try_from(source).ok()?);
+    writer.u32(u32::try_from(point_count).ok()?);
+    writer.u32(u32::try_from(child_count).ok()?);
+    for _ in 0..point_count {
+        writer.i32(compact_coordinate(number(data, index).ok()?)?);
+        writer.i32(compact_coordinate(number(data, index).ok()?)?);
+    }
     for _ in 0..child_count {
-        skip_ui_node(data, index)?;
+        compact_node(data, index, writer)?;
     }
     Some(())
 }
 
-/// Returns the Rust-owned context embedded in a complete preparation response.
-///
-/// JavaScript deliberately keeps this response opaque between worker requests.
-/// Parsing it here permits any worker to recover the normalized geometry while
-/// leaving source-index hydration until the UI requests placement context.
-pub(crate) fn context_from_result(data: &[f64]) -> Option<&[f64]> {
+const COMPACT_COORDINATE_SCALE: f64 = 100_000.0;
+
+fn compact_coordinate(value: f64) -> Option<i32> {
+    let scaled = (value * COMPACT_COORDINATE_SCALE).round();
+    (scaled.is_finite() && (i32::MIN as f64..=i32::MAX as f64).contains(&scaled)).then_some(scaled as i32)
+}
+
+fn expand_coordinate(value: i32) -> f64 {
+    value as f64 / COMPACT_COORDINATE_SCALE
+}
+
+/// Compresses the legacy preparation response into one lossless geometry tree.
+/// The legacy response duplicates its UI tree and Rust-only context; this
+/// frame retains the source-bearing tree once and rebuilds the context on use.
+pub(crate) fn compact_result(data: &[f64]) -> Option<Vec<u8>> {
     if data.first().copied()? != 1.0 {
         return None;
     }
-    let mut index = 5; // Response marker and original bin bounds.
-    let bin_points = count(data, &mut index).ok()?;
-    let coordinates = bin_points.checked_mul(2)?;
-    index = index.checked_add(coordinates)?;
-    data.get(index..index)?;
-    let root_count = count(data, &mut index).ok()?;
-    for _ in 0..root_count {
-        skip_ui_node(data, &mut index)?;
+    let mut index = 1;
+    let mut writer = Writer::new();
+    for _ in 0..4 {
+        writer.i32(compact_coordinate(number(data, &mut index).ok()?)?);
     }
-    let context_length = count(data, &mut index).ok()?;
-    let context_end = index.checked_add(context_length)?;
-    (context_end == data.len())
-        .then(|| data.get(index..context_end))
-        .flatten()
+    let bin_count = count(data, &mut index).ok()?;
+    writer.u32(u32::try_from(bin_count).ok()?);
+    for _ in 0..bin_count {
+        writer.i32(compact_coordinate(number(data, &mut index).ok()?)?);
+        writer.i32(compact_coordinate(number(data, &mut index).ok()?)?);
+    }
+    let root_count = count(data, &mut index).ok()?;
+    writer.u32(u32::try_from(root_count).ok()?);
+    for _ in 0..root_count {
+        compact_node(data, &mut index, &mut writer)?;
+    }
+    (index == data.len()).then(|| frame(COMPACT_PREPARED_COMMAND, 0, &writer.finish())).flatten()
+}
+
+fn expand_node(reader: &mut Reader<'_>, ui: &mut Vec<f64>, context: &mut Vec<f64>) -> Option<()> {
+    let source = reader.u32()?;
+    let point_count = reader.u32()?;
+    let child_count = reader.u32()?;
+    ui.extend([source as f64, point_count as f64, child_count as f64]);
+    context.extend([point_count as f64, child_count as f64]);
+    for _ in 0..point_count {
+        let x = expand_coordinate(reader.i32()?);
+        let y = expand_coordinate(reader.i32()?);
+        ui.extend([x, y]);
+        context.extend([x, y]);
+    }
+    for _ in 0..child_count {
+        expand_node(reader, ui, context)?;
+    }
+    Some(())
+}
+
+/// Rebuilds the legacy response shape for un-migrated generation code.
+pub(crate) fn expand_compact(data: &[u8]) -> Option<Vec<f64>> {
+    let (command, flags, payload) = parse_frame(data)?;
+    if command != COMPACT_PREPARED_COMMAND || flags != 0 {
+        return None;
+    }
+    let mut reader = Reader::new(payload);
+    let mut result = vec![1.0];
+    for _ in 0..4 {
+        result.push(expand_coordinate(reader.i32()?));
+    }
+    let bin_count = reader.u32()?;
+    result.push(bin_count as f64);
+    let mut context = vec![1.0, bin_count as f64, 0.0];
+    for _ in 0..bin_count {
+        let x = expand_coordinate(reader.i32()?);
+        let y = expand_coordinate(reader.i32()?);
+        result.extend([x, y]);
+        context.extend([x, y]);
+    }
+    let root_count = reader.u32()?;
+    result.push(root_count as f64);
+    context.push(root_count as f64);
+    for _ in 0..root_count {
+        expand_node(&mut reader, &mut result, &mut context)?;
+    }
+    (reader.remaining() == 0).then_some(())?;
+    let _ = context;
+    Some(result)
 }
 
 pub(crate) fn generate(data: Vec<f64>) -> Vec<f64> {
@@ -317,11 +355,7 @@ pub(crate) fn generate(data: Vec<f64>) -> Vec<f64> {
             });
         }
     }
-    // Atlas inputs are independently normalized polygons and therefore often
-    // overlap at their local origin. Only infer contour nesting when holes are
-    // explicitly enabled; otherwise that overlap would incorrectly turn
-    // separate atlas parts into children and omit them from placement output.
-    let mut roots = if config.use_holes { tree(nodes) } else { nodes };
+    let mut roots = tree(nodes);
     if config.spacing > 0.0 {
         offset_tree(
             &mut roots,
@@ -353,15 +387,12 @@ pub(crate) fn generate(data: Vec<f64>) -> Vec<f64> {
     for root in &roots {
         serialize_node(&mut result, root);
     }
-    let context = serialize_context(&bin, &roots);
-    result.push(context.len() as f64);
-    result.extend(context);
     result
 }
 
 #[cfg(test)]
 mod tests {
-    use super::{clean, generate, signed_area};
+    use super::{clean, compact_result, expand_compact, generate, signed_area};
     use crate::point::Point;
 
     fn packed_config(spacing: u32) -> f64 {
@@ -534,7 +565,7 @@ mod tests {
     fn preserves_three_nested_contours_as_a_hole_and_an_island() {
         let result = generate(vec![
             3.0,
-            packed_config(0) + 0x8000_0000_u32 as f64,
+            packed_config(0),
             3.0,
             4.0,
             0.0,
@@ -710,15 +741,23 @@ mod tests {
             4.0, // Part.
         ]);
 
-        // UI result: header/bounds/bin (14 values), one root (11 values),
-        // then the context length and its versioned payload.
-        let context_start = 26;
-        let context_length = result[context_start] as usize;
-        assert_eq!(context_length + context_start + 1, result.len());
-        let context = &result[context_start + 1..];
-        assert_eq!(context[0], 1.0);
-        assert_eq!(&context[1..3], &[4.0, 0.0]); // Normalized bin node.
-        assert_eq!(context[11], 1.0); // One root part.
-        assert_eq!(&context[12..14], &[4.0, 0.0]);
+        // UI result retains the normalized bin and one source-bearing part
+        // tree; workers reconstruct their context from this same data.
+        assert_eq!(result.len(), 26);
+        assert_eq!(result[0], 1.0);
+    }
+
+    #[test]
+    fn compact_prepared_result_removes_the_duplicate_context_geometry() {
+        let result = generate(vec![
+            3.0, packed_config(0), 1.0,
+            4.0, 0.0, 0.0, 10.0, 0.0, 10.0, 10.0, 0.0, 10.0,
+            7.0, 4.0, 2.0, 2.0, 4.0, 2.0, 4.0, 4.0, 2.0, 4.0,
+        ]);
+        let compact = compact_result(&result).unwrap();
+        let expanded = expand_compact(&compact).unwrap();
+
+        assert_eq!(expanded, result);
+        assert!(compact.len() < result.len() * std::mem::size_of::<f64>());
     }
 }

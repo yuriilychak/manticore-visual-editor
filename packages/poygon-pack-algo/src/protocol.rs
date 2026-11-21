@@ -3,10 +3,8 @@ use crate::polygon::Polygon;
 
 pub(crate) const TYPE_NFP: u64 = 1;
 pub(crate) const TYPE_GA: u64 = 0;
-pub(crate) const TYPE_PLACEMENT: u64 = 2;
 pub(crate) const TYPE_PREPARE: u64 = 3;
 pub(crate) const CLIPPER_SCALE: f64 = 10_000_000.0;
-const CONFIG_USE_HOLES_MASK: u32 = 0x80000000;
 
 #[derive(Clone, Copy)]
 pub(crate) struct Config {
@@ -15,7 +13,6 @@ pub(crate) struct Config {
     pub(crate) rotations: u32,
     pub(crate) population_size: usize,
     pub(crate) mutation_rate: f64,
-    pub(crate) use_holes: bool,
 }
 
 pub(crate) fn parse_config(data: &[f64], index: &mut usize) -> Result<Config, String> {
@@ -44,7 +41,6 @@ pub(crate) fn parse_config(data: &[f64], index: &mut usize) -> Result<Config, St
         rotations,
         population_size: population_size as usize,
         mutation_rate: mutation_rate as f64,
-        use_holes: packed & CONFIG_USE_HOLES_MASK != 0,
     })
 }
 const USE_HOLES_MASK: u64 = 0x04;
@@ -59,6 +55,9 @@ pub(crate) struct NfpRequest {
     pub(crate) key: u32,
     pub(crate) use_holes: bool,
     pub(crate) inside: bool,
+    pub(crate) rotations: u8,
+    pub(crate) a_rotation_index: u8,
+    pub(crate) b_rotation_index: u8,
     pub(crate) a_rotation: f64,
     pub(crate) b_rotation: f64,
     pub(crate) a: Polygon,
@@ -94,27 +93,6 @@ pub(crate) fn parse_polygon(data: &[f64], start: usize) -> Result<(Polygon, usiz
     Ok((Polygon { points, children }, next))
 }
 
-/// Decodes a recursive polygon tree with no buffer-relative child offsets.
-/// This format is safe to retain and re-emit from an opaque Rust operation.
-pub(crate) fn parse_recursive_polygon(data: &[f64], index: &mut usize) -> Result<Polygon, String> {
-    let point_count = *data.get(*index).ok_or("Missing polygon point count")? as usize;
-    let child_count = *data.get(*index + 1).ok_or("Missing polygon child count")? as usize;
-    *index += 2;
-    let mut points = Vec::with_capacity(point_count);
-    for _ in 0..point_count {
-        points.push(Point {
-            x: *data.get(*index).ok_or("Missing polygon x")?,
-            y: *data.get(*index + 1).ok_or("Missing polygon y")?,
-        });
-        *index += 2;
-    }
-    let mut children = Vec::with_capacity(child_count);
-    for _ in 0..child_count {
-        children.push(parse_recursive_polygon(data, index)?);
-    }
-    Ok(Polygon { points, children })
-}
-
 pub(crate) fn serialize_recursive_polygon(result: &mut Vec<f64>, polygon: &Polygon) {
     result.extend([polygon.points.len() as f64, polygon.children.len() as f64]);
     for point in &polygon.points {
@@ -140,6 +118,9 @@ pub(crate) fn parse_request(data: &[f64]) -> Result<NfpRequest, String> {
         key: (header >> KEY_SHIFT) as u32,
         use_holes: header & USE_HOLES_MASK != 0,
         inside: header & INSIDE_MASK != 0,
+        rotations: rotation_count as u8,
+        a_rotation_index: ((header >> A_ROTATION_SHIFT) & ROTATION_MASK) as u8,
+        b_rotation_index: ((header >> B_ROTATION_SHIFT) & ROTATION_MASK) as u8,
         a_rotation: ((header >> A_ROTATION_SHIFT) & ROTATION_MASK) as f64 * 360.0
             / rotation_count as f64,
         b_rotation: ((header >> B_ROTATION_SHIFT) & ROTATION_MASK) as f64 * 360.0
@@ -164,13 +145,13 @@ pub(crate) fn serialize_nfp(key: u32, contours: &[Vec<Point>]) -> Vec<f64> {
 
 #[cfg(test)]
 mod tests {
-    use super::{request_type, TYPE_NFP, TYPE_PLACEMENT, TYPE_PREPARE};
+    use super::{request_type, TYPE_NFP, TYPE_PREPARE};
 
     #[test]
     fn identifies_the_packed_nfp_header_by_its_low_type_bits() {
         let packed_nfp_header = (42_u64 << 19) | (4_u64 << 14) | TYPE_NFP;
         assert_eq!(request_type(&[packed_nfp_header as f64]), Some(TYPE_NFP));
-        assert_eq!(request_type(&[TYPE_PLACEMENT as f64]), Some(TYPE_PLACEMENT));
+        assert_eq!(request_type(&[2.0]), Some(2));
         assert_eq!(request_type(&[TYPE_PREPARE as f64]), Some(TYPE_PREPARE));
     }
 }

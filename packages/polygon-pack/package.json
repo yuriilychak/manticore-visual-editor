@@ -4,18 +4,19 @@
   "private": true,
   "type": "module",
   "description": "The no-fit-polygon placement and genetic-algorithm engine used by SVGnest.",
-  "exports": "./src/index.js",
+  "exports": "./src/index.ts",
   "files": [
     "src"
   ],
   "scripts": {
-    "build": "npm --workspace poygon-pack-algo run build && rollup --config ./rollup.config.mjs && cp ../poygon-pack-algo/pkg/poygon_pack_algo_bg.wasm ../../apps/desktop/src/renderer/public/workers/poygon_pack_algo_bg.wasm",
-    "test": "node --test ./test/*.test.mjs",
-    "check": "node -e \"console.log('Algorithm browser sources are syntax-preserved during migration.')\"",
+    "build": "npm --workspace poygon-pack-algo run build && esbuild ./src/workers/nesting.worker.ts --bundle --format=esm --platform=browser --outfile=../../apps/desktop/src/renderer/public/workers/nesting.worker.js && cp ../poygon-pack-algo/pkg/poygon_pack_algo_bg.wasm ../../apps/desktop/src/renderer/public/workers/poygon_pack_algo_bg.wasm",
+    "check": "tsc --noEmit",
+    "test": "tsx --test ./test/*.test.ts",
     "clean": "node -e \"console.log('No generated files in polygon-pack.')\""
   },
   "devDependencies": {
-    "@rollup/plugin-commonjs": "^29.0.3",
-    "@rollup/plugin-node-resolve": "^16.0.3"
+    "esbuild": "^0.28.2",
+    "tsx": "^4.23.15",
+    "typescript": "^5.9.3"
   }
 }

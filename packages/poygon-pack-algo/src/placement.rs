@@ -6,8 +6,10 @@ use crate::cache;
 use crate::point::{almost_equal, Point};
 use crate::polygon::Polygon;
 use crate::protocol::{parse_config, Config, CLIPPER_SCALE};
+use crate::binary::{frame, Writer};
 
 const TYPE_PLACEMENT: u64 = 2;
+pub(crate) const COMPACT_PLACEMENT_RESULT_COMMAND: u8 = 0x87;
 
 #[derive(Clone)]
 struct Part {
@@ -225,6 +227,39 @@ fn serialize(
     result
 }
 
+/// Converts the legacy placement vector to its UI-facing compact frame.
+pub(crate) fn compact_result(data: &[f64]) -> Option<Vec<u8>> {
+    let mut index = 0;
+    let fitness = *data.get(index)?; index += 1;
+    let placed_area = *data.get(index)?; index += 1;
+    let bin_area = *data.get(index)?; index += 1;
+    let bin_count = *data.get(index)?;
+    (fitness.is_finite() && placed_area.is_finite() && bin_area.is_finite() && bin_count.is_finite() && bin_count.fract() == 0.0 && (0.0..=u32::MAX as f64).contains(&bin_count)).then_some(())?;
+    index += 1;
+    let mut writer = Writer::new();
+    writer.f64(fitness);
+    writer.f64(placed_area);
+    writer.f64(bin_area);
+    writer.u32(bin_count as u32);
+    for _ in 0..bin_count as usize {
+        let count = *data.get(index)?; index += 1;
+        (count.is_finite() && count.fract() == 0.0 && (0.0..=u32::MAX as f64).contains(&count)).then_some(())?;
+        writer.u32(count as u32);
+        for _ in 0..count as usize {
+            let id = *data.get(index)?; index += 1;
+            let x = *data.get(index)?; index += 1;
+            let y = *data.get(index)?; index += 1;
+            let rotation = *data.get(index)?; index += 1;
+            (id.is_finite() && id.fract() == 0.0 && (0.0..=u32::MAX as f64).contains(&id) && x.is_finite() && y.is_finite() && rotation.is_finite()).then_some(())?;
+            writer.u32(id as u32);
+            writer.f32(x as f32);
+            writer.f32(y as f32);
+            writer.f32(rotation as f32);
+        }
+    }
+    (index == data.len()).then(|| frame(COMPACT_PLACEMENT_RESULT_COMMAND, 0, &writer.finish())).flatten()
+}
+
 fn empty_result() -> Vec<f64> {
     vec![0.0, 0.0, 0.0, 0.0]
 }
@@ -395,26 +430,6 @@ pub(crate) fn generate(data: Vec<f64>) -> Vec<f64> {
     serialize(&all_placements, fitness, placed_area, bin_area)
 }
 
-/// `[0, 4, cacheLength, cache..., nfpResultCount, nfpResults..., placementPayload]`.
-pub(crate) fn finalize(data: Vec<f64>) -> Vec<f64> {
-    if data.get(1) != Some(&4.0) {
-        return vec![0.0];
-    }
-    let mut index = 2;
-    let Some(cache) = cache::merge_payload(&data, &mut index) else {
-        return vec![0.0];
-    };
-    let state = cache::serialize(&cache);
-    let mut placement_request = vec![TYPE_PLACEMENT as f64];
-    placement_request.extend_from_slice(&data[index..]);
-    placement_request.extend(state.iter());
-    let placement = generate(placement_request);
-    let mut result = vec![1.0, state.len() as f64];
-    result.extend(state);
-    result.extend(placement);
-    result
-}
-
 #[cfg(test)]
 mod tests {
     use super::generate;
@@ -468,6 +483,16 @@ mod tests {
             generate(request),
             vec![1.0, 2.0, 100.0, 1.0, 1.0, 0.0, 0.0, 0.0, 0.0]
         );
+    }
+
+    #[test]
+    fn compacts_placement_transforms_and_ids() {
+        let result = vec![0.25, 12.0, 25.0, 1.0, 1.0, 7.0, 1.25, -2.5, 90.0];
+        let compact = super::compact_result(&result).unwrap();
+        let (command, flags, payload) = crate::binary::parse_frame(&compact).unwrap();
+        assert_eq!(command, super::COMPACT_PLACEMENT_RESULT_COMMAND);
+        assert_eq!(flags, 0);
+        assert_eq!(payload.len(), 8 + 8 + 8 + 4 + 4 + 4 + 4 + 4 + 4);
     }
 
     #[test]

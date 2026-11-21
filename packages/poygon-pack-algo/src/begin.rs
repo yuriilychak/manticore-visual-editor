@@ -6,9 +6,8 @@
 use crate::{
     cache, ga, placement, plan,
     polygon::Polygon,
-    prepare,
     protocol::{
-        parse_config, parse_recursive_polygon, request_type, serialize_recursive_polygon, TYPE_GA,
+        parse_config, request_type, serialize_recursive_polygon, TYPE_GA,
     },
 };
 
@@ -81,18 +80,44 @@ fn integer(value: f64) -> Option<usize> {
 }
 
 fn parse_context(data: &[f64]) -> Option<Context> {
+    // Prepared results retain one source-bearing UI tree. The source field is
+    // intentionally skipped here; workers only need the normalized geometry.
     if data.first().copied()? != 1.0 {
         return None;
     }
-    let mut index = 1;
-    let bin = parse_recursive_polygon(data, &mut index).ok()?;
+    let mut index = 5;
+    let bin_count = integer(*data.get(index)?)?;
+    index += 1;
+    let mut bin_points = Vec::with_capacity(bin_count);
+    for _ in 0..bin_count {
+        bin_points.push(crate::point::Point { x: *data.get(index)?, y: *data.get(index + 1)? });
+        index += 2;
+    }
     let root_count = integer(*data.get(index)?)?;
     index += 1;
     let mut roots = Vec::with_capacity(root_count);
     for _ in 0..root_count {
-        roots.push(parse_recursive_polygon(data, &mut index).ok()?);
+        roots.push(parse_ui_polygon(data, &mut index)?);
     }
-    (index == data.len()).then_some(Context { bin, roots })
+    (index == data.len()).then_some(Context { bin: Polygon { points: bin_points, children: vec![] }, roots })
+}
+
+fn parse_ui_polygon(data: &[f64], index: &mut usize) -> Option<Polygon> {
+    integer(*data.get(*index)?)?; // source
+    *index += 1;
+    let point_count = integer(*data.get(*index)?)?;
+    let child_count = integer(*data.get(*index + 1)?)?;
+    *index += 2;
+    let mut points = Vec::with_capacity(point_count);
+    for _ in 0..point_count {
+        points.push(crate::point::Point { x: *data.get(*index)?, y: *data.get(*index + 1)? });
+        *index += 2;
+    }
+    let mut children = Vec::with_capacity(child_count);
+    for _ in 0..child_count {
+        children.push(parse_ui_polygon(data, index)?);
+    }
+    Some(Polygon { points, children })
 }
 
 fn serialize_ga_geometry(config: f64, context: &Context) -> Vec<f64> {
@@ -232,7 +257,6 @@ pub(crate) fn generate(data: Vec<f64>) -> Vec<f64> {
     index += 1;
     let Some(context) = data
         .get(index..index + preparation_length)
-        .and_then(prepare::context_from_result)
         .and_then(parse_context)
     else {
         return vec![0.0];
@@ -354,7 +378,6 @@ pub(crate) fn complete(data: Vec<f64>) -> Vec<f64> {
     index += 1;
     let Some(context) = data
         .get(index..index + preparation_length)
-        .and_then(prepare::context_from_result)
         .and_then(parse_context)
     else {
         return vec![0.0];

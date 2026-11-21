@@ -1,21 +1,22 @@
-import { PolygonPack, type PolygonPackConfig, type PolygonPackPlacement } from 'polygon-pack';
+import { PolygonPack, type NestingConfig, type Placement } from 'polygon-pack';
 
 export type PolygonPackingInput = { id: number; points: Float32Array };
 export type PolygonPackingPlacement = { id: number; rotation: number; x: number; y: number };
 export type PolygonPackingProgress = (completedIterations: number, totalIterations: number) => void;
-export type PolygonPackingConfig = PolygonPackConfig;
+export type PolygonPackingConfig = NestingConfig;
 
 /** Number of genetic generations evaluated for each candidate atlas size. */
 export const POLYGON_PACKING_ITERATIONS = 8;
 export const POLYGON_PACKING_COMPLETE_PLACEMENTS = POLYGON_PACKING_ITERATIONS;
-type SourcePolygon = number[] & { source?: number | symbol };
+type SourcePolygon = number[] & { source: number };
 
-const square = (size: number): SourcePolygon => Object.assign([0, 0, size, 0, size, size, 0, size], { source: Symbol('atlas-bin') });
+const BIN_SOURCE = -1;
+const square = (size: number): SourcePolygon => Object.assign([0, 0, size, 0, size, size, 0, size], { source: BIN_SOURCE });
 const part = ({ id, points }: PolygonPackingInput): SourcePolygon => Object.assign(Array.from(points), { source: id });
 
 type LayoutValidation = { layout: PolygonPackingPlacement[] | null; reason?: string };
 
-const completeLayout = (placements: PolygonPackPlacement[][] | undefined, inputs: readonly PolygonPackingInput[], sourceIds: readonly unknown[] | undefined): LayoutValidation => {
+const completeLayout = (placements: Placement[][] | undefined, inputs: readonly PolygonPackingInput[], sourceIds: readonly unknown[] | undefined): LayoutValidation => {
   if (!placements) return { layout: null, reason: 'The engine did not emit a new best placement.' };
   if (placements.length !== 1) return { layout: null, reason: `Expected one atlas, received ${placements.length}.` };
   if (placements[0].length !== inputs.length) return { layout: null, reason: `Expected ${inputs.length} placements, received ${placements[0].length}.` };
@@ -54,13 +55,12 @@ export const packPolygonsInSquare = async (inputs: readonly PolygonPackingInput[
     resolve(result);
   };
   try {
-    packer.setParts([bin, ...inputs.map(part)]);
-    if (!packer.setBin(bin.source) || !packer.config(config)) { finish(null); return; }
     onProgress?.(0, maximumIterations);
-    if (!packer.start(() => undefined, (placements) => {
+    if (!packer.start(config, [bin, ...inputs.map(part)], bin.source, () => undefined, (result) => {
+      const placements = result?.placements;
       completedIterations += 1;
       onProgress?.(Math.min(completedIterations, maximumIterations), maximumIterations);
-      const sourceIds = packer.getPlacementContext()?.tree.map(({ source }) => source);
+      const sourceIds = packer.placementContext?.tree.map(({ source }) => source);
       const { layout } = completeLayout(placements, inputs, sourceIds);
       if (layout) lastCompleteLayout = layout;
       // Keep the final complete generation, rather than stopping at the first
