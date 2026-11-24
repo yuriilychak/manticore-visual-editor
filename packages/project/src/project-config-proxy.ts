@@ -16,6 +16,7 @@ export class ProjectConfigProxy {
       if (isProjectContent(item)) return item;
       if (typeof item !== 'object' || item === null || (item as { type?: unknown }).type !== AssetType.TextureAtlas || !('quad' in item)) return item;
       const { quad: _invalidQuad, ...withoutQuad } = item as Record<string, unknown>;
+      void _invalidQuad;
       if (!isProjectContent(withoutQuad)) return item;
       repairedAtlasIds.push(withoutQuad.id);
       return withoutQuad;
@@ -105,7 +106,8 @@ export class ProjectConfigProxy {
   async setTextureAtlasQuad(id: number, quad: ProjectTextureAtlasQuad): Promise<ProjectContent> {
     const atlas = this.config.content.find((item) => item.id === id && item.type === AssetType.TextureAtlas);
     const imageIds = this.config.content.filter((item) => item.parentId === id && item.type === AssetType.Image).map((item) => item.id);
-    if (!atlas || imageIds.length !== quad.items.length || new Set(quad.items.map((item) => item.id)).size !== imageIds.length || !imageIds.every((imageId) => quad.items.some((item) => item.id === imageId))) {
+    const itemImageIds = new Set(quad.items.map((item) => item.id));
+    if (!atlas || itemImageIds.size !== imageIds.length || !imageIds.every((imageId) => itemImageIds.has(imageId))) {
       throw new Error('Texture atlas layout is invalid.');
     }
     const updated = { ...atlas, quad };

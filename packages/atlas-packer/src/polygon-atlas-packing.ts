@@ -3,7 +3,7 @@ import { ATLAS_PADDING, MAX_POWER_OF_TWO_ATLAS_SIZE, type AtlasLayout, type Atla
 
 const nextPowerOfTwo = (value: number) => 2 ** Math.ceil(Math.log2(Math.max(1, value)));
 const quadPolygon = ({ height, width }: AtlasPolygonImage) => new Float32Array([0, 0, width, 0, width, height, 0, height]);
-type FlatPolygon = AtlasPackingInput;
+type FlatPolygon = AtlasPackingInput & { localX: number; localY: number };
 
 const POLYGON_ATLAS_PACKING_CONFIG: PolygonPackingConfig = {
   curveTolerance: 0.3,
@@ -33,7 +33,7 @@ const normalizePolygonOrigin = (points: Float32Array) => {
     minX = Math.min(minX, points[index]);
     minY = Math.min(minY, points[index + 1]);
   }
-  return translatePolygon(points, -minX, -minY);
+  return { localX: minX, localY: minY, points: translatePolygon(points, -minX, -minY) };
 };
 
 const isAxisAlignedQuad = (points: Float32Array) => {
@@ -53,8 +53,14 @@ const flattenPolygons = (images: readonly AtlasPolygonImage[]): FlatPolygon[] =>
   const flattened: FlatPolygon[] = [];
   for (const { height, id: sourceId, polygons, width } of images) {
     if (polygons?.length) {
-      polygons.forEach((points, polygonIndex) => flattened.push({ id: flattened.length, points: normalizePolygonOrigin(points), polygonIndex, sourceId }));
-    } else flattened.push({ id: flattened.length, points: normalizePolygonOrigin(quadPolygon({ height, id: sourceId, width })), sourceId });
+      polygons.forEach((points, polygonIndex) => {
+        const normalized = normalizePolygonOrigin(points);
+        flattened.push({ id: flattened.length, ...normalized, polygonIndex, sourceId });
+      });
+    } else {
+      const normalized = normalizePolygonOrigin(quadPolygon({ height, id: sourceId, width }));
+      flattened.push({ id: flattened.length, ...normalized, sourceId });
+    }
   }
   return flattened;
 };
@@ -104,6 +110,8 @@ const atlasItemsFromPolygonPlacements = (placements: Awaited<ReturnType<typeof p
   if (maxX - minX + ATLAS_PADDING * 2 > size || maxY - minY + ATLAS_PADDING * 2 > size) return null;
   return positioned.map(({ bounds, input, placement }) => ({
     id: input.sourceId,
+    localX: input.localX,
+    localY: input.localY,
     polygonIndex: input.polygonIndex,
     rotated: placement.rotation % 180 !== 0,
     rotation: placement.rotation,

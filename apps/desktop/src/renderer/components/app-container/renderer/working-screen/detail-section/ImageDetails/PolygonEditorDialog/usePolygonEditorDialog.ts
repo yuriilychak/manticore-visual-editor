@@ -23,7 +23,7 @@ export const usePolygonEditorDialog = ({ format, image, maxPointCount, onClose, 
   const theme = useTheme();
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [state, dispatch] = useReducer(polygonEditorReducer, polygons[0], createInitialPolygonEditorState);
-  const { bitmap, points, saving, selectedPolygonIndex } = state;
+  const { bitmap, points, saving, selectedPolygonIndex, zoom } = state;
   const polygonCount = polygons.length;
   const canNavigatePolygons = polygonCount > 1;
   const pointCount = points.length;
@@ -49,10 +49,10 @@ export const usePolygonEditorDialog = ({ format, image, maxPointCount, onClose, 
     if (!canvas || !context || !bitmap) return;
 
     const allPoints = polygons.filter((_, index) => index !== selectedPolygonIndex);
-    new PolygonEditorBuilder({ allPoints, bitmap, canvas, context, points, theme }).draw();
-  }, [bitmap, points, polygons, selectedPolygonIndex, theme]);
+    new PolygonEditorBuilder({ allPoints, bitmap, canvas, context, points, theme, zoom }).draw();
+  }, [bitmap, points, polygons, selectedPolygonIndex, theme, zoom]);
 
-  const getPoint = useCallback((event: { clientX: number; clientY: number }) => toPoint(canvasRef.current, bitmap, event), [bitmap]);
+  const getPoint = useCallback((event: { clientX: number; clientY: number }) => toPoint(canvasRef.current, bitmap, zoom, event), [bitmap, zoom]);
   const handleDoubleClick = useCallback((event: MouseEvent<HTMLCanvasElement>) => {
     const result = getPoint(event);
     if (!result) return;
@@ -115,6 +115,7 @@ export const usePolygonEditorDialog = ({ format, image, maxPointCount, onClose, 
     if (saving) return;
     onClose();
   }, [onClose, saving]);
+  const setZoom = useCallback((zoom: number) => dispatch({ type: 'zoom-changed', payload: { zoom } }), []);
 
   return {
     canSubmit,
@@ -129,6 +130,8 @@ export const usePolygonEditorDialog = ({ format, image, maxPointCount, onClose, 
     saving,
     selectNextPolygon,
     selectPreviousPolygon,
-    submit
+    setZoom,
+    submit,
+    zoom
   };
 };

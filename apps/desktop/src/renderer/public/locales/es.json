@@ -73,6 +73,7 @@
     "filesByType": "Archivos por tipo",
     "images": "Imágenes",
     "polygonEditorInstructions": "Arrastra un cuadrado para moverlo. Haz doble clic en un cuadrado para eliminarlo. Haz clic en otro lugar para añadir un punto al borde más cercano.",
+    "polygonEditorZoom": "Zoom",
     "polygonEditorTitle": "Modificar polígono",
     "previousPolygon": "Polígono anterior",
     "nextPolygon": "Siguiente polígono",

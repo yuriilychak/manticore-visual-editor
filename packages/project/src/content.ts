@@ -6,6 +6,8 @@ import type { ProjectContent, ProjectContentType, ProjectTextureAtlasQuad } from
 const isU16 = (value: unknown): value is number =>
   typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= MAX_U16;
 
+const isInteger = (value: unknown): value is number => typeof value === 'number' && Number.isInteger(value);
+
 const isLegacyAssetData = (value: unknown): value is number[] | string =>
   (typeof value === 'string' && /^[A-Za-z0-9+/]*={0,2}$/.test(value) && value.length % 4 === 0) ||
   (Array.isArray(value) && value.every((item) => Number.isInteger(item) && item >= 0 && item <= 0xff));
@@ -18,7 +20,14 @@ const isTextureAtlasQuad = (value: unknown): value is ProjectTextureAtlasQuad =>
   const { height, items, outdated, width } = value as Record<string, unknown>;
   return typeof outdated === 'boolean'
     && isU16(width) && isU16(height) && width === height && width > 0 && (width & (width - 1)) === 0
-    && Array.isArray(items) && items.every((item) => typeof item === 'object' && item !== null && isU16((item as Record<string, unknown>).id) && isU16((item as Record<string, unknown>).x) && isU16((item as Record<string, unknown>).y) && typeof (item as Record<string, unknown>).rotated === 'boolean');
+    && Array.isArray(items) && items.every((item) => {
+      if (typeof item !== 'object' || item === null) return false;
+      const { id, localX, localY, polygonIndex, rotated, rotation, x, y } = item as Record<string, unknown>;
+      return isU16(id) && isU16(x) && isU16(y) && typeof rotated === 'boolean'
+        && (localX === undefined || isInteger(localX)) && (localY === undefined || isInteger(localY))
+        && (polygonIndex === undefined || isU16(polygonIndex))
+        && (rotation === undefined || rotation === 0 || rotation === 90 || rotation === 180 || rotation === 270);
+    });
 };
 
 export const isProjectContent = (value: unknown): value is ProjectContent => {

@@ -156,7 +156,12 @@ const AtlasPreview: FC<AtlasPreviewProps> = ({ atlasIds }) => {
         });
       }
     } finally { bitmaps.forEach((bitmap) => bitmap.close()); }
-    const quad: ProjectTextureAtlasQuad = { ...layout, outdated: false };
+    const quad: ProjectTextureAtlasQuad = {
+      height: layout.height,
+      items: layout.items.map(({ id, localX, localY, polygonIndex, rotated, rotation, x, y }) => ({ id, localX, localY, polygonIndex, rotated, rotation, x, y })),
+      outdated: false,
+      width: layout.width
+    };
     updateProgress(0.45, t('details.atlasGenerationPadding'));
     const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
     await clusterizer.applyColorMargins(pixels.data, canvas.width, sprites);

@@ -1,6 +1,7 @@
 export type AtlasImage = { height: number; id: number; width: number };
 export type AtlasPolygonImage = AtlasImage & { polygons?: readonly Float32Array[] };
-export type AtlasPlacement = { id: number; polygonIndex?: number; rotated: boolean; rotation?: number; x: number; y: number };
+/** `localX`/`localY` locate a polygon in its source sprite; `x`/`y` locate it in the atlas. */
+export type AtlasPlacement = { id: number; localX: number; localY: number; polygonIndex?: number; rotated: boolean; rotation?: number; x: number; y: number };
 export type AtlasLayout = { height: number; items: AtlasPlacement[]; width: number };
 export type AtlasPackingInput = { id: number; polygonIndex?: number; points: Float32Array; sourceId: number };
 export type PolygonPackingOptions = {

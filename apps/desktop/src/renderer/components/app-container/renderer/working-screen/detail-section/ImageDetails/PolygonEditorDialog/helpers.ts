@@ -17,17 +17,17 @@ export const createBitmap = async ({ format, image, request }: CreateBitmapConfi
   }
 };
 
-export const toPoint = (canvas: HTMLCanvasElement | null, bitmap: ImageBitmap | null, event: { clientX: number; clientY: number }): { point: Point; scale: number } | null => {
+export const toPoint = (canvas: HTMLCanvasElement | null, bitmap: ImageBitmap | null, zoom: number, event: { clientX: number; clientY: number }): { point: Point; scale: number } | null => {
   if (!canvas || !bitmap) return null;
 
   const rect = canvas.getBoundingClientRect();
   const canvasX = (event.clientX - rect.left) * canvas.width / rect.width;
   const canvasY = (event.clientY - rect.top) * canvas.height / rect.height;
-  const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+  const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height) * zoom;
   return {
     point: {
-      x: (canvasX - (canvas.width - bitmap.width * scale) / 2) / scale,
-      y: (canvasY - (canvas.height - bitmap.height * scale) / 2) / scale
+      x: Math.round((canvasX - (canvas.width - bitmap.width * scale) / 2) / scale),
+      y: Math.round((canvasY - (canvas.height - bitmap.height * scale) / 2) / scale)
     },
     scale
   };

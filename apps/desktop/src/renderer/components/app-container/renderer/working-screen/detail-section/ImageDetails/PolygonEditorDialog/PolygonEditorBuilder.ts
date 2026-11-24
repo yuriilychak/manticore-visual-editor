@@ -17,6 +17,7 @@ type PolygonEditorBuilderProps = {
   context: CanvasRenderingContext2D;
   points: readonly Point[];
   theme: Theme;
+  zoom: number;
 };
 
 class PolygonEditorBuilder {
@@ -42,7 +43,7 @@ class PolygonEditorBuilder {
 
   private drawImage() {
     const { bitmap, canvas, context } = this.props;
-    const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height);
+    const scale = Math.min(canvas.width / bitmap.width, canvas.height / bitmap.height) * this.props.zoom;
     const x = (canvas.width - bitmap.width * scale) / 2;
     const y = (canvas.height - bitmap.height * scale) / 2;
     context.drawImage(bitmap, x, y, bitmap.width * scale, bitmap.height * scale);

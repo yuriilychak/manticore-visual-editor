@@ -64,6 +64,34 @@ describe('ProjectConfigProxy', () => {
     expect(saved.content.find(({ id }) => id === 3)).not.toHaveProperty('quad');
   });
 
+  test('stores multiple polygon placements for one atlas image', async () => {
+    projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
+    await mkdir(path.join(projectPath, 'src', 'assets', '00003'), { recursive: true });
+    await writeFile(path.join(projectPath, 'src', 'config.json'), JSON.stringify({
+      content: [
+        { id: 1, name: '', parentId: 0, type: 1, version: 0 },
+        { id: 2, name: 'Bundle', parentId: 1, type: 2, version: 0 },
+        { id: 3, name: 'Atlas', parentId: 2, type: 5, version: 0 },
+        { id: 4, name: 'Sprite', parentId: 3, type: 4, version: 0 }
+      ],
+      name: 'Project', version: 0
+    }));
+    const quad = {
+      height: 64,
+      items: [
+        { id: 4, localX: 4, localY: 8, polygonIndex: 0, rotated: false, rotation: 0, x: 2, y: 2 },
+        { id: 4, localX: 32, localY: 24, polygonIndex: 1, rotated: true, rotation: 90, x: 20, y: 4 }
+      ],
+      outdated: false,
+      width: 64
+    };
+
+    await (await ProjectConfigProxy.load(projectPath)).setTextureAtlasQuad(3, quad);
+
+    await expect(ProjectConfigProxy.load(projectPath)).resolves.toBeInstanceOf(ProjectConfigProxy);
+    await expect(readFile(path.join(projectPath, 'src', 'assets', '00003', 'quad.json'), 'utf8')).resolves.toBe(`${JSON.stringify(quad, null, 2)}\n`);
+  });
+
   test('imports image and font assets with unique names and polygon settings', async () => {
     projectPath = await mkdtemp(path.join(tmpdir(), 'manticore-project-'));
     const destination = path.join(projectPath, 'Example');

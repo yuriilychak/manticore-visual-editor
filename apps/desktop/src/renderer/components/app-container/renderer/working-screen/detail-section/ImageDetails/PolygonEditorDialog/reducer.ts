@@ -1,3 +1,4 @@
+import { POLYGON_EDITOR_ZOOM_DEFAULT } from './constants';
 import { insertPointAtNearestEdge } from './helpers';
 import type { Point } from './PolygonEditorBuilder';
 
@@ -6,6 +7,7 @@ type PolygonEditorState = {
   points: Point[];
   saving: boolean;
   selectedPolygonIndex: number;
+  zoom: number;
 };
 
 type PolygonEditorAction =
@@ -14,7 +16,8 @@ type PolygonEditorAction =
   | { type: 'point-moved'; payload: { index: number; point: Point } }
   | { type: 'point-removed'; payload: { index: number } }
   | { type: 'polygon-selected'; payload: { index: number; points: Int16Array } }
-  | { type: 'saving-changed'; payload: { saving: boolean } };
+  | { type: 'saving-changed'; payload: { saving: boolean } }
+  | { type: 'zoom-changed'; payload: { zoom: number } };
 
 const createPoints = (points: Int16Array) => Array.from({ length: points.length / 2 }, (_, index) => ({ x: points[index * 2], y: points[index * 2 + 1] }));
 
@@ -22,7 +25,8 @@ export const createInitialPolygonEditorState = (initialPoints: Int16Array): Poly
   bitmap: null,
   points: createPoints(initialPoints),
   saving: false,
-  selectedPolygonIndex: 0
+  selectedPolygonIndex: 0,
+  zoom: POLYGON_EDITOR_ZOOM_DEFAULT
 });
 
 export const polygonEditorReducer = (state: PolygonEditorState, action: PolygonEditorAction): PolygonEditorState => {
@@ -39,5 +43,7 @@ export const polygonEditorReducer = (state: PolygonEditorState, action: PolygonE
       return { ...state, points: createPoints(action.payload.points), selectedPolygonIndex: action.payload.index };
     case 'saving-changed':
       return { ...state, saving: action.payload.saving };
+    case 'zoom-changed':
+      return { ...state, zoom: action.payload.zoom };
   }
 };
