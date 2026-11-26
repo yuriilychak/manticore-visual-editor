@@ -10,7 +10,7 @@
     }
   },
   "dependencies": {
-    "maxrects-packer": "file:../maxrects-packer",
-    "polygon-pack": "file:../polygon-pack"
+    "maxrects-packer": "file:../maxrects-packer/adapter",
+    "polygon-pack": "file:../polygon-pack/adapter"
   }
 }

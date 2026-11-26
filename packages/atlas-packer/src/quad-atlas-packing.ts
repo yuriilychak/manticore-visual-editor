@@ -1,4 +1,4 @@
-import { packRectangles } from '../../maxrects-packer/src/rectangles';
+import { packRectangles } from '../../maxrects-packer/adapter/src/rectangles';
 import { ATLAS_PADDING, MAX_ATLAS_SIZE, MAX_POWER_OF_TWO_ATLAS_SIZE, type AtlasImage, type AtlasLayout } from './types';
 
 const nextPowerOfTwo = (value: number) => 2 ** Math.ceil(Math.log2(Math.max(1, value)));

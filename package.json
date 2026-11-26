@@ -4,7 +4,10 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/*"
+    "packages/atlas-packer",
+    "packages/project",
+    "packages/*/adapter",
+    "packages/*/core"
   ],
   "scripts": {
     "dev": "turbo run dev --concurrency=1",
