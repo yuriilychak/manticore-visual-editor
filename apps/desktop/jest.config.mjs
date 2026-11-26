@@ -1,5 +1,5 @@
 /** @type {import('jest').Config} */
-module.exports = {
+export default {
   clearMocks: true,
   collectCoverageFrom: ['src/renderer/components/**/*.{ts,tsx}', '!src/renderer/components/**/index.ts'],
   coverageDirectory: 'coverage',
