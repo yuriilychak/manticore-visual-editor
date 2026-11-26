@@ -1,4 +1,4 @@
-const WASM_URL = '/workers/poygon_pack_algo_bg.wasm';
+const WASM_URL = new URL('../../core/pkg/poygon_pack_algo_bg.wasm', import.meta.url);
 
 interface WasmExports {
 	memory: WebAssembly.Memory;

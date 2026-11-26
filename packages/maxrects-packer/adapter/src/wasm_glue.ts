@@ -6,34 +6,57 @@
  * giving each its own wasm instance.
  */
 
-let wasm;
+export interface InitOutput extends WebAssembly.Exports {
+    readonly memory: WebAssembly.Memory;
+    readonly __wbg_maxrectspacker_free: (pointer: number, fromFinalizer: number) => void;
+    readonly maxrectspacker_add: (pointer: number, width: number, height: number, data: number) => void;
+    readonly maxrectspacker_addArray: (pointer: number, data: number, length: number) => void;
+    readonly maxrectspacker_bins: (pointer: number) => [number, number];
+    readonly maxrectspacker_load: (pointer: number, data: number, length: number) => void;
+    readonly maxrectspacker_new: (width: number, height: number, padding: number, options: number) => number;
+    readonly maxrectspacker_save: (pointer: number) => [number, number];
+    readonly merge_results: (data: number, length: number, width: number, height: number, padding: number, options: number) => [number, number];
+    readonly prepare_chunks: (data: number, length: number, chunkCount: number) => [number, number];
+    readonly process_chunk: (data: number, length: number, width: number, height: number, padding: number, options: number) => [number, number];
+    readonly __wbindgen_export_0: WebAssembly.Table;
+    readonly __wbindgen_free: (pointer: number, length: number, align: number) => void;
+    readonly __wbindgen_malloc: (size: number, align: number) => number;
+    readonly __wbindgen_start: () => void;
+}
 
-const cachedTextDecoder = (typeof TextDecoder !== 'undefined' ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true }) : { decode: () => { throw Error('TextDecoder not available') } } );
+export type SyncInitInput = BufferSource | WebAssembly.Module;
+export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembly.Module;
+
+let wasm: InitOutput | undefined;
+
+const cachedTextDecoder: Pick<TextDecoder, 'decode'> = typeof TextDecoder !== 'undefined'
+    ? new TextDecoder('utf-8', { ignoreBOM: true, fatal: true })
+    : { decode: () => { throw new Error('TextDecoder not available'); } };
 
 if (typeof TextDecoder !== 'undefined') { cachedTextDecoder.decode(); }
 
-let cachedUint8ArrayMemory0 = null;
+let cachedUint8ArrayMemory0: Uint8Array | null = null;
 
-function getUint8ArrayMemory0() {
+function getUint8ArrayMemory0(): Uint8Array {
     if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
-        cachedUint8ArrayMemory0 = new Uint8Array(wasm.memory.buffer);
+        cachedUint8ArrayMemory0 = new Uint8Array(wasm!.memory.buffer);
     }
     return cachedUint8ArrayMemory0;
 }
 
-function getStringFromWasm0(ptr, len) {
+function getStringFromWasm0(ptr: number, len: number): string {
     ptr = ptr >>> 0;
     return cachedTextDecoder.decode(getUint8ArrayMemory0().subarray(ptr, ptr + len));
 }
 
-function getArrayU8FromWasm0(ptr, len) {
+function getArrayU8FromWasm0(ptr: number, len: number): Uint8Array {
     ptr = ptr >>> 0;
     return getUint8ArrayMemory0().subarray(ptr / 1, ptr / 1 + len);
 }
 
 let WASM_VECTOR_LEN = 0;
 
-function passArray8ToWasm0(arg, malloc) {
+function passArray8ToWasm0(arg: Uint8Array, malloc: (size: number, align: number) => number): number {
     const ptr = malloc(arg.length * 1, 1) >>> 0;
     getUint8ArrayMemory0().set(arg, ptr / 1);
     WASM_VECTOR_LEN = arg.length;
@@ -47,12 +70,12 @@ function passArray8ToWasm0(arg, malloc) {
  * Input: [num_results: u8] [result_len: u32_le, bins_data...] × num_results
  * Output: standard bins format
  */
-export function merge_results(results, width, height, padding, options) {
-    const ptr0 = passArray8ToWasm0(results, wasm.__wbindgen_malloc);
+export function merge_results(results: Uint8Array, width: number, height: number, padding: number, options: number): Uint8Array {
+    const ptr0 = passArray8ToWasm0(results, wasm!.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.merge_results(ptr0, len0, width, height, padding, options);
+    const ret = wasm!.merge_results(ptr0, len0, width, height, padding, options);
     var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    wasm!.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v2;
 }
 
@@ -63,12 +86,12 @@ export function merge_results(results, width, height, padding, options) {
  * Input: packed rects [width_i16, height_i16, tag_u32] × N
  * Output: standard bins format (same as WasmMaxRectsPacker.bins getter)
  */
-export function process_chunk(chunk, width, height, padding, options) {
-    const ptr0 = passArray8ToWasm0(chunk, wasm.__wbindgen_malloc);
+export function process_chunk(chunk: Uint8Array, width: number, height: number, padding: number, options: number): Uint8Array {
+    const ptr0 = passArray8ToWasm0(chunk, wasm!.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.process_chunk(ptr0, len0, width, height, padding, options);
+    const ret = wasm!.process_chunk(ptr0, len0, width, height, padding, options);
     var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    wasm!.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v2;
 }
 
@@ -79,50 +102,53 @@ export function process_chunk(chunk, width, height, padding, options) {
  * Input: packed rects [width_i16, height_i16, tag_u32] × N
  * Output: [num_chunks: u8] [chunk_len: u32_le, chunk_data...] × num_chunks
  */
-export function prepare_chunks(rects, num_chunks) {
-    const ptr0 = passArray8ToWasm0(rects, wasm.__wbindgen_malloc);
+export function prepare_chunks(rects: Uint8Array, num_chunks: number): Uint8Array {
+    const ptr0 = passArray8ToWasm0(rects, wasm!.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
-    const ret = wasm.prepare_chunks(ptr0, len0, num_chunks);
+    const ret = wasm!.prepare_chunks(ptr0, len0, num_chunks);
     var v2 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-    wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+    wasm!.__wbindgen_free(ret[0], ret[1] * 1, 1);
     return v2;
 }
 
-const MaxRectsPackerFinalization = (typeof FinalizationRegistry === 'undefined')
-    ? { register: () => {}, unregister: () => {} }
-    : new FinalizationRegistry(ptr => wasm.__wbg_maxrectspacker_free(ptr >>> 0, 1));
+type Finalizer = { register(target: object, heldValue: number, unregisterToken?: object): void; unregister(token: object): void };
+const FinalizationRegistryCtor = (globalThis as { FinalizationRegistry?: new (callback: (value: number) => void) => Finalizer }).FinalizationRegistry;
+const MaxRectsPackerFinalization: Finalizer = FinalizationRegistryCtor
+    ? new FinalizationRegistryCtor(ptr => wasm!.__wbg_maxrectspacker_free(ptr >>> 0, 1))
+    : { register: () => {}, unregister: () => {} };
 
 /**
  * WASM-exposed packer with binary serialization protocol.
  * All non-primitive data crosses the WASM boundary as Uint8Array.
  */
 export class MaxRectsPacker {
+    private __wbg_ptr: number;
 
-    __destroy_into_raw() {
+    __destroy_into_raw(): number {
         const ptr = this.__wbg_ptr;
         this.__wbg_ptr = 0;
         MaxRectsPackerFinalization.unregister(this);
         return ptr;
     }
 
-    free() {
+    free(): void {
         const ptr = this.__destroy_into_raw();
-        wasm.__wbg_maxrectspacker_free(ptr, 0);
+        wasm!.__wbg_maxrectspacker_free(ptr, 0);
     }
 
     /**
      * Add a single rectangle with a u32 data tag.
      */
-    add(width, height, data) {
-        wasm.maxrectspacker_add(this.__wbg_ptr, width, height, data);
+    add(width: number, height: number, data: number): void {
+        wasm!.maxrectspacker_add(this.__wbg_ptr, width, height, data);
     }
 
     /**
      * Create a new packer.
      * `options` is a u8 bitfield: bit0=smart, bit1=pot, bit2=square
      */
-    constructor(width, height, padding, options) {
-        const ret = wasm.maxrectspacker_new(width, height, padding, options);
+    constructor(width: number, height: number, padding: number, options: number) {
+        const ret = wasm!.maxrectspacker_new(width, height, padding, options);
         this.__wbg_ptr = ret >>> 0;
         MaxRectsPackerFinalization.register(this, this.__wbg_ptr, this);
         return this;
@@ -131,29 +157,29 @@ export class MaxRectsPacker {
     /**
      * Get bins as a packed binary buffer.
      */
-    get bins() {
-        const ret = wasm.maxrectspacker_bins(this.__wbg_ptr);
+    get bins(): Uint8Array {
+        const ret = wasm!.maxrectspacker_bins(this.__wbg_ptr);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        wasm!.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
 
     /**
      * Load bins from previously saved binary buffer.
      */
-    load(data) {
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+    load(data: Uint8Array): void {
+        const ptr0 = passArray8ToWasm0(data, wasm!.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        wasm.maxrectspacker_load(this.__wbg_ptr, ptr0, len0);
+        wasm!.maxrectspacker_load(this.__wbg_ptr, ptr0, len0);
     }
 
     /**
      * Save bins state as packed binary buffer.
      */
-    save() {
-        const ret = wasm.maxrectspacker_save(this.__wbg_ptr);
+    save(): Uint8Array {
+        const ret = wasm!.maxrectspacker_save(this.__wbg_ptr);
         var v1 = getArrayU8FromWasm0(ret[0], ret[1]).slice();
-        wasm.__wbindgen_free(ret[0], ret[1] * 1, 1);
+        wasm!.__wbindgen_free(ret[0], ret[1] * 1, 1);
         return v1;
     }
 
@@ -161,20 +187,19 @@ export class MaxRectsPacker {
      * Add rectangles from a packed binary buffer.
      * Format: [width: i16_le, height: i16_le, tag: u32_le] × N (8 bytes per rect)
      */
-    addArray(data) {
-        const ptr0 = passArray8ToWasm0(data, wasm.__wbindgen_malloc);
+    addArray(data: Uint8Array): void {
+        const ptr0 = passArray8ToWasm0(data, wasm!.__wbindgen_malloc);
         const len0 = WASM_VECTOR_LEN;
-        wasm.maxrectspacker_addArray(this.__wbg_ptr, ptr0, len0);
+        wasm!.maxrectspacker_addArray(this.__wbg_ptr, ptr0, len0);
     }
 }
 
 // --- WASM initialization ---
 
-function __wbg_get_imports() {
-    const imports = {};
-    imports.wbg = {};
+function __wbg_get_imports(): WebAssembly.Imports {
+    const imports: WebAssembly.Imports & { wbg: Record<string, (...args: number[]) => void> } = { wbg: {} };
     imports.wbg.__wbindgen_init_externref_table = function() {
-        const table = wasm.__wbindgen_export_0;
+        const table = wasm!.__wbindgen_export_0;
         const offset = table.grow(4);
         table.set(0, undefined);
         table.set(offset + 0, undefined);
@@ -183,17 +208,17 @@ function __wbg_get_imports() {
         table.set(offset + 3, false);
         ;
     };
-    imports.wbg.__wbindgen_throw = function(arg0, arg1) {
+    imports.wbg.__wbindgen_throw = function(arg0: number, arg1: number) {
         throw new Error(getStringFromWasm0(arg0, arg1));
     };
 
     return imports;
 }
 
-function __wbg_finalize_init(instance, module) {
-    wasm = instance.exports;
+function __wbg_finalize_init(instance: WebAssembly.Instance): InitOutput {
+    wasm = instance.exports as unknown as InitOutput;
     cachedUint8ArrayMemory0 = null;
-    wasm.__wbindgen_start();
+    wasm!.__wbindgen_start();
     return wasm;
 }
 
@@ -201,36 +226,36 @@ function __wbg_finalize_init(instance, module) {
  * Synchronously instantiate WASM from a BufferSource or WebAssembly.Module.
  * Use in workers where sync compilation is allowed (no size limit).
  */
-export function initSync(module) {
+export function initSync(module: SyncInitInput | { module: SyncInitInput }): InitOutput {
     if (wasm !== undefined) return wasm;
 
     if (typeof module !== 'undefined') {
         if (Object.getPrototypeOf(module) === Object.prototype) {
-            ({module} = module)
+            module = (module as { module: SyncInitInput }).module;
         }
     }
 
     const imports = __wbg_get_imports();
 
     if (!(module instanceof WebAssembly.Module)) {
-        module = new WebAssembly.Module(module);
+        module = new WebAssembly.Module(module as BufferSource);
     }
 
     const instance = new WebAssembly.Instance(module, imports);
 
-    return __wbg_finalize_init(instance, module);
+    return __wbg_finalize_init(instance);
 }
 
 /**
  * Asynchronously instantiate WASM from a URL, Response, BufferSource, or WebAssembly.Module.
  * Use in the main thread to avoid sync compilation size limits.
  */
-export async function initWasm(module_or_path) {
+export async function initWasm(module_or_path: InitInput | Promise<InitInput> | { module_or_path: InitInput | Promise<InitInput> }): Promise<InitOutput> {
     if (wasm !== undefined) return wasm;
 
     if (typeof module_or_path !== 'undefined') {
         if (Object.getPrototypeOf(module_or_path) === Object.prototype) {
-            ({module_or_path} = module_or_path)
+            module_or_path = (module_or_path as { module_or_path: InitInput | Promise<InitInput> }).module_or_path;
         }
     }
 
@@ -246,10 +271,10 @@ export async function initWasm(module_or_path) {
 
     const { instance, module } = await __wbg_load(await module_or_path, imports);
 
-    return __wbg_finalize_init(instance, module);
+    return __wbg_finalize_init(instance);
 }
 
-async function __wbg_load(module, imports) {
+async function __wbg_load(module: any, imports: WebAssembly.Imports): Promise<WebAssembly.WebAssemblyInstantiatedSource> {
     if (typeof Response === 'function' && module instanceof Response) {
         if (typeof WebAssembly.instantiateStreaming === 'function') {
             try {

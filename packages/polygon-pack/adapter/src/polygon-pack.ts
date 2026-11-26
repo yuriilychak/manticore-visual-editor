@@ -174,7 +174,11 @@ export class PolygonPack {
   }
 
   #ensureWorkerPool() {
-      if (!this.#workerPool) this.#workerPool = new NestingWorkerPool("/workers/nesting.worker.js");
+      if (!this.#workerPool) {
+          this.#workerPool = new NestingWorkerPool(
+              new URL('./workers/nesting.worker.ts', import.meta.url).href
+          );
+      }
       return this.#workerPool;
   }
 
