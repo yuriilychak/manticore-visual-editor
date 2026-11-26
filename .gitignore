@@ -11,12 +11,11 @@ apps/*/dist
 apps/*/coverage
 apps/*/release
 apps/*/.vite
-packages/image-polygonizer/core/target/
 # Rust and wasm-pack build artifacts shared by algorithm packages.
-packages/*/core/.cargo/
-packages/*/core/target/
-packages/*/core/pkg/
-packages/*/core/dist/
+packages/**/core/.cargo/
+packages/**/core/target/
+packages/**/core/pkg/
+packages/**/core/dist/
 # Generated browser bundles and WASM binaries.
 /lib/
 .DS_Store

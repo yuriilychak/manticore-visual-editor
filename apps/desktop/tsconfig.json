@@ -17,13 +17,13 @@
       "@manticore/project/types": ["../../packages/project/src/types.ts"],
       "@manticore/project/constants": ["../../packages/project/src/constants.ts"],
       "@manticore/project/image-polygon-settings": ["../../packages/project/src/image-polygon-settings.ts"],
-      "atlas-packer": ["../../packages/atlas-packer/src/index.ts"],
-      "polygon-pack": ["../../packages/polygon-pack/adapter/src/index.ts"],
-      "texture-compressor": ["../../packages/texture-compressor/adapter/src/index.ts"],
-      "texture-atlas-clusterizer": ["../../packages/texture-atlas-clusterizer/adapter/src/index.ts"],
-      "image-polygonizer": ["../../packages/image-polygonizer/adapter/src/index.ts"],
-      "maxrects-packer": ["../../packages/maxrects-packer/adapter/src/index.ts"],
-      "maxrects-packer/rectangles": ["../../packages/maxrects-packer/adapter/src/rectangles.ts"]
+      "atlas-packer": ["../../packages/texture/atlas-packer/src/index.ts"],
+      "polygon-pack": ["../../packages/texture/polygon-pack/adapter/src/index.ts"],
+      "texture-compressor": ["../../packages/texture/texture-compressor/adapter/src/index.ts"],
+      "texture-atlas-clusterizer": ["../../packages/texture/texture-atlas-clusterizer/adapter/src/index.ts"],
+      "image-polygonizer": ["../../packages/texture/image-polygonizer/adapter/src/index.ts"],
+      "maxrects-packer": ["../../packages/texture/maxrects-packer/adapter/src/index.ts"],
+      "maxrects-packer/rectangles": ["../../packages/texture/maxrects-packer/adapter/src/rectangles.ts"]
     }
   },
   "include": ["src", "vite.config.ts", "rollup.config.mjs"],

@@ -4,10 +4,10 @@
   "private": true,
   "workspaces": [
     "apps/*",
-    "packages/atlas-packer",
+    "packages/texture/atlas-packer",
     "packages/project",
-    "packages/*/adapter",
-    "packages/*/core"
+    "packages/texture/*/adapter",
+    "packages/texture/*/core"
   ],
   "scripts": {
     "dev": "turbo run dev --concurrency=1",

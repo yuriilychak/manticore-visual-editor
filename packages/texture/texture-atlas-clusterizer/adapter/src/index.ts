@@ -51,6 +51,6 @@ export class TextureAtlasClusterizer {
 
 /** Creates a clusterizer using the algorithm package's shared build artifact. */
 export const createTextureAtlasClusterizer = () => TextureAtlasClusterizer.create({
-  wasmUrl: new URL('../../../../lib/texture-atlas-clusterizer.wasm', import.meta.url),
+  wasmUrl: new URL('../../../../../lib/texture-atlas-clusterizer.wasm', import.meta.url),
   workerSource: () => new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' }),
 });
